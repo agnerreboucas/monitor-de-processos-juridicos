@@ -14,7 +14,9 @@ use Radar\Config;
 use Radar\Database;
 use Radar\Monitoring\CurlHttpClient;
 use Radar\Monitoring\DjenAdapter;
+use Radar\Mail\MailerFactory;
 use Radar\Monitoring\Worker;
+use Radar\Service\NotificationDispatcher;
 
 $options = getopt('', ['max-seconds::', 'batch::', 'pause-ms::']);
 $maxSeconds = (int) ($options['max-seconds'] ?? 50);
@@ -23,8 +25,9 @@ $pauseMs = (int) ($options['pause-ms'] ?? 300);
 
 $config = Config::fromEnvironment(__DIR__ . '/../.env');
 $http = new CurlHttpClient($config->get('HTTP_PROXY_URL') ?: null);
+$pdo = Database::connect($config);
 $worker = new Worker(
-    Database::connect($config),
+    $pdo,
     [new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'), $config->int('DJEN_TIMEOUT', 15))],
     workerId: gethostname() . ':' . getmypid(),
     pauseBetweenJobsMicros: $pauseMs * 1000,
@@ -41,5 +44,8 @@ do {
     }
 } while ($r['claimed'] > 0 && time() < $deadline);
 
-printf("[%s] recuperados=%d agendados=%d consultados=%d ok=%d falhas=%d canceladas=%d novas_movimentacoes=%d\n",
-    date('c'), $recovered, $queued, $total['claimed'], $total['succeeded'], $total['failed'], $total['cancelled'], $total['new_movements']);
+$mail = (new NotificationDispatcher($pdo, MailerFactory::fromConfig($config, __DIR__ . '/../storage'), $config->get('APP_URL')))->sendPending();
+
+printf("[%s] recuperados=%d agendados=%d consultados=%d ok=%d falhas=%d canceladas=%d novas_movimentacoes=%d emails=%d emails_falhos=%d\n",
+    date('c'), $recovered, $queued, $total['claimed'], $total['succeeded'], $total['failed'], $total['cancelled'], $total['new_movements'],
+    $mail['emails'], $mail['failed']);

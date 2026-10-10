@@ -1,0 +1,369 @@
+<?php
+declare(strict_types=1);
+
+namespace Radar\Tests;
+
+use Radar\Http\App;
+use Radar\Http\ArraySession;
+use Radar\Http\Request;
+use Radar\Http\Response;
+use Radar\Tests\Support\FakeMailer;
+
+/** A API de ponta a ponta, sem servidor web: Request entra, Response sai. */
+final class HttpApiTest extends DbTestCase
+{
+    private ArraySession $session;
+    private FakeMailer $mailer;
+    private App $app;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->newClient();
+    }
+
+    private function newClient(string $ip = '10.0.0.1'): void
+    {
+        $this->session = new ArraySession();
+        $this->mailer = new FakeMailer();
+        $this->app = new App($this->pdo, $this->session, $this->mailer, 'https://radar.exemplo.com.br', $this->clock);
+        $this->ip = $ip;
+    }
+
+    private string $ip = '10.0.0.1';
+
+    /** @return array<string,mixed> */
+    private function call(string $method, string $path, array $body = [], array $query = [], ?array $headers = null): array
+    {
+        $response = $this->raw($method, $path, $body, $query, $headers);
+        return ['status' => $response->status, 'json' => json_decode($response->body, true) ?? [], 'headers' => $response->headers];
+    }
+
+    private function raw(string $method, string $path, array $body = [], array $query = [], ?array $headers = null): Response
+    {
+        $csrf = (string) ($this->session->data['csrf'] ?? '');
+        $headers ??= ['content-type' => 'application/json', 'x-csrf-token' => $csrf];
+        return $this->app->handle(new Request($method, $path, $query, $body, $headers, $this->ip, true));
+    }
+
+    private function registerAndLogin(string $office = 'Silva Advocacia', string $email = 'dra@silva.com'): void
+    {
+        $this->call('GET', '/api/session');
+        $r = $this->call('POST', '/api/register', ['office_name' => $office, 'name' => 'Dra. Silva', 'email' => $email, 'password' => 'senha-segura-123']);
+        $this->assertSame(201, $r['status'], json_encode($r['json']));
+    }
+
+    // ── segurança da sessão ──────────────────────────────────────────────────
+
+    public function testSecurityHeadersOnEveryResponse(): void
+    {
+        $h = $this->call('GET', '/api/session')['headers'];
+        $this->assertSame('nosniff', $h['X-Content-Type-Options']);
+        $this->assertSame('DENY', $h['X-Frame-Options']);
+        $this->assertSame('no-store', $h['Cache-Control']);
+        $this->assertStringContainsString("frame-ancestors 'none'", $h['Content-Security-Policy']);
+    }
+
+    public function testWritesNeedTheCsrfToken(): void
+    {
+        $this->call('GET', '/api/session');
+        $body = ['office_name' => 'X', 'name' => 'Y', 'email' => 'x@x.com', 'password' => 'senha-segura-123'];
+        foreach ([
+            'sem token' => ['content-type' => 'application/json'],
+            'token errado' => ['content-type' => 'application/json', 'x-csrf-token' => str_repeat('a', 64)],
+            'sem JSON' => ['x-csrf-token' => (string) $this->session->data['csrf'], 'content-type' => 'text/plain'],
+        ] as $label => $headers) {
+            $r = $this->call('POST', '/api/register', $body, [], $headers);
+            $this->assertSame(403, $r['status'], $label);
+        }
+        $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM tenants'));
+    }
+
+    public function testRejectsOtherSitesOrigin(): void
+    {
+        $this->call('GET', '/api/session');
+        $headers = ['content-type' => 'application/json', 'x-csrf-token' => (string) $this->session->data['csrf'], 'origin' => 'https://site-malicioso.exemplo'];
+        $this->assertSame(403, $this->call('POST', '/api/login', ['email' => 'a@a.com', 'password' => 'x'], [], $headers)['status']);
+        $headers['origin'] = 'https://radar.exemplo.com.br';
+        $this->assertSame(401, $this->call('POST', '/api/login', ['email' => 'a@a.com', 'password' => 'x'], [], $headers)['status']);   // passou do CSRF
+    }
+
+    public function testProtectedRoutesNeedLogin(): void
+    {
+        $this->call('GET', '/api/session');
+        foreach (['/api/dashboard', '/api/processes', '/api/notifications', '/api/team', '/api/plan', '/api/audit', '/api/processes/1'] as $path) {
+            $this->assertSame(401, $this->call('GET', $path)['status'], $path);
+        }
+        $this->assertSame(401, $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG])['status']);
+    }
+
+    public function testLoginRenewsTheSessionAndLogoutEndsIt(): void
+    {
+        $this->registerAndLogin();
+        $this->assertGreaterThanOrEqual(1, $this->session->regenerations);               // registro já entrou com sessão nova
+        $before = $this->session->regenerations;
+        $this->call('POST', '/api/logout');
+        $this->assertTrue($this->session->destroyed);
+        $this->assertSame(401, $this->call('GET', '/api/dashboard')['status']);
+        $this->call('GET', '/api/session');
+        $this->call('POST', '/api/login', ['email' => 'dra@silva.com', 'password' => 'senha-segura-123']);
+        $this->assertSame($before + 1, $this->session->regenerations);                    // login = nova sessão (contra fixação)
+    }
+
+    public function testSessionExpiresWhenIdleOrTooOld(): void
+    {
+        $this->registerAndLogin();
+        $this->assertSame(200, $this->call('GET', '/api/dashboard')['status']);
+        $this->clock->advance('PT2H1M');
+        $this->assertSame(401, $this->call('GET', '/api/dashboard')['status']);           // 2 h parado
+    }
+
+    public function testUnknownRouteAndMethodsAreRefused(): void
+    {
+        $this->registerAndLogin();
+        $this->assertSame(404, $this->call('GET', '/api/nada')['status']);
+        $this->assertSame(404, $this->call('DELETE', '/api/processes/1')['status']);
+        $this->assertSame(404, $this->call('GET', '/qualquer-coisa')['status']);
+    }
+
+    public function testMalformedBodyIsAClearError(): void
+    {
+        $this->call('GET', '/api/session');
+        $r = $this->call('POST', '/api/login', ['__invalid' => true]);
+        $this->assertSame(422, $r['status']);
+    }
+
+    // ── a regra de ouro: o escritório vem da sessão ──────────────────────────
+
+    public function testTenantFromTheRequestIsIgnored(): void
+    {
+        $this->registerAndLogin('Escritório A', 'a@a.com');
+        $a = (int) $this->scalar("SELECT id FROM tenants WHERE name = 'Escritório A'");
+        $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG, 'client_label' => 'Do A']);
+        $this->newClient('10.0.0.2');
+        $this->registerAndLogin('Escritório B', 'b@b.com');
+        $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJRO, 'client_label' => 'Do B']);
+        $b = (int) $this->scalar("SELECT id FROM tenants WHERE name = 'Escritório B'");
+
+        // B tenta se passar por A de todas as formas que um atacante tentaria
+        $list = $this->call('GET', '/api/processes', [], ['tenant_id' => (string) $a, 'tenant' => (string) $a]);
+        $this->assertSame([self::CNJ_TJRO], array_column($list['json']['data']['items'], 'cnj'));
+        $r = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TRT8, 'tenant_id' => $a]);
+        $this->assertSame($b, (int) $this->scalar('SELECT tenant_id FROM processes WHERE cnj = ?', [self::CNJ_TRT8]));
+        $this->assertSame(201, $r['status']);
+        $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM processes WHERE tenant_id = ? AND cnj = ?', [$a, self::CNJ_TRT8]));
+    }
+
+    public function testCannotSelectAnOfficeYouDoNotBelongTo(): void
+    {
+        $this->registerAndLogin('Escritório A', 'a@a.com');
+        $this->newClient('10.0.0.2');
+        $this->registerAndLogin('Escritório B', 'b@b.com');
+        $a = (int) $this->scalar("SELECT id FROM tenants WHERE name = 'Escritório A'");
+        $this->assertSame(403, $this->call('POST', '/api/tenant/select', ['tenant_id' => $a])['status']);
+        // forjar o valor direto na sessão (como se o PHP tivesse sido adulterado) também não dá acesso: o banco é reconferido
+        $this->session->set('tenant_id', $a);
+        $this->assertSame(403, $this->call('GET', '/api/processes')['status']);
+        $this->assertNull($this->session->get('tenant_id'));
+    }
+
+    public function testAnotherOfficesProcessIs404(): void
+    {
+        $this->registerAndLogin('Escritório A', 'a@a.com');
+        $id = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG])['json']['data']['id'];
+        $this->newClient('10.0.0.2');
+        $this->registerAndLogin('Escritório B', 'b@b.com');
+        foreach ([['GET', ''], ['PATCH', ''], ['POST', '/pause'], ['POST', '/archive'], ['POST', '/check']] as [$method, $suffix]) {
+            $this->assertSame(404, $this->call($method, "/api/processes/$id$suffix", ['client_label' => 'x'])['status'], "$method $suffix");
+        }
+        $this->assertSame('active', $this->scalar('SELECT status FROM processes WHERE id = ?', [$id]));
+    }
+
+    public function testAccessIsLostImmediatelyWhenDisabled(): void
+    {
+        $this->registerAndLogin();
+        $this->assertSame(200, $this->call('GET', '/api/processes')['status']);
+        $this->pdo->exec("UPDATE tenant_members SET status = 'disabled'");
+        $this->assertSame(403, $this->call('GET', '/api/processes')['status']);
+    }
+
+    // ── fluxos ───────────────────────────────────────────────────────────────
+
+    public function testRegisterLoginAndWorkWithProcesses(): void
+    {
+        $this->registerAndLogin();
+        $me = $this->call('GET', '/api/session')['json']['data'];
+        $this->assertTrue($me['authenticated']);
+        $this->assertSame('office_admin', $me['tenant']['role']);
+
+        $created = $this->call('POST', '/api/processes', ['cnj' => '00014578520265080106', 'client_label' => 'Maria', 'notes' => 'urgente']);
+        $this->assertSame(201, $created['status']);
+        $id = $created['json']['data']['id'];
+        $this->assertSame(self::CNJ_TRT8, $created['json']['data']['cnj']);
+
+        $detail = $this->call('GET', "/api/processes/$id")['json']['data'];
+        $this->assertSame('Maria', $detail['process']['client_label']);
+        $this->assertSame([], $detail['movements']);
+
+        $this->assertSame('Novo', $this->call('PATCH', "/api/processes/$id", ['client_label' => 'Novo'])['json']['data']['client_label']);
+        $this->call('POST', "/api/processes/$id/pause");
+        $this->assertSame('paused', $this->call('GET', "/api/processes/$id")['json']['data']['process']['status']);
+
+        $dash = $this->call('GET', '/api/dashboard')['json']['data'];
+        $this->assertSame(1, $dash['processes_total']);
+        $this->assertSame(1, $this->call('GET', '/api/plan')['json']['data']['processes_used']);
+    }
+
+    public function testValidationErrorsAre422WithAClearMessage(): void
+    {
+        $this->registerAndLogin();
+        $r = $this->call('POST', '/api/processes', ['cnj' => '123']);
+        $this->assertSame(422, $r['status']);
+        $this->assertStringContainsString('inválido', $r['json']['error']);
+        $this->assertSame('validation', $r['json']['code']);
+    }
+
+    public function testPlanLimitIs409(): void
+    {
+        $this->pdo->exec("UPDATE plans SET max_processes = 1 WHERE code = 'essencial'");
+        $this->registerAndLogin();
+        $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG]);
+        $r = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJRO]);
+        $this->assertSame(409, $r['status']);
+        $this->assertSame('limit', $r['json']['code']);
+        $this->pdo->exec("UPDATE plans SET max_processes = 50 WHERE code = 'essencial'");
+    }
+
+    public function testListFiltersAndPagination(): void
+    {
+        $this->registerAndLogin();
+        foreach ([self::CNJ_TJMG => 'Ana', self::CNJ_TJRO => 'Bia', self::CNJ_TRT8 => 'Carla'] as $cnj => $name) {
+            $this->call('POST', '/api/processes', ['cnj' => $cnj, 'client_label' => $name]);
+        }
+        $this->assertSame(3, $this->call('GET', '/api/processes')['json']['data']['total']);
+        $this->assertSame(['Bia'], array_column($this->call('GET', '/api/processes', [], ['q' => 'bia'])['json']['data']['items'], 'client_label'));
+        $this->assertSame(1, $this->call('GET', '/api/processes', [], ['tribunal' => 'TRT8'])['json']['data']['total']);
+        $page = $this->call('GET', '/api/processes', [], ['per_page' => '2', 'page' => '2'])['json']['data'];
+        $this->assertSame(3, $page['total']);
+        $this->assertCount(1, $page['items']);
+    }
+
+    // ── senha, convites, e-mail ──────────────────────────────────────────────
+
+    public function testForgotPasswordRevealsNothingAndSendsALink(): void
+    {
+        $this->registerAndLogin();
+        $this->call('POST', '/api/logout');
+        $this->call('GET', '/api/session');
+        $known = $this->call('POST', '/api/password/forgot', ['email' => 'dra@silva.com']);
+        $unknown = $this->call('POST', '/api/password/forgot', ['email' => 'ninguem@silva.com']);
+        $this->assertSame($known['json'], $unknown['json']);                              // respostas idênticas
+        $this->assertCount(1, $this->mailer->sent);
+        $this->assertSame('dra@silva.com', $this->mailer->sent[0]['to']);
+        $this->assertStringNotContainsString('token', $known['json']['message']);
+        preg_match('~token=([0-9a-f]{64})~', $this->mailer->sent[0]['body'], $m);
+        $this->assertNotEmpty($m);
+
+        $this->assertSame(200, $this->call('POST', '/api/password/reset', ['token' => $m[1], 'password' => 'nova-senha-forte-9'])['status']);
+        $this->assertSame(200, $this->call('POST', '/api/login', ['email' => 'dra@silva.com', 'password' => 'nova-senha-forte-9'])['status']);
+        $this->assertSame(422, $this->call('POST', '/api/password/reset', ['token' => $m[1], 'password' => 'outra-senha-forte-9'])['status']);
+    }
+
+    public function testInviteSendsAnEmailAndTheGuestCanJoin(): void
+    {
+        $this->registerAndLogin();
+        $r = $this->call('POST', '/api/team/invite', ['name' => 'Dr. Souza', 'email' => 'souza@silva.com', 'role' => 'lawyer']);
+        $this->assertSame(201, $r['status']);
+        $this->assertTrue($r['json']['data']['email_sent']);
+        preg_match('~token=([0-9a-f]{64})~', $this->mailer->sent[0]['body'], $m);
+        $this->assertNotEmpty($m);
+        $this->assertCount(2, $this->call('GET', '/api/team')['json']['data']);
+
+        $this->newClient('10.0.0.9');
+        $this->call('GET', '/api/session');
+        $this->call('POST', '/api/password/reset', ['token' => $m[1], 'password' => 'senha-do-souza-1']);
+        $login = $this->call('POST', '/api/login', ['email' => 'souza@silva.com', 'password' => 'senha-do-souza-1']);
+        $this->assertSame('lawyer', $login['json']['data']['tenants'][0]['role']);
+        $this->assertSame(403, $this->call('POST', '/api/team/invite', ['name' => 'X', 'email' => 'x@silva.com', 'role' => 'lawyer'])['status']);   // advogado não convida
+    }
+
+    public function testMailFailureDoesNotLoseTheInvite(): void
+    {
+        $this->registerAndLogin();
+        $this->mailer->failNext = 1;
+        $r = $this->call('POST', '/api/team/invite', ['name' => 'Dr. Souza', 'email' => 'souza@silva.com', 'role' => 'lawyer']);
+        $this->assertSame(201, $r['status']);
+        $this->assertFalse($r['json']['data']['email_sent']);                              // a tela avisa que o e-mail não saiu
+    }
+
+    // ── notificações ─────────────────────────────────────────────────────────
+
+    public function testNotificationsListAndMarkAsRead(): void
+    {
+        $this->registerAndLogin();
+        $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG]);
+        $worker = new \Radar\Monitoring\Worker($this->pdo, [(new Support\FakeAdapter())
+            ->thenFor(self::CNJ_TJMG, [Support\FakeAdapter::movement('1')])
+            ->thenFor(self::CNJ_TJMG, [Support\FakeAdapter::movement('1'), Support\FakeAdapter::movement('2', 'Sentença publicada')])], $this->clock);
+        $worker->runBatch(10);
+        $this->clock->advance('PT7H');
+        $worker->enqueueDue();
+        $worker->runBatch(10);
+
+        // passaram 7 h: a sessão expirou por inatividade (2 h), então entra de novo
+        $this->assertSame(401, $this->call('GET', '/api/notifications')['status']);
+        $this->call('GET', '/api/session');
+        $this->call('POST', '/api/login', ['email' => 'dra@silva.com', 'password' => 'senha-segura-123']);
+
+        $list = $this->call('GET', '/api/notifications')['json']['data'];
+        $this->assertSame(1, $list['unread']);
+        $this->assertStringContainsString('Sentença publicada', $list['items'][0]['description']);
+        $this->assertTrue($this->call('POST', '/api/notifications/' . $list['items'][0]['id'] . '/read')['json']['ok']);
+        $this->assertSame(0, $this->call('GET', '/api/notifications')['json']['data']['unread']);
+        $this->assertFalse($this->call('POST', '/api/notifications/' . $list['items'][0]['id'] . '/read')['json']['ok']);   // já lida
+    }
+
+    // ── abuso ────────────────────────────────────────────────────────────────
+
+    public function testRegistrationFloodFromOneIpIsBlocked(): void
+    {
+        $this->call('GET', '/api/session');
+        for ($i = 1; $i <= 5; $i++) {
+            $this->newClient();
+            $this->call('GET', '/api/session');
+            $this->assertSame(201, $this->call('POST', '/api/register', ['office_name' => "E$i", 'name' => 'N', 'email' => "e$i@x.com", 'password' => 'senha-segura-123'])['status']);
+        }
+        $this->newClient();
+        $this->call('GET', '/api/session');
+        $this->assertSame(409, $this->call('POST', '/api/register', ['office_name' => 'E6', 'name' => 'N', 'email' => 'e6@x.com', 'password' => 'senha-segura-123'])['status']);
+    }
+
+    public function testBruteForceFromOneIpIsBlockedEvenAcrossAccounts(): void
+    {
+        $this->office('A', 'a@a.com');
+        $this->call('GET', '/api/session');
+        for ($i = 0; $i < 20; $i++) {
+            $this->call('POST', '/api/login', ['email' => "alvo$i@x.com", 'password' => 'chute-chute-1']);
+        }
+        $r = $this->call('POST', '/api/login', ['email' => 'a@a.com', 'password' => 'senha-segura-123']);   // até a senha certa é barrada
+        $this->assertSame(401, $r['status']);
+        $this->assertStringContainsString('Muitas tentativas', $r['json']['error']);
+    }
+
+    public function testUnexpectedErrorsAreGenericAndNeverLeakDetails(): void
+    {
+        $this->registerAndLogin();
+        $this->pdo->exec('DROP TABLE audit_logs');                         // força um erro de banco no meio de uma rota
+        try {
+            $r = $this->call('GET', '/api/audit');
+        } finally {
+            $this->pdo->exec('CREATE TABLE audit_logs (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, tenant_id BIGINT UNSIGNED NULL, user_id BIGINT UNSIGNED NULL,
+                action VARCHAR(64) NOT NULL, entity_type VARCHAR(40) NULL, entity_id BIGINT UNSIGNED NULL, ip VARCHAR(45) NULL, meta TEXT NULL,
+                created_at DATETIME NOT NULL, PRIMARY KEY (id), KEY ix_audit_tenant (tenant_id, created_at), KEY ix_audit_action (action, created_at)) ENGINE=InnoDB');
+        }
+        $this->assertSame(500, $r['status']);
+        $this->assertSame('Algo deu errado. Tente de novo em instantes.', $r['json']['error']);
+        $this->assertStringNotContainsString('audit_logs', json_encode($r['json']));
+        $this->assertStringNotContainsString('SQLSTATE', json_encode($r['json']));
+    }
+}
