@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Jurídico</title>
+<style>
+  :root { --fundo:#f5f6f8; --cartao:#fff; --texto:#1c2330; --suave:#667085; --linha:#e3e6ec;
+          --azul:#1f4fd8; --verm:#c4281c; --amar:#b7791f; --verde:#13795b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fundo:#10141b; --cartao:#171c26; --texto:#e8ecf3; --suave:#98a2b3; --linha:#2a3140;
+            --azul:#7ea3ff; --verm:#ff7b72; --amar:#f0b94d; --verde:#4cc9a0; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background:var(--fundo); color:var(--texto); }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+           padding:14px 20px; background:var(--cartao); border-bottom:1px solid var(--linha); }
+  h1 { font-size:18px; margin:0; }
+  main { max-width:1180px; margin:0 auto; padding:16px; display:grid; gap:16px; }
+  .grade { display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:10px; padding:14px 16px; }
+  .cartao h2 { font-size:14px; margin:0 0 10px; color:var(--suave); font-weight:600;
+               text-transform:uppercase; letter-spacing:.04em; }
+  .numero { font-size:30px; font-weight:700; }
+  .vazio { color:var(--suave); font-size:14px; }
+  ul { list-style:none; margin:0; padding:0; }
+  li.item { padding:8px 0; border-top:1px solid var(--linha); cursor:pointer; }
+  li.item:first-child { border-top:0; }
+  .linha2 { color:var(--suave); font-size:13px; }
+  .etq { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px;
+         border:1px solid var(--linha); margin-right:4px; }
+  .etq.verm { color:var(--verm); border-color:var(--verm); }
+  .etq.amar { color:var(--amar); border-color:var(--amar); }
+  .etq.verde { color:var(--verde); border-color:var(--verde); }
+  button, select, input { font:inherit; color:inherit; background:var(--cartao);
+         border:1px solid var(--linha); border-radius:8px; padding:7px 10px; }
+  button { cursor:pointer; }
+  button.principal { background:var(--azul); color:#fff; border-color:var(--azul); }
+  button:disabled { opacity:.55; cursor:default; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .filtros input[type=search] { flex:1 1 200px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-top:1px solid var(--linha); vertical-align:top; }
+  th { color:var(--suave); font-weight:600; font-size:12px; text-transform:uppercase; }
+  tr.linha { cursor:pointer; } tr.linha:hover { background:rgba(127,127,127,.08); }
+  tr.nova td:first-child { box-shadow: inset 3px 0 var(--azul); }
+  .barra { display:flex; align-items:center; gap:8px; font-size:13px; margin:3px 0; }
+  .barra i { display:block; height:8px; background:var(--azul); border-radius:4px; }
+  form.inline { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  form.inline input { flex:1 1 130px; }
+  #gaveta { position:fixed; inset:0 0 0 auto; width:min(560px, 100%); background:var(--cartao);
+            border-left:1px solid var(--linha); padding:18px; overflow:auto; display:none; z-index:5;
+            box-shadow:-8px 0 24px rgba(0,0,0,.18); }
+  #gaveta.aberta { display:block; }
+  pre.teor { white-space:pre-wrap; word-break:break-word; font:inherit; background:var(--fundo);
+             padding:10px; border-radius:8px; max-height:340px; overflow:auto; }
+  .aviso { font-size:13px; color:var(--amar); }
+  #msg, #estadoBusca { font-size:13px; color:var(--suave); }
+  #msg { color:var(--azul); font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Monitor Jurídico</h1>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    <span id="estadoBusca"></span> <span id="msg" role="status"></span>
+    <button id="btnExecutar" class="principal">Buscar agora</button>
+  </div>
+</header>
+
+<main>
+  <div class="grade" id="cartoes" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr))"></div>
+
+  <div class="grade">
+    <section class="cartao"><h2>Prazos (a confirmar)</h2><ul id="prazos"></ul></section>
+    <section class="cartao"><h2>Audiências e sessões</h2><ul id="audiencias"></ul></section>
+    <section class="cartao"><h2>Sem publicação há 60+ dias</h2><ul id="parados"></ul></section>
+  </div>
+
+  <div class="grade">
+    <section class="cartao"><h2>Por UF</h2><div id="porUf"></div></section>
+    <section class="cartao"><h2>Estadual × Federal × outros</h2><div id="porSegmento"></div></section>
+    <section class="cartao"><h2>Por advogado (OAB)</h2><div id="porAdvogado"></div></section>
+  </div>
+
+  <section class="cartao">
+    <h2>O que está sendo acompanhado</h2>
+    <form class="inline" id="formOab">
+      <input name="numero" placeholder="Nº da OAB" inputmode="numeric" required>
+      <input name="uf" placeholder="UF" maxlength="2" style="max-width:70px" required>
+      <input name="rotulo" placeholder="Nome do advogado (opcional)">
+      <button>Acompanhar OAB</button>
+    </form>
+    <form class="inline" id="formProcesso">
+      <input name="numero" placeholder="Nº do processo (padrão CNJ)" required style="flex:2 1 240px">
+      <input name="rotulo" placeholder="Apelido (opcional)">
+      <button>Acompanhar processo</button>
+    </form>
+    <ul id="monitorados"></ul>
+  </section>
+
+  <section class="cartao">
+    <h2>Publicações</h2>
+    <div class="filtros">
+      <input type="search" id="fBusca" placeholder="Buscar por nome, processo ou palavra…">
+      <select id="fAdvogado"><option value="">Todos os advogados</option></select>
+      <select id="fUf"><option value="">Todas as UFs</option></select>
+      <select id="fSegmento">
+        <option value="">Todas as justiças</option><option value="estadual">Estadual</option>
+        <option value="federal">Federal</option><option value="trabalho">Trabalho</option>
+        <option value="outros">Outras</option></select>
+      <select id="fCategoria"><option value="">Todos os tipos</option></select>
+      <label style="display:flex; gap:6px; align-items:center"><input type="checkbox" id="fNaoLidas"> só novas</label>
+      <button id="btnLidas">Marcar tudo como lido</button>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Data</th><th>Processo</th><th>Tipo</th><th>Órgão</th><th>Prazo</th></tr></thead>
+      <tbody id="tabela"></tbody></table></div>
+  </section>
+  <p class="aviso" id="avisoPrazo"></p>
+</main>
+
+<aside id="gaveta" aria-label="Detalhe da publicação"></aside>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const CABECALHO = {'Content-Type': 'application/json', 'X-Painel': '1'};
+let CATEGORIAS = {};
+
+// Tudo que vem do tribunal entra como TEXTO (textContent), nunca como HTML.
+function h(tag, attrs, ...filhos) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') el.className = v; else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) el.setAttribute(k, v);
+  }
+  for (const f of filhos.flat()) if (f != null) el.append(f.nodeType ? f : document.createTextNode(String(f)));
+  return el;
+}
+const api = async (caminho, corpo) => {
+  const r = await fetch(caminho, corpo === undefined ? {} : {method: 'POST', headers: CABECALHO, body: JSON.stringify(corpo)});
+  return r.json();
+};
+let _tAviso;
+function aviso(texto) {            // recado que some sozinho e não é apagado pela atualização da tela
+  $('#msg').textContent = texto; clearTimeout(_tAviso);
+  _tAviso = setTimeout(() => { $('#msg').textContent = ''; }, 6000);
+}
+const dataBR = (iso) => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '—';
+const dataHoraBR = (iso) => iso ? dataBR(iso) + (iso.length > 10 && iso.slice(11, 16) !== '00:00' ? ' ' + iso.slice(11, 16) : '') : '—';
+const seguro = (url) => /^https:\/\//i.test(url || '') ? url : null;
+const dias = (iso, hoje) => Math.round((new Date(iso) - new Date(hoje)) / 86400000);
+
+function etqPrazo(p, hoje) {
+  if (!p || !p.data_fim) return null;
+  const d = dias(p.data_fim, hoje);
+  const cls = d < 0 ? 'verm' : d <= 5 ? 'amar' : '';
+  const txt = d < 0 ? 'vencido há ' + (-d) + 'd' : d === 0 ? 'hoje' : 'em ' + d + 'd';
+  return h('span', {class: 'etq ' + cls}, dataBR(p.data_fim) + ' (' + txt + ')');
+}
+
+function lista(el, itens, vazio, fazer) {
+  el.replaceChildren(...(itens.length ? itens.map(fazer) : [h('li', {class: 'vazio'}, vazio)]));
+}
+
+async function carregar() {
+  const r = await api('/api/resumo');
+  const d = r.dado, hoje = d.hoje;
+  CATEGORIAS = r.categorias;
+  $('#avisoPrazo').textContent = r.aviso_prazo;
+  const execucao = d.ultima_execucao;
+  $('#estadoBusca').textContent = r.execucao.rodando ? 'Buscando…' :
+    execucao && execucao.terminada_em ? 'Última busca: ' + execucao.terminada_em.replace('T', ' ').slice(0, 16) +
+    ' (' + execucao.novos + ' nova(s)' + (execucao.erros.length ? ', ' + execucao.erros.length + ' erro(s)' : '') + ')' : 'Nenhuma busca feita ainda';
+  $('#btnExecutar').disabled = r.execucao.rodando;
+
+  $('#cartoes').replaceChildren(
+    h('div', {class: 'cartao'}, h('h2', {}, 'Publicações novas'), h('div', {class: 'numero'}, d.nao_lidas)),
+    h('div', {class: 'cartao'}, h('h2', {}, 'Prazos vencidos'), h('div', {class: 'numero', style: d.prazos_vencidos.length ? 'color:var(--verm)' : ''}, d.prazos_vencidos.length)),
+    h('div', {class: 'cartao'}, h('h2', {}, 'Críticos (até 5 dias)'), h('div', {class: 'numero'}, d.alertas_criticos.length)),
+    h('div', {class: 'cartao'}, h('h2', {}, 'Total guardado'), h('div', {class: 'numero'}, d.total_publicacoes)));
+
+  const todosPrazos = [...d.prazos_vencidos, ...d.prazos_proximos];
+  lista($('#prazos'), todosPrazos, 'Nenhum prazo pendente.', (p) =>
+    h('li', {class: 'item', onclick: () => abrir(p.publicacao_id)},
+      h('div', {}, etqPrazo(p, hoje), p.numero_processo),
+      h('div', {class: 'linha2'}, (CATEGORIAS[p.categoria] || ''), ' · ', p.dias + (p.uteis ? ' dias úteis' : ' dias') + ' · ' + p.status.replace('_', ' '))));
+  lista($('#audiencias'), d.audiencias, 'Nenhuma audiência futura encontrada.', (p) =>
+    h('li', {class: 'item', onclick: () => abrir(p.id)},
+      h('div', {}, h('span', {class: 'etq verde'}, dataHoraBR(p.audiencia_em)), p.numero_processo),
+      h('div', {class: 'linha2'}, p.orgao)));
+  lista($('#parados'), d.parados, 'Nenhum processo parado.', (p) =>
+    h('li', {class: 'item'}, h('div', {}, p.numero_processo, p.rotulo ? ' — ' + p.rotulo : ''),
+      h('div', {class: 'linha2'}, p.ultima_publicacao ? 'última publicação em ' + dataBR(p.ultima_publicacao) : 'nenhuma publicação encontrada')));
+
+  barras($('#porUf'), d.por_uf, 'Sem dados ainda.');
+  barras($('#porSegmento'), {Estadual: d.por_segmento.estadual, Federal: d.por_segmento.federal,
+                             Trabalho: d.por_segmento.trabalho, Outras: d.por_segmento.outros}, 'Sem dados ainda.');
+  const adv = {}; d.por_advogado.forEach((a) => adv[(a.rotulo || 'OAB ' + a.oab_uf + ' ' + a.oab_numero)] = a.processos);
+  barras($('#porAdvogado'), adv, 'Nenhuma OAB acompanhada.');
+
+  const sel = $('#fAdvogado'), atual = sel.value;
+  sel.replaceChildren(h('option', {value: ''}, 'Todos os advogados'),
+    ...d.por_advogado.map((a) => h('option', {value: a.oab_uf + '-' + a.oab_numero}, a.rotulo || 'OAB ' + a.oab_uf + ' ' + a.oab_numero)));
+  sel.value = atual;
+  const ufs = Object.keys(d.por_uf).sort(), selUf = $('#fUf'), uAtual = selUf.value;
+  selUf.replaceChildren(h('option', {value: ''}, 'Todas as UFs'), ...ufs.map((u) => h('option', {value: u}, u)));
+  selUf.value = uAtual;
+  const selC = $('#fCategoria'), cAtual = selC.value;
+  selC.replaceChildren(h('option', {value: ''}, 'Todos os tipos'),
+    ...Object.entries(CATEGORIAS).map(([k, v]) => h('option', {value: k}, v)));
+  selC.value = cAtual;
+  await Promise.all([carregarMonitorados(), carregarTabela(hoje)]);
+}
+
+function barras(el, dados, vazio) {
+  const pares = Object.entries(dados).filter(([, v]) => v > 0), maior = Math.max(1, ...pares.map(([, v]) => v));
+  el.replaceChildren(...(pares.length ? pares.map(([k, v]) =>
+    h('div', {class: 'barra'}, h('span', {style: 'min-width:90px'}, k), h('i', {style: 'width:' + Math.round(v / maior * 100) + 'px'}), v))
+    : [h('div', {class: 'vazio'}, vazio)]));
+}
+
+async function carregarMonitorados() {
+  const r = await api('/api/monitorados');
+  lista($('#monitorados'), r.dado, 'Nada acompanhado ainda. Cadastre uma OAB ou um processo acima.', (m) =>
+    h('li', {class: 'item', style: 'cursor:default; display:flex; gap:8px; justify-content:space-between; align-items:center'},
+      h('div', {}, h('div', {}, m.tipo === 'oab' ? 'OAB ' + m.oab_uf + ' ' + m.oab_numero : m.numero_processo, m.rotulo ? ' — ' + m.rotulo : ''),
+        h('div', {class: 'linha2'}, m.ultimo_erro ? h('span', {style: 'color:var(--verm)'}, 'Erro: ' + m.ultimo_erro)
+          : m.ultima_busca ? 'última busca ' + m.ultima_busca.replace('T', ' ').slice(0, 16) : 'ainda não buscado')),
+      h('div', {}, h('button', {onclick: async () => { await api('/api/monitorados/' + m.id + '/ativo', {ativo: !m.ativo}); carregar(); }}, m.ativo ? 'Pausar' : 'Retomar'), ' ',
+        h('button', {onclick: async () => { if (confirm('Parar de acompanhar? As publicações já guardadas continuam.')) { await api('/api/monitorados/' + m.id + '/remover', {}); carregar(); } }}, 'Remover'))));
+}
+
+async function carregarTabela(hoje) {
+  const q = new URLSearchParams({q: $('#fBusca').value, advogado: $('#fAdvogado').value, uf: $('#fUf').value,
+    segmento: $('#fSegmento').value, categoria: $('#fCategoria').value, nao_lidas: $('#fNaoLidas').checked ? '1' : '0'});
+  const r = await api('/api/publicacoes?' + q);
+  const dia = hoje || new Date().toISOString().slice(0, 10);
+  $('#tabela').replaceChildren(...(r.dado.length ? r.dado.map((p) =>
+    h('tr', {class: 'linha' + (p.lida ? '' : ' nova'), onclick: () => abrir(p.id)},
+      h('td', {}, dataBR(p.data_disponibilizacao)), h('td', {}, p.numero_processo, h('div', {class: 'linha2'}, p.tribunal)),
+      h('td', {}, CATEGORIAS[p.categoria] || p.categoria), h('td', {}, p.orgao), h('td', {}, etqPrazo(p.prazo, dia))))
+    : [h('tr', {}, h('td', {colspan: 5, class: 'vazio'}, 'Nenhuma publicação com esses filtros.'))]));
+}
+
+async function abrir(id) {
+  const r = await api('/api/publicacoes/' + id);
+  if (!r.ok) return;
+  const p = r.dado, g = $('#gaveta'), url = seguro(p.link);
+  const status = h('select', {}, ...['a_confirmar', 'confirmado', 'cumprido', 'descartado'].map((s) =>
+    h('option', {value: s, selected: p.prazo && p.prazo.status === s}, s.replace('_', ' '))));
+  const obs = h('input', {placeholder: 'Observação do advogado', value: (p.prazo && p.prazo.observacao) || ''});
+  const fim = h('input', {type: 'date', value: (p.prazo && p.prazo.data_fim) || ''});
+  g.replaceChildren(
+    h('div', {style: 'display:flex; justify-content:space-between; align-items:center'},
+      h('strong', {}, p.numero_processo), h('button', {onclick: () => g.classList.remove('aberta')}, 'Fechar')),
+    h('p', {class: 'linha2'}, p.tribunal + ' · ' + p.orgao + ' · ' + (CATEGORIAS[p.categoria] || '') + ' · publicado em ' + dataBR(p.data_disponibilizacao)),
+    p.audiencia_em ? h('p', {}, h('span', {class: 'etq verde'}, 'Audiência/sessão: ' + dataHoraBR(p.audiencia_em)), ' ', h('span', {class: 'aviso'}, '[CONFIRMAR] data lida do texto')) : null,
+    p.prazo ? h('div', {class: 'cartao'}, h('h2', {}, 'Prazo sugerido'),
+      h('p', {}, '“' + p.prazo.trecho + '” → ' + p.prazo.dias + (p.prazo.uteis ? ' dias úteis' : ' dias corridos')),
+      h('p', {class: 'aviso'}, '[CONFIRMAR] Estimativa sem feriado local, suspensão nem recesso. Corrija a data se precisar.'),
+      h('div', {class: 'filtros'}, fim, status, obs,
+        h('button', {class: 'principal', onclick: async () => {
+          const x = await api('/api/prazos/' + p.id, {status: status.value, observacao: obs.value, data_fim: fim.value || undefined});
+          aviso(x.ok ? 'Prazo salvo.' : (x.erro || 'Não salvou.'));
+          if (x.ok) g.classList.remove('aberta');
+          carregar(); }}, 'Salvar'))) : null,
+    h('h2', {}, 'Teor'), h('pre', {class: 'teor'}, p.texto || '(sem texto)'),
+    h('h2', {}, 'Partes'), h('p', {}, p.partes.map((x) => x.nome + ' (' + x.polo + ')').join('; ') || '—'),
+    h('h2', {}, 'Advogados'), h('p', {}, p.advogados.map((a) => a.nome + (a.oab_numero ? ' — OAB ' + a.oab_uf + ' ' + a.oab_numero : '')).join('; ') || '—'),
+    url ? h('p', {}, h('a', {href: url, target: '_blank', rel: 'noopener noreferrer'}, 'Abrir no tribunal')) : null,
+    h('button', {onclick: async () => { await api('/api/publicacoes/' + p.id + '/lida', {lida: !p.lida}); g.classList.remove('aberta'); carregar(); }},
+      p.lida ? 'Marcar como não lida' : 'Marcar como lida'));
+  g.classList.add('aberta');
+  if (!p.lida) { api('/api/publicacoes/' + p.id + '/lida', {lida: true}).then(carregar); }
+}
+
+for (const id of ['fBusca', 'fAdvogado', 'fUf', 'fSegmento', 'fCategoria', 'fNaoLidas'])
+  $('#' + id).addEventListener(id === 'fBusca' ? 'input' : 'change', () => carregarTabela());
+$('#btnLidas').addEventListener('click', async () => { await api('/api/lidas', {}); carregar(); });
+$('#btnExecutar').addEventListener('click', async () => {
+  $('#btnExecutar').disabled = true; $('#estadoBusca').textContent = 'Buscando…';
+  await api('/api/executar', {});
+  const esperar = setInterval(async () => {
+    const r = await api('/api/resumo');
+    if (!r.execucao.rodando) { clearInterval(esperar); carregar(); }
+  }, 2000);
+});
+async function cadastrar(ev, tipo) {
+  ev.preventDefault();
+  const f = Object.fromEntries(new FormData(ev.target));
+  const r = await api('/api/monitorados', {tipo, ...f});
+  aviso(r.ok ? 'Cadastrado. Clique em “Buscar agora”.' : r.erro);
+  if (r.ok) { ev.target.reset(); carregar(); }
+}
+$('#formOab').addEventListener('submit', (e) => cadastrar(e, 'oab'));
+$('#formProcesso').addEventListener('submit', (e) => cadastrar(e, 'processo'));
+carregar();
+setInterval(() => { if (!document.hidden) carregar(); }, 60000);
+</script>
+</body>
+</html>

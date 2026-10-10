@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Robô Jurídico · Painel da API</title>
+<link rel="stylesheet" href="/admin/estatico/app.css">
+</head>
+<body>
+
+<!-- Login -->
+<main id="tela-login" class="login" hidden>
+  <section class="login-marca">
+    <p class="rotulo">Painel da API</p>
+    <h1 class="marca-grande">Robô<br><em>Jurídico</em></h1>
+    <p class="login-texto">Clientes, chaves de acesso e consumo da API de processos em um lugar só.</p>
+    <p class="login-rodape">Dados públicos do CNJ · DataJud + DJEN</p>
+  </section>
+  <section class="login-form-area">
+    <form id="form-login" class="login-form" autocomplete="on" novalidate>
+      <h2>Entrar</h2>
+      <label>E-mail
+        <input type="email" name="email" autocomplete="username" required maxlength="254">
+      </label>
+      <label>Senha
+        <input type="password" name="senha" autocomplete="current-password" required maxlength="256">
+      </label>
+      <p class="erro" id="login-erro" role="alert" hidden></p>
+      <button type="submit" class="botao primario largo">Entrar</button>
+      <p class="dica">Primeiro acesso? No servidor, rode<br><code>consulta-processos admin criar seu@email</code></p>
+    </form>
+  </section>
+</main>
+
+<!-- Aplicação -->
+<div id="tela-app" class="app" hidden>
+  <aside class="lateral">
+    <a class="marca" href="#/visao">Robô <em>Jurídico</em></a>
+    <nav class="menu" aria-label="Seções">
+      <a href="#/visao" data-rota="visao">Visão geral</a>
+      <a href="#/clientes" data-rota="clientes">Clientes</a>
+      <a href="#/uso" data-rota="uso">Uso da API</a>
+      <a href="#/auditoria" data-rota="auditoria">Auditoria</a>
+    </nav>
+    <div class="lateral-pe">
+      <a class="link-docs" href="/docs" target="_blank" rel="noopener">Documentação da API ↗</a>
+      <p class="quem" id="quem"></p>
+      <button type="button" class="botao fantasma pequeno" id="sair">Sair</button>
+    </div>
+  </aside>
+  <main class="conteudo" id="conteudo" tabindex="-1"></main>
+</div>
+
+<dialog id="dialogo" class="dialogo"></dialog>
+<div id="avisos" class="avisos" aria-live="polite"></div>
+
+<script src="/admin/estatico/app.js"></script>
+</body>
+</html>
