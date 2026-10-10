@@ -162,8 +162,44 @@ def _banco_do_monitor():
     return Banco()
 
 
+def _imprimir_aviso(r) -> None:
+    if r.enviado:
+        print(f"E-mail enviado a {r.destinatarios} pessoa(s): {r.publicacoes} publicação(ões), "
+              f"{r.prazos} prazo(s), {r.audiencias} audiência(s).")
+    else:
+        print(f"Sem e-mail: {r.motivo}")
+
+
+def _cmd_email(args, banco, cfg, enviar_email) -> int:
+    if args.email_acao == "adicionar":
+        banco.adicionar_destinatario(args.endereco, args.nome)
+        print(f"{args.endereco} vai receber os avisos.")
+    elif args.email_acao == "listar":
+        for d in banco.listar_destinatarios():
+            print(f"  {d['id']:>3}  {d['email']:<40} {d['nome']}")
+        if not banco.listar_destinatarios():
+            print("Nenhum e-mail cadastrado.")
+        print("Servidor de e-mail:", "configurado" if cfg.configurado else "NÃO configurado (veja o .env)")
+    elif args.email_acao == "remover":
+        print("Removido." if banco.remover_destinatario(args.id) else "Não encontrei esse número.")
+    elif args.email_acao == "testar":
+        destinos = [d["email"] for d in banco.listar_destinatarios(so_ativos=True)]
+        if not cfg.configurado or not destinos:
+            print("Configure o servidor (.env) e cadastre ao menos um e-mail antes de testar.", file=sys.stderr)
+            return 2
+        try:
+            enviar_email(cfg, destinos, "Monitor Jurídico: teste de aviso",
+                         "Se você recebeu esta mensagem, o aviso por e-mail está funcionando.\n")
+        except Exception as e:  # noqa: BLE001 — o motivo vai para a tela, sem a senha
+            print(f"Falhou: {type(e).__name__}: {e}", file=sys.stderr)
+            return 3
+        print(f"Teste enviado a {len(destinos)} pessoa(s).")
+    return 0
+
+
 def _cmd_monitor(args) -> int:
     from .monitor import ErroDeCadastro, executar
+    from .monitor.avisos import ConfigEmail, avisar, enviar_email
     from .monitor.painel import servir as servir_painel
     banco = _banco_do_monitor()
     try:
@@ -189,7 +225,15 @@ def _cmd_monitor(args) -> int:
             print(f"{r.buscados} item(ns) consultado(s), {r.novos} publicação(ões) nova(s).")
             for erro in r.erros:
                 print(f"  ! {erro}", file=sys.stderr)
+            if args.avisar:
+                _imprimir_aviso(avisar(banco, dias_prazo=args.dias_prazo))
             return 0 if r.ok else 3
+        elif args.acao == "avisar":
+            resultado = avisar(banco, dias_prazo=args.dias_prazo)
+            _imprimir_aviso(resultado)
+            return 0 if resultado.enviado or not resultado.motivo.startswith("Falha") else 3
+        elif args.acao == "email":
+            return _cmd_email(args, banco, ConfigEmail.do_ambiente(), enviar_email)
         elif args.acao == "painel":
             return servir_painel(args.porta, abrir=not args.sem_abrir, a_cada_minutos=args.a_cada,
                                  banco=banco)
@@ -266,6 +310,18 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("id", type=int)
     m = ms.add_parser("executar", help="busca o que saiu e grava o que é novo (rotina diária)")
     m.add_argument("--pausa", type=float, default=0.0, help="segundos de pausa entre itens")
+    m.add_argument("--avisar", action="store_true", help="depois da busca, manda o e-mail de aviso")
+    m.add_argument("--dias-prazo", type=int, default=3, help="avisar prazos que vencem em até N dias (padrão: 3)")
+    m = ms.add_parser("avisar", help="manda o e-mail com o que é novo, prazos e audiências de amanhã")
+    m.add_argument("--dias-prazo", type=int, default=3, help="avisar prazos que vencem em até N dias (padrão: 3)")
+    me = ms.add_parser("email", help="quem recebe os avisos")
+    mes = me.add_subparsers(dest="email_acao", required=True)
+    m = mes.add_parser("adicionar", help="cadastra um e-mail para receber os avisos")
+    m.add_argument("endereco"); m.add_argument("--nome", default="")
+    mes.add_parser("listar", help="mostra os e-mails e se o servidor está configurado")
+    m = mes.add_parser("remover", help="tira um e-mail (veja o número em 'listar')")
+    m.add_argument("id", type=int)
+    mes.add_parser("testar", help="manda uma mensagem de teste")
     m = ms.add_parser("painel", help="abre a tela do monitor no navegador")
     m.add_argument("--porta", type=int, default=8766)
     m.add_argument("--sem-abrir", action="store_true")

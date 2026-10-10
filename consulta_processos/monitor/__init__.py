@@ -6,9 +6,10 @@ prazos, audiências e alertas num painel.
     consulta-processos monitor executar        # a rotina diária (cron)
     consulta-processos monitor painel          # a tela
 """
+from .avisos import ConfigEmail, avisar
 from .banco import Banco, ErroDeCadastro
 from .classificar import CATEGORIAS, classificar, extrair_audiencia, sugerir_prazo
 from .motor import Resultado, executar
 
-__all__ = ["CATEGORIAS", "Banco", "ErroDeCadastro", "Resultado", "classificar",
-           "executar", "extrair_audiencia", "sugerir_prazo"]
+__all__ = ["CATEGORIAS", "Banco", "ConfigEmail", "ErroDeCadastro", "Resultado", "avisar",
+           "classificar", "executar", "extrair_audiencia", "sugerir_prazo"]

@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS publicacoes (
     advogados TEXT NOT NULL DEFAULT '[]',
     audiencia_em TEXT,
     lida INTEGER NOT NULL DEFAULT 0,
+    avisada INTEGER NOT NULL DEFAULT 0,
     primeira_vez_em TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_pub_data ON publicacoes (data_disponibilizacao);
@@ -79,6 +80,17 @@ CREATE TABLE IF NOT EXISTS prazos (
     status TEXT NOT NULL DEFAULT 'a_confirmar',
     observacao TEXT NOT NULL DEFAULT '',
     atualizado_em TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS destinatarios (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    nome TEXT NOT NULL DEFAULT '',
+    ativo INTEGER NOT NULL DEFAULT 1,
+    criado_em TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS avisos (
+    chave TEXT PRIMARY KEY,
+    enviado_em TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS execucoes (
     id INTEGER PRIMARY KEY,
@@ -124,6 +136,9 @@ class Banco:
         with self._conexao() as con:
             con.execute("PRAGMA journal_mode=WAL")
             con.executescript(ESQUEMA)
+            colunas = {r["name"] for r in con.execute("PRAGMA table_info(publicacoes)")}
+            if "avisada" not in colunas:
+                con.execute("ALTER TABLE publicacoes ADD COLUMN avisada INTEGER NOT NULL DEFAULT 1")
         if novo:
             try:
                 os.chmod(self.caminho, 0o600)
@@ -328,6 +343,63 @@ class Banco:
         with self._transacao() as con:
             return con.execute(f"UPDATE prazos SET {', '.join(sets)} WHERE publicacao_id=?",
                                valores).rowcount > 0
+
+    # ── e-mails de aviso ─────────────────────────────────────────────────────
+
+    def adicionar_destinatario(self, email: str, nome: str = "") -> int:
+        email = (email or "").strip()
+        # sem espaço nem quebra de linha: nada que possa virar cabeçalho extra no e-mail
+        if not re.fullmatch(r"[^\s@<>\",;]+@[^\s@<>\",;]+\.[^\s@<>\",;]+", email) or len(email) > 254:
+            raise ErroDeCadastro("E-mail inválido.")
+        nome = re.sub(r"[\r\n]", " ", (nome or "")).strip()[:120]
+        with self._transacao() as con:
+            if con.execute("SELECT 1 FROM destinatarios WHERE email=?", (email,)).fetchone():
+                raise ErroDeCadastro("Esse e-mail já está na lista de avisos.")
+            return int(con.execute("INSERT INTO destinatarios (email, nome, criado_em) VALUES (?,?,?)",
+                                   (email, nome, _agora())).lastrowid)
+
+    def listar_destinatarios(self, so_ativos: bool = False) -> list[dict]:
+        sql = "SELECT * FROM destinatarios" + (" WHERE ativo=1" if so_ativos else "") + " ORDER BY id"
+        with self._conexao() as con:
+            return [dict(r) for r in con.execute(sql)]
+
+    def remover_destinatario(self, id_: int) -> bool:
+        with self._transacao() as con:
+            return con.execute("DELETE FROM destinatarios WHERE id=?", (id_,)).rowcount > 0
+
+    def publicacoes_para_avisar(self, limite: int = 200) -> list[dict]:
+        """Publicações que ainda não entraram em nenhum e-mail (as mais antigas primeiro)."""
+        with self._conexao() as con:
+            return [_publicacao(r, resumo=True) for r in con.execute(
+                _SQL_PUBLICACAO + " WHERE p.avisada=0 ORDER BY p.data_disponibilizacao ASC, p.id ASC LIMIT ?",
+                (limite,))]
+
+    def prazos_a_vencer(self, hoje: date, dias: int) -> list[dict]:
+        """Prazos pendentes que vencem de hoje até daqui a `dias` dias (e os já vencidos)."""
+        limite = (hoje + timedelta(days=dias)).isoformat()
+        with self._conexao() as con:
+            return [dict(r) for r in con.execute(
+                _SQL_PRAZO + " WHERE z.status IN ('a_confirmar','confirmado') AND z.data_fim IS NOT NULL "
+                "AND z.data_fim <= ? ORDER BY z.data_fim ASC", (limite,))]
+
+    def audiencias_entre(self, inicio: date, fim: date) -> list[dict]:
+        """Audiências e sessões com data de `inicio` até `fim` (inclusive)."""
+        with self._conexao() as con:
+            return [_publicacao(r, resumo=True) for r in con.execute(
+                _SQL_PUBLICACAO + " WHERE substr(p.audiencia_em,1,10) >= ? AND substr(p.audiencia_em,1,10) <= ? "
+                "ORDER BY p.audiencia_em ASC", (inicio.isoformat(), fim.isoformat()))]
+
+    def aviso_enviado(self, chave: str) -> bool:
+        with self._conexao() as con:
+            return con.execute("SELECT 1 FROM avisos WHERE chave=?", (chave,)).fetchone() is not None
+
+    def registrar_avisos(self, *, publicacoes: list[int], chaves: list[str]) -> None:
+        """Marca como avisado, tudo numa transação: ou entra tudo ou nada."""
+        with self._transacao() as con:
+            for id_ in publicacoes:
+                con.execute("UPDATE publicacoes SET avisada=1 WHERE id=?", (id_,))
+            for chave in chaves:
+                con.execute("INSERT OR IGNORE INTO avisos (chave, enviado_em) VALUES (?, ?)", (chave, _agora()))
 
     # ── execuções ────────────────────────────────────────────────────────────
 

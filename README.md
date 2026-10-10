@@ -205,6 +205,17 @@ consulta-processos monitor painel --a-cada 60   # a tela busca sozinha a cada 60
 
 > **O prazo é sempre uma estimativa a confirmar ([CONFIRMAR]).** A data final desconta só fins de semana e feriados nacionais fixos. Não sabe de feriado local, ponto facultativo, suspensão de prazo nem recesso forense, e cada rito conta de um jeito. Edital fica sem prazo sugerido de propósito: o prazo do edital corre antes do prazo da parte. Quem confirma é o advogado, e a tela deixa corrigir a data e marcar como confirmado, cumprido ou descartado.
 
+**Aviso por e-mail:** preencha `SMTP_*` no `.env` (veja `.env.exemplo`), cadastre quem recebe e agende a rotina:
+
+```bash
+consulta-processos monitor email adicionar fulana@escritorio.com.br --nome "Dra. Fulana"
+consulta-processos monitor email testar
+consulta-processos monitor executar --avisar     # busca e avisa (rode todo dia)
+consulta-processos monitor avisar                # só avisa (prazos e audiências de amanhã)
+```
+
+Sai **um e-mail-resumo por rodada**, em texto puro, e só quando há algo a avisar: publicações novas (cada uma entra uma vez), prazos que vencem em até 3 dias (lembrados uma vez por dia, até alguém marcar como cumprido) e audiências ou sessões na véspera. O assunto leva só contagens, sem número de processo nem nome de parte. Se o envio falhar, nada é marcado como avisado e a próxima rodada tenta de novo. O aviso é apoio, não intimação: não substitui a conferência no tribunal.
+
 **Onde ficam os dados:** SQLite em `dados/monitor.db` (ou `MONITOR_BANCO`), com permissão 600. O banco guarda o teor das intimações, que pode ter dado pessoal: inclua no backup e proteja o arquivo como protege os autos (LGPD).
 
 **Segurança da tela:** roda só em `127.0.0.1` e **não tem login**. Para usar pela rede, ponha atrás de um proxy com senha. A tela só atende o endereço `localhost`/`127.0.0.1` (contra DNS rebinding), pedidos que alteram dados exigem JSON e um cabeçalho próprio (outro site aberto no navegador não consegue mexer), e todo texto vindo do tribunal entra na página como texto, nunca como HTML.
