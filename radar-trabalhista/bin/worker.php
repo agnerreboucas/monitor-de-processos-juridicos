@@ -18,6 +18,8 @@ use Radar\Mail\MailerFactory;
 use Radar\Monitoring\OabMonitor;
 use Radar\Monitoring\Worker;
 use Radar\Service\NotificationDispatcher;
+use Radar\Service\PrivacyService;
+use Radar\Service\SubscriptionService;
 
 $options = getopt('', ['max-seconds::', 'batch::', 'pause-ms::']);
 $maxSeconds = (int) ($options['max-seconds'] ?? 50);
@@ -35,6 +37,9 @@ $worker = new Worker(
 );
 
 $deadline = time() + $maxSeconds;
+$pdo->prepare('INSERT INTO worker_runs (started_at) VALUES (UTC_TIMESTAMP())')->execute();
+$runId = (int) $pdo->lastInsertId();
+$lapsed = (new SubscriptionService($pdo))->tick();      // fecha testes e períodos vencidos antes de agendar consultas
 $recovered = $worker->recoverStale();
 $queued = $worker->enqueueDue();
 $total = ['claimed' => 0, 'succeeded' => 0, 'failed' => 0, 'cancelled' => 0, 'new_movements' => 0];
@@ -50,6 +55,12 @@ $djenOab = new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.
 $oab = (new OabMonitor($pdo, $djenOab, pauseBetweenMicros: $pauseMs * 1000))->runDue(3);
 
 $mail = (new NotificationDispatcher($pdo, MailerFactory::fromConfig($config, __DIR__ . '/../storage'), $config->get('APP_URL')))->sendPending();
+
+$pdo->prepare('UPDATE worker_runs SET finished_at = UTC_TIMESTAMP(), summary = ? WHERE id = ?')->execute([
+    json_encode(['checked' => $total['claimed'], 'failed' => $total['failed'], 'new_movements' => $total['new_movements'],
+        'oabs' => $oab['claimed'], 'emails' => $mail['emails'], 'past_due' => $lapsed['past_due'], 'suspended' => $lapsed['suspended']]), $runId]);
+$pdo->exec('DELETE FROM worker_runs WHERE started_at < UTC_TIMESTAMP() - INTERVAL 30 DAY');
+(new PrivacyService($pdo))->purgeExpired();            // prazos de guarda da política de privacidade
 
 printf("[%s] recuperados=%d agendados=%d consultados=%d ok=%d falhas=%d canceladas=%d novas_movimentacoes=%d emails=%d emails_falhos=%d oabs=%d oabs_falhas=%d publicacoes_novas=%d\n",
     date('c'), $recovered, $queued, $total['claimed'], $total['succeeded'], $total['failed'], $total['cancelled'], $total['new_movements'],

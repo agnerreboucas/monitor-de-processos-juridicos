@@ -18,8 +18,13 @@ O robô em Python da pasta raiz deste repositório é a **referência**: dali fo
 | RF-013 Planos e limites | Pronto: Essencial / Profissional / Equipe (valores e limites **experimentais**), assinatura controlada à mão |
 | RF-014 Auditoria | Pronto, sem senha nem token nos registros |
 | Monitoramento por OAB (extra, inspirado no painel de concorrentes) | Pronto: cadastro de OAB por advogado (limite no plano: 2 / 5 / 15), consulta do diário por OAB desde 1º de janeiro (primeira vez em silêncio), lista de publicações com filtros e **"Monitorar este processo"**, painel **Ações por UF** (Estadual / Federal / Trabalho / Outras, por advogado e ano) e **alerta de possível inscrição suplementar** (mais de 5 processos diferentes no ano em uma UF onde o advogado não tem inscrição — Estatuto da Advocacia, art. 10, §2º) |
-| RF-012 Administração da plataforma | **Falta** (tela do dono do SaaS) |
-| Cobrança automática | **Falta** (PRD adia até escolher o provedor) |
+| RF-012 Administração da plataforma | Pronto: menu **Administração** só para o dono (`php bin/criar-admin.php email`): escritórios, uso, receita mensal das assinaturas ativas, saúde do robô, renovar, trocar plano, suspender, bloquear acesso, anotação. Não mostra conteúdo de processos. Tudo auditado |
+| Ciclo da assinatura | Pronto, **sem provedor de pagamento**: teste de 14 dias → vencida (3 dias de carência, consultas continuam) → suspensa (consultas pausam, dados ficam). O dono renova à mão; o provedor, quando existir, só chama `renew()`. Faixa de aviso na tela |
+| Cobrança automática | **Falta** (escolher Asaas/Stripe/Pagar.me; PRD adia) |
+| Conta da pessoa | Pronto: nome, trocar senha (com limite de tentativas), aviso por e-mail ligado/desligado |
+| Planilhas | Pronto: importar processos por CSV (relatório linha a linha, respeita o limite do plano) e exportar processos e publicações (CSV seguro contra fórmulas) |
+| LGPD / termos | Aceite dos termos registrado; páginas de Termos e Privacidade **em rascunho, sem revisão jurídica**; cópia completa dos dados (JSON) e exclusão definitiva do escritório; limpeza por prazo (auditoria 730 dias, histórico de consultas 180) |
+| Operação | `/api/health` (503 se o robô parou há 20 min), `bin/backup.php` (backup compactado; **restauração testada**), CI no GitHub Actions |
 
 **Regra de ouro (PRD §10):** falha de consulta nunca vira "sem novidade" e nunca marca o processo como atualizado. A tela mostra a data da última consulta que **deu certo** e, em separado, o erro da última tentativa.
 
@@ -39,6 +44,8 @@ php bin/migrate.php
 ```
 
 - **Servidor no Brasil.** O DJEN (gov.br) responde 403 a IP de fora do país. Fora do Brasil, use `HTTP_PROXY_URL`.
+- **Backup diário:** `0 3 * * * php /caminho/radar-trabalhista/bin/backup.php` e copie o arquivo para FORA do servidor. **Monitoramento:** aponte um serviço (UptimeRobot etc.) para `/api/health`.
+- **Dono do SaaS:** crie a conta pela tela e rode `php bin/criar-admin.php seu@email.com`.
 - **Cron** (a cada 5 minutos): `*/5 * * * * php /caminho/radar-trabalhista/bin/worker.php >> /var/log/radar-worker.log 2>&1`. Cada rodada recupera trabalho preso, agenda o que venceu, consulta em lotes pequenos e envia os e-mails pendentes.
 - **Apache/Hostinger:** aponte o domínio para `public/` (o `.htaccess` já encaminha `/api/*` ao PHP). Sirva **só por HTTPS**.
 - **Com processos reais no seu computador:** veja `local/LEIA-ME.md` (Docker) e `php bin/testar-fonte.php`.
@@ -53,9 +60,13 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-172 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
+214 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
 
 ## O que NÃO está garantido
+
+- **Termos e Política de Privacidade são rascunhos** (`public/app/termos.html`, `privacidade.html`) com campos `[PREENCHER]`. Precisam de revisão de advogado antes de vender.
+- **Sem cobrança automática, sem confirmação de e-mail, sem verificação em duas etapas.** E-mail real depende de configurar SMTP e SPF/DKIM do domínio.
+- O CI (`.github/workflows/radar-trabalhista.yml`) foi escrito mas **ainda não rodou no GitHub**.
 
 - **Alerta de inscrição suplementar é só indicativo.** A UF vem do tribunal e só é conhecida quando ele cobre um estado (TRF1/2/3/4/5, TRT8/10/11/14 ficam em "UF indeterminada" e fora do alerta). O advogado confere a habitualidade com a Seccional. Rodar `bin/worker.php` consulta até 3 OABs por rodada.
 

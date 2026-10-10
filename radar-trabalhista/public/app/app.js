@@ -42,19 +42,28 @@ function estadoMonitoramento(p) {
   return h('span', { class: 'etq verde' }, 'Monitorado');
 }
 
+async function baixar(caminho, nome, consulta) {
+  const r = await fetch(caminho + (consulta ? '?' + new URLSearchParams(consulta) : ''), { credentials: 'same-origin' });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); return j.error || 'Não foi possível gerar o arquivo.'; }
+  const url = URL.createObjectURL(await r.blob());
+  const a = h('a', { href: url, download: nome }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return null;
+}
+
 // ── topo ─────────────────────────────────────────────────────────────────────
 function desenharTopo() {
   const topo = document.getElementById('topo');
-  const logado = sessao && sessao.authenticated && sessao.tenant;
+  const logado = sessao && sessao.authenticated && (sessao.tenant || sessao.platform_admin);
   topo.hidden = !logado;
   if (!logado) return;
-  const itens = [['#/', 'Painel'], ['#/processos', 'Processos'],
+  const itens = !sessao.tenant ? [['#/admin', 'Administração']] : [['#/', 'Painel'], ['#/processos', 'Processos'],
     ...(pode('oab.view') ? [['#/uf', 'Ações por UF'], ['#/publicacoes', 'Publicações'], ['#/oabs', 'Advogados (OAB)']] : []),
-    ['#/notificacoes', 'Notificações'], ['#/equipe', 'Equipe'], ['#/plano', 'Plano']];
+    ['#/notificacoes', 'Notificações'], ['#/equipe', 'Equipe'], ['#/plano', 'Plano'],
+    ...(sessao.platform_admin ? [['#/admin', 'Administração']] : [])];
   const atual = location.hash || '#/';
   document.getElementById('menu').replaceChildren(...itens.map(([href, nome]) =>
     h('a', { href, class: (href === '#/' ? atual === '#/' : atual.startsWith(href)) ? 'ativo' : '' }, nome)));
-  document.getElementById('quem').textContent = sessao.user.name;
+  document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
 }
 document.getElementById('sair').addEventListener('click', async () => { await api('POST', '/api/logout'); await carregarSessao(); location.hash = '#/entrar'; });
 
@@ -88,8 +97,9 @@ function telaEscolherEscritorio() {
     ...sessao.tenants.map((t) => h('p', {}, h('button', { class: 'principal', onclick: async () => { await api('POST', '/api/tenant/select', { tenant_id: t.tenant_id }); await carregarSessao(); location.hash = '#/'; rota(); } }, t.name + ' (' + t.role + ')')))));
 }
 function telaCadastro() {
-  app.replaceChildren(formulario('Criar conta do escritório', [campo('Nome do escritório', 'office_name'), campo('Seu nome', 'name'), campo('E-mail', 'email', 'email'), campo('Senha (mínimo 10 caracteres)', 'password', 'password', { minlength: 10, autocomplete: 'new-password' })], 'Criar conta',
-    async (d) => { const r = await api('POST', '/api/register', d); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
+  app.replaceChildren(formulario('Criar conta do escritório', [campo('Nome do escritório', 'office_name'), campo('Seu nome', 'name'), campo('E-mail', 'email', 'email'), campo('Senha (mínimo 10 caracteres)', 'password', 'password', { minlength: 10, autocomplete: 'new-password' }),
+    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: 'termos.html', target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: 'privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
+    async (d) => { const r = await api('POST', '/api/register', { ...d, accept_terms: d.accept_terms === 'on' }); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
     h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta'))));
 }
 function telaEsqueci() {
@@ -152,9 +162,23 @@ async function telaProcessos(consulta) {
     msg.replaceChildren(aviso(r.ok ? 'Processo cadastrado. A primeira consulta será feita em instantes.' : r.error, r.ok ? 'ok' : 'erro'));
     if (r.ok) { f.reset(); carregar(); }
   } }, h('input', { name: 'cnj', placeholder: 'Número CNJ (0000000-00.0000.0.00.0000)', required: true, size: 34 }), h('input', { name: 'client_label', placeholder: 'Cliente (opcional)' }), h('button', { class: 'principal' }, 'Cadastrar')) : null;
+  const relatorio = h('div');
+  const arquivo = h('input', { type: 'file', accept: '.csv,.txt', hidden: true, onchange: async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    relatorio.replaceChildren(aviso('Importando…'));
+    const x = await api('POST', '/api/processes/import', { csv: await f.text() });
+    e.target.value = '';
+    if (!x.ok) return relatorio.replaceChildren(aviso(x.error, 'erro'));
+    relatorio.replaceChildren(aviso(x.data.created + ' processo(s) importado(s)' + (x.data.skipped.length ? ' e ' + x.data.skipped.length + ' linha(s) não importada(s):' : '.'), x.data.skipped.length ? 'amarelo' : 'ok'),
+      ...x.data.skipped.slice(0, 50).map((s) => h('div', { class: 'suave' }, 'Linha ' + s.line + (s.cnj ? ' (' + s.cnj + ')' : '') + ': ' + s.reason)));
+    carregar();
+  } });
+  const importar = pode('process.create') ? h('div', { class: 'linha' }, arquivo,
+    h('button', { onclick: () => arquivo.click() }, 'Importar planilha (CSV)'), h('span', { class: 'suave' }, 'Uma coluna com o número do processo e, se quiser, outra com o cliente. Até 500 linhas.')) : null;
+  const exportar = h('button', { onclick: async () => { const e = await baixar('/api/export/processes', 'processos.csv'); if (e) msg.replaceChildren(aviso(e, 'erro')); } }, 'Exportar CSV');
   app.replaceChildren(h('h1', {}, 'Processos'),
-    novo ? h('div', { class: 'cartao' }, h('h2', {}, 'Cadastrar processo'), novo, msg) : null,
-    h('div', { class: 'cartao' }, h('div', { class: 'filtros' }, busca, status, total),
+    novo ? h('div', { class: 'cartao' }, h('h2', {}, 'Cadastrar processo'), novo, msg, h('div', { style: 'height:10px' }), importar, relatorio) : null,
+    h('div', { class: 'cartao' }, h('div', { class: 'filtros' }, busca, status, total, exportar),
       h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Número', 'Cliente', 'Tribunal', 'Responsável', 'Última consulta com sucesso', 'Situação'].map((t) => h('th', {}, t)))), corpoTabela))));
   carregar();
 }
@@ -320,7 +344,8 @@ async function telaPublicacoes(consulta) {
       selecao('oab', [['', 'Todos os advogados'], ...oabs.map((o) => [o.id, o.lawyer_name])]),
       selecao('uf', [['', 'Todas as UFs'], ...UFS.map((u) => [u, u])]),
       selecao('group', [['', 'Todas as justiças'], ...Object.entries(GRUPOS)]),
-      selecao('new_only', [['', 'Todas'], ['1', 'Só as novas']]), total), msg, lista));
+      selecao('new_only', [['', 'Todas'], ['1', 'Só as novas']]), total,
+      h('button', { onclick: async () => { const e = await baixar('/api/export/publications', 'publicacoes.csv', filtros.year ? { year: filtros.year } : null); if (e) msg.replaceChildren(aviso(e, 'erro')); } }, 'Exportar CSV')), msg, lista));
   carregar();
 }
 
@@ -357,6 +382,123 @@ async function telaUf(ano) {
     d.undetermined ? h('p', { class: 'suave' }, d.undetermined + ' processo(s) estão em tribunais que cobrem mais de um estado (por exemplo TRF1, TRF4, TRT8). Eles não entram na tabela por UF nem no alerta, porque a UF não pode ser afirmada.') : null);
 }
 
+// ── faixa de aviso da assinatura ─────────────────────────────────────────────
+async function desenharFaixa() {
+  const faixa = document.getElementById('faixa');
+  faixa.hidden = true;
+  if (!pode('plan.view')) return;
+  const r = await api('GET', '/api/plan');
+  if (!r.ok || !r.data.banner || !r.data.banner.message || r.data.banner.level === 'ok') return;
+  faixa.className = 'msg ' + ({ erro: 'erro', amarelo: 'amarelo', info: '' }[r.data.banner.level] || '');
+  faixa.replaceChildren(r.data.banner.message + ' ', h('a', { href: '#/plano' }, 'Ver plano'));
+  faixa.hidden = false;
+}
+
+// ── administração do SaaS (só o dono) ────────────────────────────────────────
+const reais = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const SITUACAO = { trialing: 'Em teste', active: 'Ativa', past_due: 'Vencida', suspended: 'Suspensa', cancelled: 'Cancelada' };
+const COR = { trialing: 'azul', active: 'verde', past_due: 'amar', suspended: 'verm', cancelled: '' };
+
+async function telaAdmin(consulta) {
+  const filtros = { q: '', status: '', ...consulta };
+  const [ov, planos] = await Promise.all([api('GET', '/api/admin/overview'), api('GET', '/api/admin/plans')]);
+  if (!ov.ok) return app.replaceChildren(aviso(ov.error, 'erro'));
+  const o = ov.data;
+  const corpo = h('tbody'); const total = h('span', { class: 'suave' });
+  const carregar = async () => {
+    const q = Object.fromEntries(Object.entries(filtros).filter(([, v]) => v));
+    const r = await api('GET', '/api/admin/tenants', null, q);
+    if (!r.ok) return corpo.replaceChildren(h('tr', {}, h('td', { colspan: 7 }, r.error)));
+    total.textContent = r.data.total + ' escritório(s)';
+    corpo.replaceChildren(...(r.data.items.length ? r.data.items.map((t) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/admin/escritorio/' + t.id; } },
+      h('td', {}, t.name, t.tenant_status === 'suspended' ? h('span', { class: 'etq verm' }, 'acesso bloqueado') : null), h('td', {}, t.plan_name),
+      h('td', {}, h('span', { class: 'etq ' + COR[t.subscription_status] }, SITUACAO[t.subscription_status])), h('td', {}, dataBR(t.current_period_end)),
+      h('td', {}, t.users + ' / ' + t.processes + ' / ' + t.oabs), h('td', {}, dataBR(t.created_at)), h('td', {}, t.last_activity ? dataHoraBR(t.last_activity) : '—')))
+      : [h('tr', {}, h('td', { colspan: 7, class: 'vazio' }, 'Nenhum escritório encontrado.'))]));
+  };
+  const card = (t, v, cor) => h('div', { class: 'cartao' }, h('h2', {}, t), h('div', { class: 'numero', style: cor ? 'color:var(--' + cor + ')' : '' }, v));
+  const rodada = o.last_worker_run;
+  app.replaceChildren(h('h1', {}, 'Administração da plataforma'),
+    o.worker_stale ? aviso('O robô não registrou nenhuma rodada nos últimos 20 minutos. Confira o cron do servidor.', 'erro') : null,
+    h('div', { class: 'grade' }, card('Escritórios', o.tenants), card('Assinaturas ativas', o.subscriptions.active || 0, 'verde'), card('Em teste', o.subscriptions.trialing || 0, 'azul'),
+      card('Vencidas ou suspensas', (o.subscriptions.past_due || 0) + (o.subscriptions.suspended || 0), (o.subscriptions.past_due || 0) + (o.subscriptions.suspended || 0) ? 'amar' : ''),
+      card('Receita mensal (ativas)', reais(o.monthly_revenue_cents)), card('Usuários', o.users), card('Processos monitorados', o.processes_active), card('OABs monitoradas', o.oabs_active)),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Saúde do monitoramento'),
+      h('p', {}, 'Últimas 24 h: ', h('strong', {}, o.checks_ok_24h + ' consultas ok'), ' · ', h('strong', { style: o.checks_failed_24h ? 'color:var(--verm)' : '' }, o.checks_failed_24h + ' com falha'),
+        ' · processos com erro agora: ', h('strong', {}, o.processes_with_error), ' · OABs com erro: ', h('strong', {}, o.oabs_with_error), ' · na fila: ', h('strong', {}, o.queued_jobs)),
+      h('p', { class: 'suave' }, rodada ? 'Última rodada do robô: ' + dataHoraBR(rodada.started_at) : 'O robô ainda não registrou nenhuma rodada.')),
+    h('div', { class: 'cartao' }, h('div', { class: 'filtros' },
+      h('input', { type: 'search', placeholder: 'Buscar por nome do escritório ou e-mail…', value: filtros.q, oninput: (e) => { filtros.q = e.target.value; carregar(); } }),
+      h('select', { onchange: (e) => { filtros.status = e.target.value; carregar(); } }, h('option', { value: '' }, 'Todas as situações'), ...Object.entries(SITUACAO).map(([v, t]) => h('option', { value: v }, t))), total),
+      h('div', { style: 'overflow-x:auto' }, h('table', { class: 'larga' }, h('thead', {}, h('tr', {}, ...['Escritório', 'Plano', 'Assinatura', 'Vence em', 'Usuários / processos / OABs', 'Criado em', 'Última atividade'].map((t) => h('th', {}, t)))), corpo))),
+    h('p', { class: 'suave' }, 'Aqui aparecem só números e dados cadastrais. O conteúdo dos processos de cada escritório não é exibido nesta tela.'));
+  carregar();
+}
+
+async function telaAdminEscritorio(id, recado) {
+  const [r, planos] = await Promise.all([api('GET', '/api/admin/tenants/' + id), api('GET', '/api/admin/plans')]);
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/admin' }, '← Voltar')));
+  const { tenant: t, members, audit } = r.data;
+  const msg = h('div', {}, recado || null);
+  const chamar = async (caminho, corpo, texto) => { const x = await api('POST', '/api/admin/tenants/' + id + caminho, corpo); if (x.ok) telaAdminEscritorio(id, aviso(texto, 'ok')); else msg.replaceChildren(aviso(x.error, 'erro')); };
+  const dias = h('input', { type: 'number', min: 1, max: 3660, value: 30, style: 'width:90px' });
+  const plano = h('select', {}, ...(planos.data || []).map((p) => h('option', { value: p.code, selected: p.code === t.plan_code }, p.name + ' (' + reais(p.price_cents) + ')')));
+  const nota = h('input', { value: t.admin_note || '', placeholder: 'Anotação interna (só o dono vê)', size: 40, maxlength: 500 });
+  app.replaceChildren(h('p', {}, h('a', { href: '#/admin' }, '← Administração')),
+    h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h1', {}, t.name), h('span', { class: 'etq ' + COR[t.subscription_status] }, SITUACAO[t.subscription_status])),
+      h('p', { class: 'suave' }, 'Plano ' + t.plan_name + ' · vence em ' + dataBR(t.current_period_end) + ' · usa ' + t.users + ' usuário(s), ' + t.processes + ' processo(s), ' + t.oabs + ' OAB(s)' + (t.suspended_reason ? ' · motivo: ' + t.suspended_reason : '')),
+      t.tenant_status === 'suspended' ? aviso('O acesso deste escritório está bloqueado.', 'erro') : null, msg,
+      h('div', { class: 'linha' }, h('label', { class: 'linha suave' }, 'Renovar por ', dias, ' dias'), h('button', { class: 'principal', onclick: () => chamar('/renew', { days: Number(dias.value) }, 'Assinatura renovada.') }, 'Renovar')),
+      h('div', { class: 'linha', style: 'margin-top:10px' }, plano, h('button', { onclick: () => chamar('/plan', { plan: plano.value }, 'Plano alterado.') }, 'Trocar plano')),
+      h('div', { class: 'linha', style: 'margin-top:10px' }, nota, h('button', { onclick: () => chamar('/note', { note: nota.value }, 'Anotação salva.') }, 'Salvar anotação')),
+      h('div', { class: 'linha', style: 'margin-top:14px' },
+        t.subscription_status !== 'suspended' ? h('button', { class: 'perigo', onclick: () => { if (confirm('Suspender a assinatura? As consultas pausam, os dados ficam.')) chamar('/status', { status: 'suspended', reason: 'Suspensa pelo administrador' }, 'Assinatura suspensa.'); } }, 'Suspender assinatura') : null,
+        t.tenant_status === 'active' ? h('button', { class: 'perigo', onclick: () => { if (confirm('Bloquear o acesso de todos deste escritório?')) chamar('/access', { status: 'suspended' }, 'Acesso bloqueado.'); } }, 'Bloquear acesso')
+          : h('button', { onclick: () => chamar('/access', { status: 'active' }, 'Acesso liberado.') }, 'Liberar acesso'))),
+    h('div', { class: 'cartao', style: 'overflow-x:auto' }, h('h2', {}, 'Pessoas'), h('table', { class: 'larga' }, h('thead', {}, h('tr', {}, ...['Nome', 'E-mail', 'Papel', 'Situação', 'Último acesso'].map((x) => h('th', {}, x)))),
+      h('tbody', {}, ...members.map((m) => h('tr', {}, h('td', {}, m.name), h('td', {}, m.email), h('td', {}, { office_admin: 'Administrador', lawyer: 'Advogado(a)', assistant: 'Assistente' }[m.role] || m.role), h('td', {}, { active: 'Ativo', invited: 'Convite pendente', disabled: 'Desativado' }[m.status] || m.status), h('td', {}, dataHoraBR(m.last_login_at))))))),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Últimos eventos do escritório'), audit.length ? audit.map((a) => h('div', { class: 'mov suave' }, dataHoraBR(a.created_at) + ' · ' + a.action)) : h('p', { class: 'vazio' }, 'Sem eventos.')));
+}
+
+// ── minha conta ──────────────────────────────────────────────────────────────
+async function telaConta(recado) {
+  const r = await api('GET', '/api/account');
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
+  const c = r.data;
+  const msgPerfil = h('div', {}, recado || null), msgSenha = h('div'), msgPriv = h('div');
+  const perfil = h('form', { class: 'empilhado', onsubmit: async (e) => {
+    e.preventDefault(); const f = e.target;
+    const x = await api('PATCH', '/api/account', { name: f.name.value, email_notifications: f.email_notifications.checked });
+    if (x.ok) { await carregarSessao(); return telaConta(aviso('Dados salvos.', 'ok')); }
+    msgPerfil.replaceChildren(aviso(x.error, 'erro'));
+  } }, h('label', {}, 'Nome', h('input', { name: 'name', value: c.name, required: true })),
+    h('label', {}, 'E-mail de acesso', h('input', { value: c.email, disabled: true })),
+    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'email_notifications', checked: c.email_notifications }), 'Receber aviso de nova movimentação por e-mail (o aviso no painel continua sempre)'),
+    h('button', { class: 'principal' }, 'Salvar'), msgPerfil);
+  const senha = h('form', { class: 'empilhado', onsubmit: async (e) => {
+    e.preventDefault(); const f = e.target;
+    const x = await api('POST', '/api/account/password', { current: f.current.value, new: f.nova.value });
+    if (x.ok) { f.reset(); msgSenha.replaceChildren(aviso('Senha alterada.', 'ok')); } else msgSenha.replaceChildren(aviso(x.error, 'erro'));
+  } }, campo('Senha atual', 'current', 'password', { autocomplete: 'current-password' }), campo('Nova senha (mínimo 10 caracteres)', 'nova', 'password', { minlength: 10, autocomplete: 'new-password' }),
+    h('button', { class: 'principal' }, 'Trocar senha'), msgSenha);
+  app.replaceChildren(h('h1', {}, 'Minha conta'),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Dados e avisos'), perfil),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Senha'), senha),
+    pode('privacy.manage') ? h('div', { class: 'cartao' }, h('h2', {}, 'Dados do escritório (LGPD)'),
+      h('p', { class: 'suave' }, 'Baixe uma cópia completa dos dados ou exclua o escritório de forma definitiva. Veja a ', h('a', { href: 'privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'), '.'),
+      h('div', { class: 'linha' }, h('button', { onclick: async () => { const e = await baixar('/api/privacy/export', 'meus-dados.json'); if (e) msgPriv.replaceChildren(aviso(e, 'erro')); } }, 'Baixar cópia dos dados (JSON)')),
+      h('details', { style: 'margin-top:12px' }, h('summary', {}, 'Excluir o escritório definitivamente'),
+        h('form', { class: 'empilhado', style: 'margin-top:8px', onsubmit: async (e) => {
+          e.preventDefault(); const f = e.target;
+          const x = await api('POST', '/api/privacy/erase', { confirm_name: f.confirm_name.value, password: f.password.value });
+          if (!x.ok) return msgPriv.replaceChildren(aviso(x.error, 'erro'));
+          await carregarSessao(); location.hash = '#/entrar'; rota();
+        } }, aviso('Isto apaga processos, movimentações, publicações, OABs e todas as pessoas do escritório. Não tem volta.', 'erro'),
+          campo('Digite o nome do escritório para confirmar', 'confirm_name'), campo('Sua senha', 'password', 'password', { autocomplete: 'current-password' }),
+          h('button', { class: 'perigo' }, 'Excluir tudo para sempre'))), msgPriv) : null,
+    c.terms_accepted_at ? h('p', { class: 'suave' }, 'Termos de uso aceitos em ' + dataBR(c.terms_accepted_at) + ' (versão ' + c.terms_version + ').') : null);
+}
+
 // ── roteador ─────────────────────────────────────────────────────────────────
 async function rota() {
   const [caminho, qs] = (location.hash || '#/').slice(1).split('?');
@@ -370,7 +512,13 @@ async function rota() {
     return telaEntrar();
   }
   if (publicas.includes(caminho) && caminho !== '/redefinir') { location.hash = '#/'; return; }
+  if (caminho === '/conta') { document.getElementById('faixa').hidden = true; return telaConta(); }
+  let a;
+  if (sessao.platform_admin && caminho === '/admin') { document.getElementById('faixa').hidden = true; return telaAdmin(consulta); }
+  if (sessao.platform_admin && (a = caminho.match(/^\/admin\/escritorio\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaAdminEscritorio(Number(a[1])); }
+  if (!sessao.tenant && sessao.platform_admin && sessao.tenants.length === 0) { location.hash = '#/admin'; return; }
   if (!sessao.tenant) return sessao.tenants.length > 1 ? telaEscolherEscritorio() : telaEntrar();
+  desenharFaixa();
   let m;
   if (caminho === '/' || caminho === '') return telaPainel();
   if (caminho === '/processos') return telaProcessos(consulta);
@@ -381,6 +529,7 @@ async function rota() {
   if (caminho === '/notificacoes') return telaNotificacoes();
   if (caminho === '/equipe') return telaEquipe();
   if (caminho === '/plano') return telaPlano();
+
   location.hash = '#/';
 }
 window.addEventListener('hashchange', rota);

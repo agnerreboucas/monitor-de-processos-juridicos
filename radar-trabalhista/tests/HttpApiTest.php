@@ -49,7 +49,7 @@ final class HttpApiTest extends DbTestCase
     private function registerAndLogin(string $office = 'Silva Advocacia', string $email = 'dra@silva.com'): void
     {
         $this->call('GET', '/api/session');
-        $r = $this->call('POST', '/api/register', ['office_name' => $office, 'name' => 'Dra. Silva', 'email' => $email, 'password' => 'senha-segura-123']);
+        $r = $this->call('POST', '/api/register', ['office_name' => $office, 'name' => 'Dra. Silva', 'email' => $email, 'password' => 'senha-segura-123', 'accept_terms' => true]);
         $this->assertSame(201, $r['status'], json_encode($r['json']));
     }
 
@@ -91,7 +91,7 @@ final class HttpApiTest extends DbTestCase
     public function testProtectedRoutesNeedLogin(): void
     {
         $this->call('GET', '/api/session');
-        foreach (['/api/dashboard', '/api/processes', '/api/notifications', '/api/team', '/api/plan', '/api/audit', '/api/processes/1', '/api/oabs', '/api/publications', '/api/oab-stats'] as $path) {
+        foreach (['/api/dashboard', '/api/processes', '/api/notifications', '/api/team', '/api/plan', '/api/audit', '/api/processes/1', '/api/oabs', '/api/publications', '/api/oab-stats', '/api/admin/overview', '/api/admin/tenants'] as $path) {
             $this->assertSame(401, $this->call('GET', $path)['status'], $path);
         }
         $this->assertSame(401, $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG])['status']);
@@ -331,11 +331,11 @@ final class HttpApiTest extends DbTestCase
         for ($i = 1; $i <= 5; $i++) {
             $this->newClient();
             $this->call('GET', '/api/session');
-            $this->assertSame(201, $this->call('POST', '/api/register', ['office_name' => "E$i", 'name' => 'N', 'email' => "e$i@x.com", 'password' => 'senha-segura-123'])['status']);
+            $this->assertSame(201, $this->call('POST', '/api/register', ['office_name' => "E$i", 'name' => 'N', 'email' => "e$i@x.com", 'password' => 'senha-segura-123', 'accept_terms' => true])['status']);
         }
         $this->newClient();
         $this->call('GET', '/api/session');
-        $this->assertSame(409, $this->call('POST', '/api/register', ['office_name' => 'E6', 'name' => 'N', 'email' => 'e6@x.com', 'password' => 'senha-segura-123'])['status']);
+        $this->assertSame(409, $this->call('POST', '/api/register', ['office_name' => 'E6', 'name' => 'N', 'email' => 'e6@x.com', 'password' => 'senha-segura-123', 'accept_terms' => true])['status']);
     }
 
     public function testBruteForceFromOneIpIsBlockedEvenAcrossAccounts(): void
@@ -412,9 +412,106 @@ final class HttpApiTest extends DbTestCase
         $this->newClient('10.0.0.9');
         $this->call('GET', '/api/session');
         $this->assertSame(200, $this->call('POST', '/api/login', ['email' => 'ass@silva.com', 'password' => 'senha-segura-123'])['status']);
-        foreach (['/api/oabs', '/api/publications', '/api/oab-stats'] as $path) {
+        foreach (['/api/oabs', '/api/publications', '/api/oab-stats', '/api/admin/overview', '/api/admin/tenants'] as $path) {
             $this->assertSame(403, $this->call('GET', $path)['status'], $path);
         }
         $this->assertSame(0, $this->call('GET', '/api/dashboard')['json']['data']['oab_alerts_unseen']);
+    }
+
+    public function testPlatformAdminRoutesAreOnlyForPlatformAdmins(): void
+    {
+        $this->registerAndLogin('Escritório Comum', 'comum@x.com');
+        $this->assertFalse($this->call('GET', '/api/session')['json']['data']['platform_admin']);
+        foreach (['/api/admin/overview', '/api/admin/tenants', '/api/admin/plans', '/api/admin/tenants/1'] as $path) {
+            $this->assertSame(403, $this->call('GET', $path)['status'], $path);
+        }
+        $this->assertSame(403, $this->call('POST', '/api/admin/tenants/1/renew', ['days' => 30])['status']);
+        $this->assertSame('trialing', $this->scalar('SELECT status FROM subscriptions LIMIT 1'));   // nada mudou
+    }
+
+    public function testPlatformAdminCanOperateOfficesThroughTheApi(): void
+    {
+        $this->registerAndLogin('Cliente Um', 'cliente@x.com');
+        $tenantId = (int) $this->scalar('SELECT id FROM tenants');
+        $this->newClient('10.0.0.50');
+        $this->registerAndLogin('Dono do SaaS', 'dono@x.com');
+        $this->pdo->exec("UPDATE users SET is_platform_admin = 1 WHERE email = 'dono@x.com'");
+        $this->assertTrue($this->call('GET', '/api/session')['json']['data']['platform_admin']);
+
+        $o = $this->call('GET', '/api/admin/overview')['json']['data'];
+        $this->assertSame(2, $o['tenants']);
+        $list = $this->call('GET', '/api/admin/tenants', [], ['q' => 'Cliente'])['json']['data'];
+        $this->assertSame(1, $list['total']);
+        $r = $this->call('POST', "/api/admin/tenants/$tenantId/renew", ['days' => 30]);
+        $this->assertSame(200, $r['status'], json_encode($r['json']));
+        $this->assertSame('active', $r['json']['data']['tenant']['subscription_status']);
+        $this->assertSame(200, $this->call('POST', "/api/admin/tenants/$tenantId/plan", ['plan' => 'equipe'])['status']);
+        $this->assertSame(422, $this->call('POST', "/api/admin/tenants/$tenantId/plan", ['plan' => 'nao-existe'])['status']);
+        $this->assertSame(200, $this->call('POST', "/api/admin/tenants/$tenantId/access", ['status' => 'suspended'])['status']);
+        $this->assertSame(404, $this->call('GET', '/api/admin/tenants/99999')['status']);
+        $this->assertSame(200, $this->call('GET', '/api/admin/plans')['status']);
+    }
+
+    public function testPlanEndpointCarriesTheSubscriptionBanner(): void
+    {
+        $this->registerAndLogin();
+        $plan = $this->call('GET', '/api/plan')['json']['data'];
+        $this->assertSame('info', $plan['banner']['level']);
+        $this->assertSame(14, $plan['banner']['days_left']);
+    }
+
+    public function testAccountRoutesWorkOnTheLoggedUserOnly(): void
+    {
+        $this->registerAndLogin();
+        $this->assertSame(401, (function () { $this->call('POST', '/api/logout'); return $this->call('GET', '/api/account')['status']; })());
+        $this->call('GET', '/api/session');
+        $this->call('POST', '/api/login', ['email' => 'dra@silva.com', 'password' => 'senha-segura-123']);
+        $acc = $this->call('PATCH', '/api/account', ['name' => 'Helena', 'email_notifications' => false, 'user_id' => 999]);
+        $this->assertSame('Helena', $acc['json']['data']['name']);
+        $this->assertFalse($acc['json']['data']['email_notifications']);
+        $this->assertSame('Helena', $this->call('GET', '/api/session')['json']['data']['user']['name']);
+        $this->assertSame(422, $this->call('POST', '/api/account/password', ['current' => 'errada', 'new' => 'nova-senha-456'])['status']);
+        $this->assertSame(200, $this->call('POST', '/api/account/password', ['current' => 'senha-segura-123', 'new' => 'nova-senha-456'])['status']);
+    }
+
+    public function testImportAndExportRoutes(): void
+    {
+        $this->registerAndLogin();
+        $r = $this->call('POST', '/api/processes/import', ['csv' => "Processo;Cliente\n" . self::CNJ_TRT8 . ";Maria\nlixo;x\n"]);
+        $this->assertSame(200, $r['status'], json_encode($r['json']));
+        $this->assertSame(1, $r['json']['data']['created']);
+        $this->assertSame(1, count($r['json']['data']['skipped']));
+        $raw = $this->raw('GET', '/api/export/processes');
+        $this->assertSame(200, $raw->status);
+        $this->assertStringStartsWith('text/csv', $raw->headers['Content-Type']);
+        $this->assertStringContainsString('attachment', $raw->headers['Content-Disposition']);
+        $this->assertStringContainsString('Maria', $raw->body);
+        $this->assertSame(200, $this->raw('GET', '/api/export/publications')->status);
+    }
+
+    public function testTermsAcceptanceIsRequiredAndRecorded(): void
+    {
+        $this->call('GET', '/api/session');
+        $body = ['office_name' => 'Sem Aceite', 'name' => 'N', 'email' => 'n@x.com', 'password' => 'senha-segura-123'];
+        $this->assertSame(422, $this->call('POST', '/api/register', $body)['status']);
+        $this->assertSame(422, $this->call('POST', '/api/register', $body + ['accept_terms' => 'sim'])['status']);   // só o booleano true vale
+        $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM users'));
+        $this->assertSame(201, $this->call('POST', '/api/register', $body + ['accept_terms' => true])['status']);
+        $this->assertNotNull($this->scalar('SELECT terms_accepted_at FROM users'));
+        $this->assertSame('2026-10-rascunho', $this->scalar('SELECT terms_version FROM users'));
+        $this->assertSame('2026-10-rascunho', $this->call('GET', '/api/account')['json']['data']['terms_version']);
+    }
+
+    public function testPrivacyRoutesExportAndErase(): void
+    {
+        $this->registerAndLogin();
+        $raw = $this->raw('GET', '/api/privacy/export');
+        $this->assertSame(200, $raw->status);
+        $this->assertStringContainsString('attachment', $raw->headers['Content-Disposition']);
+        $this->assertSame('dra@silva.com', json_decode($raw->body, true)['people'][0]['email']);
+        $this->assertSame(422, $this->call('POST', '/api/privacy/erase', ['confirm_name' => 'Outro', 'password' => 'senha-segura-123'])['status']);
+        $this->assertSame(200, $this->call('POST', '/api/privacy/erase', ['confirm_name' => 'Silva Advocacia', 'password' => 'senha-segura-123'])['status']);
+        $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM tenants'));
+        $this->assertSame(401, $this->call('GET', '/api/dashboard')['status']);
     }
 }

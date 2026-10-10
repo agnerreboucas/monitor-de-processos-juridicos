@@ -1,0 +1,44 @@
+name: Radar Trabalhista
+
+on:
+  push:
+    paths: ['radar-trabalhista/**', '.github/workflows/radar-trabalhista.yml']
+  pull_request:
+    paths: ['radar-trabalhista/**', '.github/workflows/radar-trabalhista.yml']
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: radar-trabalhista
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: radar_teste
+          MARIADB_USER: radar
+          MARIADB_PASSWORD: radar_teste_local
+          MARIADB_ROOT_PASSWORD: root_local
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      RADAR_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=radar_teste;charset=utf8mb4
+      RADAR_TEST_USER: radar
+      RADAR_TEST_PASS: radar_teste_local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, curl, zlib
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - name: Sintaxe de todos os arquivos PHP
+        run: find src bin public tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+      - name: Sintaxe da tela (JavaScript)
+        run: node --check public/app/app.js
+      - name: Testes
+        run: ./vendor/bin/phpunit

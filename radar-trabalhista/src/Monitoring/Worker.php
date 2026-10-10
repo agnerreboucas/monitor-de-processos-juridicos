@@ -279,8 +279,12 @@ final class Worker
             "INSERT INTO notifications (tenant_id, user_id, process_id, movement_id, channel, status, created_at)
              VALUES (?, ?, ?, ?, ?, 'pending', ?) ON DUPLICATE KEY UPDATE id = id"
         );
+        $wantsEmail = $ids === [] ? [] : $this->pdo->query('SELECT id FROM users WHERE email_notifications = 1 AND id IN (' . implode(',', array_map('intval', $ids)) . ')')->fetchAll(PDO::FETCH_COLUMN);
         foreach ($ids as $userId) {
             foreach (['panel', 'email'] as $channel) {
+                if ($channel === 'email' && !in_array((string) $userId, array_map('strval', $wantsEmail), true)) {
+                    continue;                                      // a pessoa desligou o aviso por e-mail
+                }
                 $insert->execute([$tenantId, (int) $userId, $processId, $movementId, $channel, $nowSql]);
             }
         }

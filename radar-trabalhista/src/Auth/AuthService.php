@@ -39,7 +39,7 @@ final class AuthService
      * @return array{tenant_id:int,user_id:int}
      */
     public function registerTenant(string $officeName, string $adminName, string $email, string $password,
-                                   string $planCode = 'essencial', ?string $phone = null, ?string $ip = null): array
+                                   string $planCode = 'essencial', ?string $phone = null, ?string $ip = null, ?string $termsVersion = null): array
     {
         $officeName = trim($officeName);
         $adminName = trim($adminName);
@@ -68,13 +68,14 @@ final class AuthService
             $this->pdo->prepare('INSERT INTO tenants (name, slug, phone, created_at) VALUES (?, ?, ?, ?)')
                 ->execute([$officeName, $this->uniqueSlug($officeName), $phone, $now]);
             $tenantId = (int) $this->pdo->lastInsertId();
-            $this->pdo->prepare('INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)')
-                ->execute([$adminName, $email, self::hashPassword($password), $now]);
+            $this->pdo->prepare('INSERT INTO users (name, email, password_hash, created_at, terms_accepted_at, terms_version) VALUES (?, ?, ?, ?, ?, ?)')
+                ->execute([$adminName, $email, self::hashPassword($password), $now, $termsVersion !== null ? $now : null, $termsVersion]);
             $userId = (int) $this->pdo->lastInsertId();
             $this->pdo->prepare("INSERT INTO tenant_members (tenant_id, user_id, role, status, created_at)
                                  VALUES (?, ?, 'office_admin', 'active', ?)")->execute([$tenantId, $userId, $now]);
-            $this->pdo->prepare("INSERT INTO subscriptions (tenant_id, plan_id, status, created_at, updated_at)
-                                 VALUES (?, ?, 'trialing', ?, ?)")->execute([$tenantId, $planId, $now, $now]);
+            $this->pdo->prepare("INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_end, created_at, updated_at)
+                                 VALUES (?, ?, 'trialing', ?, ?, ?)")->execute([$tenantId, $planId,
+                Clock::sql($this->clock->now()->add(new DateInterval('P' . \Radar\Service\SubscriptionService::TRIAL_DAYS . 'D'))), $now, $now]);
             $this->audit->log('tenant.registered', $tenantId, $userId, 'tenant', $tenantId, $ip, ['plan' => $planCode]);
             $this->pdo->commit();
         } catch (\Throwable $e) {
