@@ -49,6 +49,7 @@ php bin/migrate.php
 - **Cron** (a cada 5 minutos): `*/5 * * * * php /caminho/radar-trabalhista/bin/worker.php >> /var/log/radar-worker.log 2>&1`. Cada rodada recupera trabalho preso, agenda o que venceu, consulta em lotes pequenos e envia os e-mails pendentes.
 - **Apache/Hostinger:** aponte o domínio para `public/` (o `.htaccess` já encaminha `/api/*` ao PHP). Sirva **só por HTTPS**.
 - **Com processos reais no seu computador:** veja `local/LEIA-ME.md` (Docker) e `php bin/testar-fonte.php`.
+- **Páginas:** `/` é a apresentação (`public/app/inicio.html`), `/entrar` é o login e o sistema, `/app/...` são arquivos estáticos. A apresentação ainda tem textos de preço e prazos a confirmar (valores iniciais) e não traz depoimentos nem números de clientes de propósito.
 - **Teste local:** `php -S 127.0.0.1:8080 -t public public/index.php`. Sem `SMTP_HOST` e com `APP_ENV=local`, os e-mails vão para `storage/mail.log`. Em produção sem SMTP o envio é recusado, de propósito.
 
 ## Testes

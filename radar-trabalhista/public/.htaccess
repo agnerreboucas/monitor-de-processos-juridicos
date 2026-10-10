@@ -1,8 +1,10 @@
-# Apache / Hostinger: /api/* vai para a aplicação PHP; o resto é a tela estática.
+# Apache / Hostinger: /api/* vai para a aplicação PHP; / é a página de apresentação; /entrar é o sistema.
 Options -Indexes
+DirectoryIndex app/inicio.html
 RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^ index.php [L]
+RewriteRule ^entrar/?$ app/index.html [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ app/index.html [L]
 # Nunca expor arquivos de configuração

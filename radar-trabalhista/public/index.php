@@ -19,11 +19,19 @@ $request = Request::fromGlobals();
 
 if (!str_starts_with($request->path, '/api/')) {
     $types = ['html' => 'text/html; charset=utf-8', 'js' => 'text/javascript; charset=utf-8', 'css' => 'text/css; charset=utf-8',
-        'svg' => 'image/svg+xml', 'png' => 'image/png', 'ico' => 'image/x-icon'];
-    $file = realpath(__DIR__ . '/app/' . ltrim($request->path === '/' ? 'index.html' : $request->path, '/'));
+        'svg' => 'image/svg+xml', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'webp' => 'image/webp', 'ico' => 'image/x-icon'];
+    // /  = página de apresentação; /entrar = o sistema (login e telas); /app/arquivo = arquivos estáticos
+    $path = $request->path;
+    $name = match (true) {
+        $path === '/' || $path === '' => 'inicio.html',
+        $path === '/entrar' => 'index.html',
+        str_starts_with($path, '/app/') => substr($path, 5),
+        default => 'index.html',
+    };
+    $file = realpath(__DIR__ . '/app/' . ltrim($name, '/'));
     $root = realpath(__DIR__ . '/app');
     if ($file === false || $root === false || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || !is_file($file)) {
-        $file = $root . '/index.html';                       // a tela usa rotas por #, qualquer outro caminho cai na página inicial
+        $file = $root . '/index.html';
     }
     header('Content-Type: ' . ($types[pathinfo($file, PATHINFO_EXTENSION)] ?? 'application/octet-stream'));
     header('X-Content-Type-Options: nosniff');

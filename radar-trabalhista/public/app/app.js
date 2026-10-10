@@ -50,26 +50,99 @@ async function baixar(caminho, nome, consulta) {
   return null;
 }
 
-// ── topo ─────────────────────────────────────────────────────────────────────
+// ── ícones, menu lateral e cabeçalho ─────────────────────────────────────────
+const ICONES = {
+  home: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z',
+  folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  file: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h6',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.7 21a2 2 0 0 1-3.4 0',
+  alert: 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01',
+  map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z M9 4v14 M15 6v14',
+  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  card: 'M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z M1 10h22',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 6v6l4 2',
+  radar: 'M19.1 4.9A10 10 0 1 0 21 12 M15.5 8.5A5 5 0 1 0 17 12 M12 12l7-7',
+  pulse: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  menu: 'M3 6h18 M3 12h18 M3 18h18',
+};
+function icone(nome) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+  for (const d of (ICONES[nome] || '').split(' M').map((x, i) => (i ? 'M' + x : x))) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); svg.append(p); }
+  return svg;
+}
+document.getElementById('marca').replaceChildren(icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Trabalhista')));
+document.getElementById('abrir-menu').append(icone('menu'));
+document.getElementById('abrir-menu').addEventListener('click', () => document.body.classList.toggle('menu-aberto'));
+window.addEventListener('hashchange', () => document.body.classList.remove('menu-aberto'));
+
+let selos = { alertas: 0, notif: 0 };
+const TITULOS = [
+  [/^\/?$/, 'Radar <b>Trabalhista</b>', 'Visão Geral'], [/^\/processos/, 'Processos', 'Acompanhamento processual'], [/^\/publicacoes/, 'Publicações', 'Diário oficial por OAB'],
+  [/^\/uf/, 'Ações por UF', 'Por advogado (OAB)'], [/^\/alertas/, 'Alertas OAB', 'Possível inscrição suplementar'], [/^\/oabs/, 'Advogados (OAB)', 'Cadastro de OABs monitoradas'],
+  [/^\/notificacoes/, 'Notificações', 'Movimentações capturadas'], [/^\/equipe/, 'Equipe', 'Pessoas do escritório'], [/^\/plano/, 'Plano', 'Assinatura e limites'],
+  [/^\/conta/, 'Minha conta', 'Dados, senha e privacidade'], [/^\/admin/, 'Administração', 'Plataforma'],
+];
 function desenharTopo() {
-  const topo = document.getElementById('topo');
+  const topo = document.getElementById('topo'), cab = document.getElementById('cabecalho');
   const logado = sessao && sessao.authenticated && (sessao.tenant || sessao.platform_admin);
-  topo.hidden = !logado;
+  topo.hidden = !logado; cab.hidden = !logado;
+  document.body.classList.toggle('logado', !!logado);
   if (!logado) return;
-  const itens = !sessao.tenant ? [['#/admin', 'Administração']] : [['#/', 'Painel'], ['#/processos', 'Processos'],
-    ...(pode('oab.view') ? [['#/uf', 'Ações por UF'], ['#/publicacoes', 'Publicações'], ['#/oabs', 'Advogados (OAB)']] : []),
-    ['#/notificacoes', 'Notificações'], ['#/equipe', 'Equipe'], ['#/plano', 'Plano'],
-    ...(sessao.platform_admin ? [['#/admin', 'Administração']] : [])];
   const atual = location.hash || '#/';
-  document.getElementById('menu').replaceChildren(...itens.map(([href, nome]) =>
-    h('a', { href, class: (href === '#/' ? atual === '#/' : atual.startsWith(href)) ? 'ativo' : '' }, nome)));
+  const item = (href, nome, ic, extra) => h('a', { href, class: ((href === '#/' ? atual === '#/' : atual.startsWith(href)) ? 'ativo ' : '') + (extra && extra.alerta ? 'alerta' : '') },
+    icone(ic), nome, extra && extra.selo ? h('span', { class: 'selo' }, extra.selo) : null);
+  const grupo = (t) => h('div', { class: 'grupo' }, t);
+  const partes = [];
+  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
+  else {
+    partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/processos', 'Processos', 'folder'),
+      ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
+    if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
+      item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
+    partes.push(grupo('Escritório'), item('#/equipe', 'Equipe', 'users'), item('#/plano', 'Plano', 'card'), item('#/conta', 'Minha conta', 'user'));
+    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
+  }
+  document.getElementById('menu').replaceChildren(...partes);
   document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
+  const caminho = atual.slice(1).split('?')[0];
+  const [, t, sub] = TITULOS.find(([re]) => re.test(caminho)) || [0, 'Radar <b>Trabalhista</b>', ''];
+  document.getElementById('titulo-t').innerHTML = t;       // texto fixo do próprio sistema, nunca dado de usuário
+  document.getElementById('titulo-s').textContent = sub;
+  document.getElementById('sino').replaceChildren(icone('bell'), selos.notif ? h('span', { class: 'selo' }, selos.notif) : null);
+}
+async function atualizarSelos() {
+  if (!sessao || !sessao.authenticated || !sessao.tenant || !pode('process.view')) return;
+  const r = await api('GET', '/api/dashboard');
+  if (!r.ok) return;
+  const novo = { alertas: r.data.oab_alerts_unseen || 0, notif: r.data.unread_notifications || 0 };
+  if (novo.alertas !== selos.alertas || novo.notif !== selos.notif) { selos = novo; desenharTopo(); }
 }
 document.getElementById('sair').addEventListener('click', async () => { await api('POST', '/api/logout'); await carregarSessao(); location.hash = '#/entrar'; });
 
 // ── telas de entrada ─────────────────────────────────────────────────────────
 function campo(rotulo, nome, tipo, extra) { return h('label', {}, rotulo, h('input', { name: nome, type: tipo || 'text', required: true, ...(extra || {}) })); }
-function formulario(titulo, campos, botao, aoEnviar, rodape) {
+// tela de entrada em duas colunas: apresentação à esquerda, formulário à direita
+function layoutAuth(titulo, subtitulo, ...conteudo) {
+  return h('div', { class: 'auth' },
+    h('section', { class: 'auth-lado' },
+      h('a', { class: 'marca', href: '/' }, icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Trabalhista'))),
+      h('div', { class: 'auth-texto' },
+        h('h2', {}, 'Monitoramento processual para escritórios trabalhistas'),
+        h('ul', {}, h('li', {}, 'Consulta o Diário de Justiça Eletrônico Nacional todos os dias, por processo e por OAB.'),
+          h('li', {}, 'Avisa a equipe no painel e por e-mail quando sai movimentação nova.'),
+          h('li', {}, 'Se uma consulta falha, o sistema mostra a falha. Nunca finge que não houve novidade.'),
+          h('li', {}, 'Cada escritório enxerga somente os próprios dados.'))),
+      h('p', { class: 'suave' }, 'Apoio operacional de acompanhamento. Não substitui a conferência nas fontes oficiais.')),
+    h('section', { class: 'auth-form' }, h('div', { class: 'auth-caixa' },
+      h('h1', {}, titulo), subtitulo ? h('p', { class: 'suave' }, subtitulo) : null, ...conteudo,
+      h('p', { class: 'suave auth-rodape' }, h('a', { href: '/' }, '← Voltar para o site'), ' · ', h('a', { href: '/app/termos.html' }, 'Termos'), ' · ', h('a', { href: '/app/privacidade.html' }, 'Privacidade')))));
+}
+function formulario(titulo, campos, botao, aoEnviar, rodape, subtitulo) {
   const msg = h('div');
   const form = h('form', { class: 'empilhado', onsubmit: async (e) => {
     e.preventDefault();
@@ -79,7 +152,7 @@ function formulario(titulo, campos, botao, aoEnviar, rodape) {
     b.disabled = false;
     if (erro) msg.replaceChildren(aviso(erro, 'erro'));
   } }, ...campos, h('button', { class: 'principal' }, botao), msg);
-  return h('div', { class: 'cartao estreito' }, h('h1', {}, titulo), h('div', { style: 'height:12px' }), form, rodape || null);
+  return layoutAuth(titulo, subtitulo, form, rodape || null);
 }
 function telaEntrar() {
   app.replaceChildren(formulario('Entrar', [campo('E-mail', 'email', 'email', { autocomplete: 'username' }), campo('Senha', 'password', 'password', { autocomplete: 'current-password' })], 'Entrar',
@@ -90,17 +163,17 @@ function telaEntrar() {
       if (!sessao.tenant && sessao.tenants.length > 1) return telaEscolherEscritorio();
       location.hash = '#/'; rota();
     },
-    h('p', { class: 'suave' }, h('a', { href: '#/esqueci' }, 'Esqueci a senha'), ' · ', h('a', { href: '#/cadastro' }, 'Criar conta do escritório'))));
+    h('p', { class: 'suave' }, h('a', { href: '#/esqueci' }, 'Esqueci a senha'), ' · ', h('a', { href: '#/cadastro' }, 'Criar conta do escritório (teste grátis)')), 'Acesse o painel do seu escritório.'));
 }
 function telaEscolherEscritorio() {
-  app.replaceChildren(h('div', { class: 'cartao estreito' }, h('h1', {}, 'Escolha o escritório'), h('div', { style: 'height:12px' }),
+  app.replaceChildren(layoutAuth('Escolha o escritório', 'Sua conta participa de mais de um escritório.',
     ...sessao.tenants.map((t) => h('p', {}, h('button', { class: 'principal', onclick: async () => { await api('POST', '/api/tenant/select', { tenant_id: t.tenant_id }); await carregarSessao(); location.hash = '#/'; rota(); } }, t.name + ' (' + t.role + ')')))));
 }
 function telaCadastro() {
   app.replaceChildren(formulario('Criar conta do escritório', [campo('Nome do escritório', 'office_name'), campo('Seu nome', 'name'), campo('E-mail', 'email', 'email'), campo('Senha (mínimo 10 caracteres)', 'password', 'password', { minlength: 10, autocomplete: 'new-password' }),
-    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: 'termos.html', target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: 'privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
+    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: '/app/termos.html', target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: '/app/privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
     async (d) => { const r = await api('POST', '/api/register', { ...d, accept_terms: d.accept_terms === 'on' }); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
-    h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta'))));
+    h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta')), 'Teste grátis por 14 dias. Não pede cartão de crédito.'));
 }
 function telaEsqueci() {
   app.replaceChildren(formulario('Redefinir senha', [campo('E-mail', 'email', 'email')], 'Enviar instruções',
@@ -113,27 +186,36 @@ function telaRedefinir(token) {
 }
 
 // ── painel ───────────────────────────────────────────────────────────────────
+const kpi = (titulo, valor, cor, ic, href, rodape) => h('a', { class: 'cartao kpi', href }, h('span', { class: 'rot' }, titulo), h('span', { class: 'chip ' + cor }, icone(ic)),
+  h('span', { class: 'num', style: cor === 'verm' && valor ? 'color:var(--verm)' : '' }, String(valor)), h('span', { class: 'rod' }, rodape + ' →'));
+
 async function telaPainel() {
-  const r = await api('GET', '/api/dashboard');
+  const veOab = pode('oab.view');
+  const [r, st, pubs] = await Promise.all([api('GET', '/api/dashboard'), veOab ? api('GET', '/api/oab-stats') : null,
+    veOab ? api('GET', '/api/publications', null, { new_only: '1', per_page: '1' }) : null]);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
   const d = r.data;
-  const card = (titulo, valor, cor, href) => h('a', { class: 'cartao', href: href || '#/processos', style: 'text-decoration:none;color:inherit' }, h('h2', {}, titulo), h('div', { class: 'numero', style: cor ? 'color:var(--' + cor + ')' : '' }, valor));
+  selos = { alertas: d.oab_alerts_unseen || 0, notif: d.unread_notifications || 0 }; desenharTopo();
+  const kpis = [kpi('Processos ativos', d.processes_active, 'azul', 'folder', '#/processos', 'Ver todos'),
+    kpi('Notificações não lidas', d.unread_notifications, 'ambar', 'bell', '#/notificacoes', 'Ver notificações'),
+    kpi('Movimentações (7 dias)', d.recent_movements.length, 'roxo', 'pulse', '#/notificacoes', 'Últimos 7 dias'),
+    kpi('Falha de consulta', d.with_error, 'verm', 'alert', '#/processos?with_error=1', 'Ver processos'),
+    ...(veOab ? [kpi('Publicações novas', pubs && pubs.ok ? pubs.data.total : 0, 'azul', 'file', '#/publicacoes?new_only=1', 'Ver publicações'),
+      kpi('Alertas OAB', d.oab_alerts_unseen, 'verm', 'alert', '#/alertas', 'Ver central de alertas')] : []),
+    kpi('Sem atualização', d.stale, 'cinza', 'clock', '#/processos?stale_days=7', 'Sem consulta há 7+ dias'),
+    kpi('Aguardando 1ª consulta', d.never_checked, 'ambar', 'clock', '#/processos', 'Ver processos')];
+  const bloco = h('div');
+  const montar = (dados) => bloco.replaceChildren(blocoUf(dados, async (ano) => { const x = await api('GET', '/api/oab-stats', null, { year: ano }); if (x.ok) montar(x.data); }));
+  if (veOab && st && st.ok) montar(st.data);
   app.replaceChildren(
-    h('div', { class: 'linha entre' }, h('h1', {}, 'Painel'), pode('process.create') ? h('a', { href: '#/processos' }, h('button', { class: 'principal' }, 'Cadastrar processo')) : null),
-    h('div', { class: 'grade' },
-      card('Processos', d.processes_total), card('Ativos', d.processes_active),
-      card('Com falha de consulta', d.with_error, d.with_error ? 'verm' : '', '#/processos?with_error=1'),
-      card('Aguardando 1ª consulta', d.never_checked, d.never_checked ? 'amar' : ''),
-      card('Sem atualização há 7+ dias', d.stale, d.stale ? 'amar' : '', '#/processos?stale_days=7'),
-      card('Notificações não lidas', d.unread_notifications, d.unread_notifications ? 'azul' : '', '#/notificacoes')),
-    d.oab_alerts_unseen ? h('a', { href: '#/uf', class: 'msg amarelo', style: 'text-decoration:none;display:block' },
-      'Atenção: ' + d.oab_alerts_unseen + ' alerta(s) de possível inscrição suplementar. Clique para ver.') : null,
-    h('p', { class: 'suave' }, 'Última consulta bem-sucedida: ' + dataHoraBR(d.last_success_at)),
+    h('div', { class: 'linha entre' }, h('h1', {}, 'Dashboard'), pode('process.create') ? h('a', { href: '#/processos' }, h('button', { class: 'principal' }, 'Cadastrar processo')) : null),
+    h('div', { class: 'grade' }, ...kpis), bloco,
     h('div', { class: 'cartao' }, h('h2', {}, 'Movimentações dos últimos 7 dias'),
       d.recent_movements.length ? d.recent_movements.map((m) => h('div', { class: 'mov' },
         h('a', { href: '#/processos/' + m.process_id }, m.cnj), ' ', h('span', { class: 'etq' }, m.tribunal), ' ',
         h('span', { class: 'suave' }, 'movimentação de ' + dataBR(m.occurred_at) + ' · capturada em ' + dataHoraBR(m.captured_at)),
-        h('pre', {}, (m.description || '').slice(0, 280)))) : h('p', { class: 'vazio' }, 'Nenhuma movimentação nova nos últimos 7 dias.')));
+        h('pre', {}, (m.description || '').slice(0, 280)))) : h('p', { class: 'vazio' }, 'Nenhuma movimentação nova nos últimos 7 dias.')),
+    h('p', { class: 'suave' }, 'Última consulta bem-sucedida: ' + dataHoraBR(d.last_success_at)));
 }
 
 // ── processos ────────────────────────────────────────────────────────────────
@@ -349,37 +431,58 @@ async function telaPublicacoes(consulta) {
   carregar();
 }
 
+const SUBGRUPOS = [['estadual', 'JE', 'sub-je', 'var(--azul)'], ['federal', 'JF', 'sub-jf', 'var(--verde)'], ['trabalho', 'JT', 'sub-jt', 'var(--roxo)']];
+
+// bloco "Ações por UF": indicadores, alerta, tabela por advogado (JE/JF/JT) e barras por estado
+function blocoUf(d, aoMudarAno) {
+  const anos = [...new Set([d.year, ...d.years])].sort((a, b) => b - a);
+  const risco = new Set(d.alerts.map((a) => a.oab_id + '|' + a.uf));
+  const maximo = Math.max(1, ...d.rows.map((x) => x.total));
+  const tile = (r, v, cls) => h('div', { class: 'tile' }, h('div', { class: 'r' }, r), h('div', { class: 'v ' + (cls || '') }, String(v)));
+  const topo = h('div', { class: 'cab' }, h('h3', {}, 'Ações por UF ', h('span', {}, '· por advogado (OAB) · Estadual (JE) × Federal (JF) × Trabalho (JT)')),
+    h('label', { class: 'linha suave' }, 'Ano ', h('select', { onchange: (e) => aoMudarAno(Number(e.target.value)) }, ...anos.map((a) => h('option', { value: a, selected: a === d.year }, String(a))))));
+  const tiles = h('div', { class: 'tiles' }, tile('Total de ações', d.totals.total), tile('Estadual (JE)', d.totals.estadual, 'sub-je'), tile('Federal (JF)', d.totals.federal, 'sub-jf'),
+    tile('Trabalho (JT)', d.totals.trabalho, 'sub-jt'), tile('Estados (UF)', d.totals.states));
+  const banner = d.alerts.length ? h('div', { class: 'msg alerta-uf' }, icone('alert'), h('div', {},
+    h('strong', {}, d.alerts.length + ' situação(ões) com mais de ' + d.threshold + ' ações no ano'), ' numa UF onde o advogado não tem inscrição na OAB: ', h('strong', {}, 'pode exigir inscrição suplementar'), '. ',
+    h('a', { href: '#/alertas' }, 'Ver detalhes'))) : null;
+  const cabAdv = d.oabs.map((o) => h('th', { colspan: 3, class: 'adv manter' }, o.name, h('small', {}, 'OAB ' + o.uf + ' ' + o.number)));
+  const tabela = h('table', { class: 'larga' }, h('thead', {},
+    h('tr', {}, h('th', { rowspan: 2, class: 'manter' }, 'UF'), ...cabAdv, h('th', { rowspan: 2, class: 'manter' }, 'Total UF')),
+    h('tr', {}, ...d.oabs.flatMap(() => SUBGRUPOS.map(([, t, c]) => h('th', { class: c + ' manter' }, t))))),
+    h('tbody', {}, ...(d.rows.length ? d.rows.map((row) => h('tr', {}, h('td', { class: 'manter' }, row.uf),
+      ...d.oabs.flatMap((o) => { const v = row.by_oab[o.id]; const r = risco.has(o.id + '|' + row.uf);
+        return SUBGRUPOS.map(([g]) => { const n = v ? v[g] : 0; return h('td', { class: 'manter ' + (r ? 'risco' : n ? '' : 'zero') }, n ? String(n) : '·'); }); }),
+      h('td', { class: 'tot manter' }, String(row.total))))
+      : [h('tr', {}, h('td', { colspan: 2 + d.oabs.length * 3, class: 'vazio' }, 'Sem publicações em ' + d.year + '. Cadastre uma OAB e aguarde a primeira consulta.'))])));
+  const grafico = h('div', { class: 'grafico' }, h('h4', {}, 'Estados com mais ações', h('span', { class: 'leg' }, ...SUBGRUPOS.flatMap(([, t, , cor]) => [h('i', { style: 'background:' + cor }), t]))),
+    ...d.rows.slice(0, 12).map((row) => h('div', { class: 'bar-linha' }, h('span', {}, row.uf),
+      h('div', { class: 'bar-trilho' }, ...SUBGRUPOS.map(([g, , , cor]) => h('i', { style: 'width:' + (row.groups[g] / maximo * 100) + '%;background:' + cor, title: row.groups[g] + ' ' + g }))), h('b', {}, String(row.total)))),
+    h('div', { class: 'por-adv' }, h('h4', {}, 'Total por advogado'), ...d.oabs.map((o) => h('div', { class: 'l' }, h('span', {}, o.name), h('strong', {}, String(d.rows.reduce((t, r) => t + (r.by_oab[o.id] ? r.by_oab[o.id].total : 0), 0)))))));
+  return h('div', { class: 'cartao secao-uf' }, topo, tiles, banner,
+    h('div', { class: 'uf-corpo' }, h('div', { class: 'uf-tabela' }, tabela), grafico),
+    h('p', { class: 'suave' }, d.notice + (d.totals.outros ? ' Inclui ' + d.totals.outros + ' em outras justiças.' : '') +
+      (d.undetermined ? ' ' + d.undetermined + ' processo(s) estão em tribunais que cobrem mais de um estado (por exemplo TRF1, TRF4, TRT8) e não entram na tabela nem no alerta, porque a UF não pode ser afirmada.' : '')));
+}
+
 async function telaUf(ano) {
   const r = await api('GET', '/api/oab-stats', null, ano ? { year: ano } : null);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
+  app.replaceChildren(h('h1', {}, 'Ações por UF'), blocoUf(r.data, (a) => telaUf(a)));
+}
+
+async function telaAlertas(ano) {
+  const r = await api('GET', '/api/oab-stats', null, ano ? { year: ano } : null);
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
   const d = r.data;
-  const nomes = Object.fromEntries(d.oabs.map((o) => [o.id, o.name]));
-  const anos = [...new Set([d.year, ...d.years])].sort((a, b) => b - a);
-  const maximo = Math.max(1, ...d.rows.map((x) => x.total));
-  const alertas = d.alerts.map((a) => h('div', { class: 'msg amarelo' },
-    h('strong', {}, a.lawyer_name + ' (OAB ' + a.oab_number + '/' + a.oab_uf + ')'), ' tem ' + a.process_count + ' processos diferentes com publicação em ' + a.alert_year + ' no(a) ',
-    h('strong', {}, a.uf), ', onde não consta inscrição suplementar. O Estatuto da Advocacia (art. 10, §2º) considera habitual a atuação em mais de ' + d.threshold + ' causas por ano em uma Seccional. ',
+  const alertas = d.alerts.map((a) => h('div', { class: 'msg alerta-uf' }, icone('alert'), h('div', {},
+    h('strong', {}, a.lawyer_name + ' (OAB ' + a.oab_number + '/' + a.oab_uf + ')'), ' tem ' + a.process_count + ' processos diferentes com publicação em ' + a.alert_year + ' no(a) ', h('strong', {}, a.uf),
+    ', onde não consta inscrição suplementar. O Estatuto da Advocacia (art. 10, §2º) considera habitual a atuação em mais de ' + d.threshold + ' causas por ano em uma Seccional. ',
     h('span', { class: 'suave' }, 'Indicativo: confira com a Seccional. '),
-    !a.seen_at ? h('button', { class: 'link', onclick: async () => { await api('POST', '/api/oab-alerts/' + a.id + '/seen'); telaUf(d.year); } }, 'marcar como visto') : h('span', { class: 'etq' }, 'visto')));
-  app.replaceChildren(
-    h('div', { class: 'linha entre' }, h('h1', {}, 'Ações por UF'),
-      h('label', { class: 'linha suave' }, 'Ano ', h('select', { onchange: (e) => telaUf(e.target.value) }, ...anos.map((a) => h('option', { value: a, selected: a === d.year }, String(a)))))),
-    h('p', { class: 'suave' }, d.notice),
-    ...alertas,
-    h('div', { class: 'grade' }, h('div', { class: 'cartao' }, h('h2', {}, 'Processos no ano'), h('div', { class: 'numero' }, d.totals.total)),
-      h('div', { class: 'cartao' }, h('h2', {}, 'Estados'), h('div', { class: 'numero' }, d.totals.states)),
-      ...Object.entries(GRUPOS).map(([k, t]) => h('div', { class: 'cartao' }, h('h2', {}, t), h('div', { class: 'numero' }, d.totals[k])))),
-    h('div', { class: 'cartao', style: 'overflow-x:auto' }, h('table', { class: 'larga' },
-      h('thead', {}, h('tr', {}, ...['UF', 'Advogado(a)', 'Estadual', 'Federal', 'Trabalho', 'Outras', 'Total', ''].map((t) => h('th', {}, t)))),
-      h('tbody', {}, ...(d.rows.length ? d.rows.flatMap((row) => {
-        const porOab = Object.entries(row.by_oab);
-        return [h('tr', { class: 'uf' }, h('td', {}, h('strong', {}, row.uf)), h('td', {}, porOab.length + ' advogado(s)'),
-            ...Object.keys(GRUPOS).map((g) => h('td', {}, String(row.groups[g]))), h('td', {}, h('strong', {}, String(row.total))),
-            h('td', { style: 'width:22%' }, h('div', { class: 'barra' }, h('i', { style: 'width:' + Math.round(row.total / maximo * 100) + '%' })))),
-          ...porOab.map(([id, v]) => h('tr', {}, h('td', {}), h('td', { class: 'suave' }, nomes[id] || 'OAB ' + id),
-            ...Object.keys(GRUPOS).map((g) => h('td', { class: 'suave' }, String(v[g]))), h('td', { class: 'suave' }, String(v.total)), h('td', {})))];
-      }) : [h('tr', {}, h('td', { colspan: 8, class: 'vazio' }, 'Sem publicações em ' + d.year + '. Cadastre uma OAB e aguarde a primeira consulta.'))])))),
-    d.undetermined ? h('p', { class: 'suave' }, d.undetermined + ' processo(s) estão em tribunais que cobrem mais de um estado (por exemplo TRF1, TRF4, TRT8). Eles não entram na tabela por UF nem no alerta, porque a UF não pode ser afirmada.') : null);
+    !a.seen_at ? h('button', { class: 'link', onclick: async () => { await api('POST', '/api/oab-alerts/' + a.id + '/seen'); await atualizarSelos(); telaAlertas(d.year); } }, 'marcar como visto') : h('span', { class: 'etq' }, 'visto'))));
+  app.replaceChildren(h('div', { class: 'linha entre' }, h('h1', {}, 'Alertas OAB'),
+    h('label', { class: 'linha suave' }, 'Ano ', h('select', { onchange: (e) => telaAlertas(e.target.value) }, ...[...new Set([d.year, ...d.years])].sort((a, b) => b - a).map((a) => h('option', { value: a, selected: a === d.year }, String(a)))))),
+    h('p', { class: 'suave' }, d.notice), ...(alertas.length ? alertas : [h('div', { class: 'cartao' }, h('p', { class: 'vazio' }, 'Nenhum alerta em ' + d.year + '. Os alertas aparecem quando um advogado passa de ' + d.threshold + ' processos no ano numa UF sem inscrição.'))]));
 }
 
 // ── faixa de aviso da assinatura ─────────────────────────────────────────────
@@ -485,7 +588,7 @@ async function telaConta(recado) {
     h('div', { class: 'cartao' }, h('h2', {}, 'Dados e avisos'), perfil),
     h('div', { class: 'cartao' }, h('h2', {}, 'Senha'), senha),
     pode('privacy.manage') ? h('div', { class: 'cartao' }, h('h2', {}, 'Dados do escritório (LGPD)'),
-      h('p', { class: 'suave' }, 'Baixe uma cópia completa dos dados ou exclua o escritório de forma definitiva. Veja a ', h('a', { href: 'privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'), '.'),
+      h('p', { class: 'suave' }, 'Baixe uma cópia completa dos dados ou exclua o escritório de forma definitiva. Veja a ', h('a', { href: '/app/privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'), '.'),
       h('div', { class: 'linha' }, h('button', { onclick: async () => { const e = await baixar('/api/privacy/export', 'meus-dados.json'); if (e) msgPriv.replaceChildren(aviso(e, 'erro')); } }, 'Baixar cópia dos dados (JSON)')),
       h('details', { style: 'margin-top:12px' }, h('summary', {}, 'Excluir o escritório definitivamente'),
         h('form', { class: 'empilhado', style: 'margin-top:8px', onsubmit: async (e) => {
@@ -518,7 +621,7 @@ async function rota() {
   if (sessao.platform_admin && (a = caminho.match(/^\/admin\/escritorio\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaAdminEscritorio(Number(a[1])); }
   if (!sessao.tenant && sessao.platform_admin && sessao.tenants.length === 0) { location.hash = '#/admin'; return; }
   if (!sessao.tenant) return sessao.tenants.length > 1 ? telaEscolherEscritorio() : telaEntrar();
-  desenharFaixa();
+  desenharFaixa(); atualizarSelos();
   let m;
   if (caminho === '/' || caminho === '') return telaPainel();
   if (caminho === '/processos') return telaProcessos(consulta);
@@ -526,6 +629,7 @@ async function rota() {
   if (caminho === '/oabs' && pode('oab.view')) return telaOabs();
   if (caminho === '/publicacoes' && pode('oab.view')) return telaPublicacoes(consulta);
   if (caminho === '/uf' && pode('oab.view')) return telaUf();
+  if (caminho === '/alertas' && pode('oab.view')) return telaAlertas();
   if (caminho === '/notificacoes') return telaNotificacoes();
   if (caminho === '/equipe') return telaEquipe();
   if (caminho === '/plano') return telaPlano();

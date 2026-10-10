@@ -4,17 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radar Trabalhista</title>
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="/app/app.css">
 </head>
 <body>
-<header id="topo" hidden>
-  <a class="marca" href="#/">Radar Trabalhista</a>
+<aside id="topo" hidden>
+  <a class="marca" href="#/" id="marca"></a>
   <nav id="menu" aria-label="Principal"></nav>
   <div class="usuario"><span id="quem"></span> <button id="sair" class="link">Sair</button></div>
-</header>
-<div id="faixa" hidden style="max-width:1100px;margin:12px auto 0"></div>
-<main id="app" aria-live="polite"></main>
-<footer><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Privacidade</a><br>O Radar Trabalhista é um apoio operacional de acompanhamento. Não substitui a conferência nas fontes oficiais nem o controle de prazos do escritório.</footer>
-<script src="app.js"></script>
+</aside>
+<div class="principal-area">
+  <header id="cabecalho" hidden>
+    <button id="abrir-menu" aria-label="Abrir menu"></button>
+    <div class="titulos"><div class="t" id="titulo-t"></div><div class="s" id="titulo-s"></div></div>
+    <a class="sino" id="sino" href="#/notificacoes" aria-label="Notificações"></a>
+  </header>
+  <div id="faixa" hidden></div>
+  <main id="app" aria-live="polite"></main>
+  <footer><a href="/app/termos.html">Termos de Uso</a> · <a href="/app/privacidade.html">Privacidade</a><br>O Radar Trabalhista é um apoio operacional de acompanhamento. Não substitui a conferência nas fontes oficiais nem o controle de prazos do escritório.</footer>
+</div>
+<script src="/app/app.js"></script>
 </body>
 </html>
