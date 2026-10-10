@@ -15,6 +15,7 @@ use Radar\Database;
 use Radar\Monitoring\CurlHttpClient;
 use Radar\Monitoring\DjenAdapter;
 use Radar\Mail\MailerFactory;
+use Radar\Monitoring\OabMonitor;
 use Radar\Monitoring\Worker;
 use Radar\Service\NotificationDispatcher;
 
@@ -44,8 +45,12 @@ do {
     }
 } while ($r['claimed'] > 0 && time() < $deadline);
 
+// consulta por OAB: poucas OABs por rodada, com pausa entre páginas (é um serviço público)
+$djenOab = new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'), $config->int('DJEN_TIMEOUT', 15), pageDelayMicros: 500000);
+$oab = (new OabMonitor($pdo, $djenOab, pauseBetweenMicros: $pauseMs * 1000))->runDue(3);
+
 $mail = (new NotificationDispatcher($pdo, MailerFactory::fromConfig($config, __DIR__ . '/../storage'), $config->get('APP_URL')))->sendPending();
 
-printf("[%s] recuperados=%d agendados=%d consultados=%d ok=%d falhas=%d canceladas=%d novas_movimentacoes=%d emails=%d emails_falhos=%d\n",
+printf("[%s] recuperados=%d agendados=%d consultados=%d ok=%d falhas=%d canceladas=%d novas_movimentacoes=%d emails=%d emails_falhos=%d oabs=%d oabs_falhas=%d publicacoes_novas=%d\n",
     date('c'), $recovered, $queued, $total['claimed'], $total['succeeded'], $total['failed'], $total['cancelled'], $total['new_movements'],
-    $mail['emails'], $mail['failed']);
+    $mail['emails'], $mail['failed'], $oab['claimed'], $oab['failed'], $oab['new_publications']);

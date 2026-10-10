@@ -133,4 +133,57 @@ final class DjenAdapterTest extends TestCase
         $this->assertSame('2026-10-09', $out[0]->occurredAt);
         $this->assertNull($out[1]->occurredAt);
     }
+
+    // ── consulta por OAB ─────────────────────────────────────────────────────
+
+    private function oabItem(int $id, string $cnj = DbTestCase::CNJ_TRT8): array
+    {
+        return $this->item($id) + ['numero_processo' => preg_replace('/\D/', '', $cnj)];
+    }
+
+    public function testOabFetchSplitsLongPeriodsIntoWindowsAndSendsOabParams(): void
+    {
+        $http = new FakeHttp();
+        $pubs = (new DjenAdapter($http))->fetchByOab('012.345', 'mg', new \DateTimeImmutable('2026-01-01'), new \DateTimeImmutable('2026-03-15'));
+        $this->assertSame([], $pubs);
+        $this->assertCount(3, $http->requests);                       // 31 + 31 + 13 dias
+        $q = $http->requests[0]['query'];
+        $this->assertSame('12345', ltrim((string) $q['numeroOab'], '0'));
+        $this->assertSame('MG', $q['ufOab']);
+        $this->assertSame('2026-01-01', $q['dataDisponibilizacaoInicio']);
+        $this->assertSame('2026-01-31', $q['dataDisponibilizacaoFim']);
+        $this->assertSame('2026-02-01', $http->requests[1]['query']['dataDisponibilizacaoInicio']);
+        $this->assertSame('2026-03-15', $http->requests[2]['query']['dataDisponibilizacaoFim']);
+    }
+
+    public function testOabFetchReadsAllPagesAndSkipsItemsWithoutValidCnj(): void
+    {
+        $page1 = array_map(fn ($i) => $this->oabItem($i), range(1, 100));
+        $http = (new FakeHttp())
+            ->push($this->ok($page1, 101))
+            ->push($this->ok([$this->oabItem(101, DbTestCase::CNJ_TJMG), $this->item(102) + ['numero_processo' => '123'], ['texto' => 'sem id']], 101));
+        $pubs = (new DjenAdapter($http))->fetchByOab('1', 'SP', new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-10-10'));
+        $this->assertCount(101, $pubs);                                // o item com número inválido e o sem id ficam de fora
+        $this->assertSame(2, $http->requests[1]['query']['pagina']);
+        $this->assertSame('djen-101', $pubs[100]->externalId);
+        $this->assertSame('TRT8', $pubs[0]->tribunal);
+        $this->assertSame(preg_replace('/\D/', '', DbTestCase::CNJ_TJMG), $pubs[100]->cnjDigits);
+    }
+
+    public function testOabFetchRefusesToPretendItGotEverythingWhenVolumeIsTooBig(): void
+    {
+        $http = new FakeHttp();
+        for ($i = 0; $i < 40; $i++) {
+            $http->push($this->ok(array_map(fn ($n) => $this->oabItem($i * 100 + $n), range(1, 100)), 100000));
+        }
+        $this->expectException(SourceUnavailable::class);
+        (new DjenAdapter($http))->fetchByOab('1', 'SP', new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-10-10'));
+    }
+
+    public function testOabFetchPropagatesSourceFailureInsteadOfEmptyList(): void
+    {
+        $http = (new FakeHttp())->push(new HttpResponse(403, 'forbidden'));
+        $this->expectException(SourceUnavailable::class);
+        (new DjenAdapter($http))->fetchByOab('1', 'SP', new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-10-10'));
+    }
 }

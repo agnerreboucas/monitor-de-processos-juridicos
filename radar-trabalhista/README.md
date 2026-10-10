@@ -17,6 +17,7 @@ O robô em Python da pasta raiz deste repositório é a **referência**: dali fo
 | RF-011 Equipe | Pronto: convite, papéis, desativar (perde o acesso na hora), nunca fica sem administrador |
 | RF-013 Planos e limites | Pronto: Essencial / Profissional / Equipe (valores e limites **experimentais**), assinatura controlada à mão |
 | RF-014 Auditoria | Pronto, sem senha nem token nos registros |
+| Monitoramento por OAB (extra, inspirado no painel de concorrentes) | Pronto: cadastro de OAB por advogado (limite no plano: 2 / 5 / 15), consulta do diário por OAB desde 1º de janeiro (primeira vez em silêncio), lista de publicações com filtros e **"Monitorar este processo"**, painel **Ações por UF** (Estadual / Federal / Trabalho / Outras, por advogado e ano) e **alerta de possível inscrição suplementar** (mais de 5 processos diferentes no ano em uma UF onde o advogado não tem inscrição — Estatuto da Advocacia, art. 10, §2º) |
 | RF-012 Administração da plataforma | **Falta** (tela do dono do SaaS) |
 | Cobrança automática | **Falta** (PRD adia até escolher o provedor) |
 
@@ -51,9 +52,11 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-141 testes cobrem CNJ, migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
+172 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
 
 ## O que NÃO está garantido
+
+- **Alerta de inscrição suplementar é só indicativo.** A UF vem do tribunal e só é conhecida quando ele cobre um estado (TRF1/2/3/4/5, TRT8/10/11/14 ficam em "UF indeterminada" e fora do alerta). O advogado confere a habitualidade com a Seccional. Rodar `bin/worker.php` consulta até 3 OABs por rodada.
 
 - **Nunca rodou contra o DJEN ao vivo.** Os testes usam respostas gravadas no formato real. O primeiro teste de verdade deve ser feito num servidor no Brasil, com um processo conhecido, comparando com o tribunal.
 - **Termos de uso comercial** do DJEN e do Datajud ainda precisam ser lidos e confirmados (PRD §7.3 e §12).

@@ -14,9 +14,9 @@ enum Role: string
     {
         return match ($this) {
             self::OfficeAdmin => ['process.view', 'process.create', 'process.update', 'process.archive',
-                'members.manage', 'plan.view', 'audit.view', 'notifications.view'],
+                'members.manage', 'plan.view', 'audit.view', 'notifications.view', 'oab.view', 'oab.manage'],
             self::Lawyer => ['process.view', 'process.create', 'process.update', 'process.archive',
-                'plan.view', 'notifications.view'],
+                'plan.view', 'notifications.view', 'oab.view'],
             self::Assistant => ['process.view', 'process.create', 'notifications.view'],
         };
     }

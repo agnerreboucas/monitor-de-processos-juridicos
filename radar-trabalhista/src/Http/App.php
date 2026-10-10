@@ -13,9 +13,12 @@ use Radar\Exception\ValidationError;
 use Radar\Mail\Mailer;
 use Radar\Mail\MailerException;
 use Radar\Repository\NotificationRepository;
+use Radar\Repository\OabPublicationRepository;
 use Radar\Repository\ProcessRepository;
 use Radar\Service\DashboardService;
 use Radar\Service\MemberService;
+use Radar\Service\OabService;
+use Radar\Service\OabStats;
 use Radar\Service\PlanService;
 use Radar\Service\ProcessService;
 use Radar\Support\Clock;
@@ -39,6 +42,8 @@ final class App
     private MemberService $members;
     private PlanService $plans;
     private DashboardService $dashboard;
+    private OabService $oabs;
+    private OabStats $oabStats;
 
     public function __construct(
         private PDO $pdo,
@@ -54,6 +59,8 @@ final class App
         $this->members = new MemberService($pdo, $clock);
         $this->plans = new PlanService($pdo);
         $this->dashboard = new DashboardService($pdo, $clock);
+        $this->oabs = new OabService($pdo, $clock);
+        $this->oabStats = new OabStats($pdo, $clock);
     }
 
     public function handle(Request $request): Response
@@ -136,7 +143,9 @@ final class App
 
         // processos
         if ($method === 'GET' && $path === '/api/dashboard') {
-            return Response::json(['ok' => true, 'data' => $this->dashboard->summary($ctx)]);
+            $data = $this->dashboard->summary($ctx);
+            $data['oab_alerts_unseen'] = $ctx->can('oab.view') ? $this->oabStats->unseenCount($ctx) : 0;
+            return Response::json(['ok' => true, 'data' => $data]);
         }
         if ($method === 'GET' && $path === '/api/processes') {
             $ctx->require('process.view');
@@ -183,6 +192,48 @@ final class App
             return Response::json(['ok' => true]);
         }
 
+        // OABs, publicações e painel por UF
+        if ($method === 'GET' && $path === '/api/oabs') {
+            return Response::json(['ok' => true, 'data' => $this->oabs->list($ctx)]);
+        }
+        if ($method === 'POST' && $path === '/api/oabs') {
+            $ufs = is_array($r->body['supplementary_ufs'] ?? null) ? $r->body['supplementary_ufs'] : [];
+            $oab = $this->oabs->add($ctx, $r->str('oab_number'), $r->str('oab_uf'), $r->str('lawyer_name'), $ufs, $r->ip);
+            return Response::json(['ok' => true, 'data' => $oab], 201);
+        }
+        if ($method === 'PATCH' && preg_match('~^/api/oabs/(\d+)$~', $path, $m) === 1) {
+            $this->oabs->update($ctx, (int) $m[1], is_string($r->body['lawyer_name'] ?? null) ? $r->body['lawyer_name'] : null,
+                is_array($r->body['supplementary_ufs'] ?? null) ? $r->body['supplementary_ufs'] : null, $r->ip);
+            return Response::json(['ok' => true, 'data' => $this->oabs->get($ctx, (int) $m[1])]);
+        }
+        if ($method === 'POST' && preg_match('~^/api/oabs/(\d+)/(pause|resume|archive|check)$~', $path, $m) === 1) {
+            if ($m[2] === 'check') {
+                $this->oabs->requestCheck($ctx, (int) $m[1]);
+            } else {
+                $this->oabs->setStatus($ctx, (int) $m[1], $m[2], $r->ip);
+            }
+            return Response::json(['ok' => true]);
+        }
+        if ($method === 'GET' && $path === '/api/publications') {
+            $ctx->require('oab.view');
+            $result = (new OabPublicationRepository($this->pdo, $ctx))->search([
+                'oab_id' => $r->intQuery('oab'), 'uf' => $r->strQuery('uf'), 'group' => $r->strQuery('group'),
+                'q' => $r->strQuery('q'), 'year' => $r->intQuery('year'), 'new_only' => $r->strQuery('new_only') === '1',
+            ], max(1, $r->intQuery('page', 1)), $r->intQuery('per_page', 25));
+            return Response::json(['ok' => true, 'data' => $result]);
+        }
+        if ($method === 'POST' && preg_match('~^/api/publications/(\d+)/monitor$~', $path, $m) === 1) {
+            $p = $this->oabs->monitorPublication($ctx, (int) $m[1], $ctx->userId, $r->ip);
+            return Response::json(['ok' => true, 'data' => $p], 201);
+        }
+        if ($method === 'GET' && $path === '/api/oab-stats') {
+            $year = $r->intQuery('year', (int) $this->clock->now()->setTimezone(new \DateTimeZone('America/Sao_Paulo'))->format('Y'));
+            return Response::json(['ok' => true, 'data' => $this->oabStats->summary($ctx, $year)]);
+        }
+        if ($method === 'POST' && preg_match('~^/api/oab-alerts/(\d+)/seen$~', $path, $m) === 1) {
+            return Response::json(['ok' => $this->oabStats->markSeen($ctx, (int) $m[1])]);
+        }
+
         // notificações
         if ($method === 'GET' && $path === '/api/notifications') {
             $ctx->require('notifications.view');
@@ -215,6 +266,7 @@ final class App
             $ctx->require('plan.view');
             $plan = $this->plans->forTenant($ctx->tenantId);
             $plan['processes_used'] = (new ProcessRepository($this->pdo, $ctx))->countNotArchived();
+            $plan['oabs_used'] = (int) $this->pdo->query('SELECT COUNT(*) FROM oab_registrations WHERE status <> \'archived\' AND tenant_id = ' . (int) $ctx->tenantId)->fetchColumn();
             $plan['users_used'] = count(array_filter($this->members->list($ctx), static fn (array $m) => $m['status'] !== 'disabled'));
             return Response::json(['ok' => true, 'data' => $plan]);
         }

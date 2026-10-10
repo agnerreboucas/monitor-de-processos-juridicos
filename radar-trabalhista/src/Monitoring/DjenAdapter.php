@@ -14,15 +14,19 @@ use Radar\Support\Cnj;
  * Portado do robô em Python (consulta_processos/fontes/comunica.py). Atenção: o gov.br só
  * responde a IP do Brasil (de fora, HTTP 403) — a hospedagem precisa estar no Brasil ou usar proxy.
  */
-final class DjenAdapter implements SourceAdapter
+final class DjenAdapter implements SourceAdapter, OabSource
 {
     public const PAGE_SIZE = 100;
     private const MAX_PAGES = 20;
+    /** Cada janela de busca por OAB cobre até 31 dias e no máximo 30 páginas (3000 publicações). */
+    private const OAB_WINDOW_DAYS = 31;
+    private const OAB_MAX_PAGES = 30;
 
     public function __construct(
         private HttpClient $http,
         private string $url = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao',
         private int $timeoutSeconds = 15,
+        private int $pageDelayMicros = 0,   // respeito ao serviço público entre páginas
     ) {
     }
 
@@ -54,16 +58,87 @@ final class DjenAdapter implements SourceAdapter
         return $movements;
     }
 
+    public function fetchByOab(string $oabNumber, string $oabUf, DateTimeImmutable $since, DateTimeImmutable $until): array
+    {
+        $digits = preg_replace('/\D/', '', $oabNumber) ?? '';
+        if ($digits === '' || preg_match('/^[A-Za-z]{2}$/', $oabUf) !== 1) {
+            throw new InvalidResponse('OAB inválida.');
+        }
+        $out = [];
+        $from = $since;
+        while ($from <= $until) {
+            $to = min($until, $from->modify('+' . (self::OAB_WINDOW_DAYS - 1) . ' days'));
+            $total = 0;
+            for ($page = 1; $page <= self::OAB_MAX_PAGES; $page++) {
+                if ($page > 1 && $this->pageDelayMicros > 0) {
+                    usleep($this->pageDelayMicros);
+                }
+                $data = $this->request([
+                    'numeroOab' => $digits, 'ufOab' => strtoupper($oabUf),
+                    'dataDisponibilizacaoInicio' => $from->format('Y-m-d'), 'dataDisponibilizacaoFim' => $to->format('Y-m-d'),
+                    'tamanhoPagina' => self::PAGE_SIZE, 'pagina' => $page,
+                ]);
+                $items = $data['items'] ?? [];
+                if (!is_array($items)) {
+                    throw new InvalidResponse('A fonte devolveu um formato inesperado.');
+                }
+                $total = (int) ($data['count'] ?? 0);
+                foreach ($items as $item) {
+                    if (is_array($item) && ($publication = $this->oabPublication($item)) !== null) {
+                        $out[] = $publication;
+                    }
+                }
+                if ($items === [] || $page * self::PAGE_SIZE >= $total) {
+                    $total = 0;
+                    break;
+                }
+            }
+            if ($total > 0) {      // saiu do laço por limite de páginas: não pode fingir que pegou tudo
+                throw new SourceUnavailable('Volume de publicações acima do limite seguro por janela; reduza o período da consulta.');
+            }
+            $from = $to->modify('+1 day');
+        }
+        return $out;
+    }
+
+    /** @param array<string,mixed> $item */
+    private function oabPublication(array $item): ?OabPublication
+    {
+        $id = (string) ($item['id'] ?? '');
+        $cnj = Cnj::parse((string) ($item['numero_processo'] ?? $item['numeroprocessocommascara'] ?? ''));
+        if ($id === '' || $cnj === null) {
+            return null;           // sem identificador ou com número que não é CNJ válido: não dá para guardar nem deduplicar
+        }
+        $raw = (string) ($item['texto'] ?? '');
+        $link = (string) ($item['link'] ?? '');
+        return new OabPublication(
+            'djen-' . $id, $cnj->digits, self::date($item['data_disponibilizacao'] ?? $item['datadisponibilizacao'] ?? null),
+            mb_substr(trim((string) ($item['tipoComunicacao'] ?? '')), 0, 80), mb_substr(trim((string) ($item['tipoDocumento'] ?? '')), 0, 120),
+            mb_substr(trim((string) ($item['nomeOrgao'] ?? '')), 0, 255), mb_substr(trim((string) ($item['nomeClasse'] ?? '')), 0, 255),
+            self::plainText($raw), $raw !== '' ? $raw : null, str_starts_with($link, 'https://') ? mb_substr($link, 0, 500) : null,
+            strtoupper(trim((string) ($item['siglaTribunal'] ?? ''))),
+        );
+    }
+
     /** @return array<string,mixed> */
     private function page(Cnj $cnj, ?DateTimeImmutable $since, DateTimeImmutable $today, int $page): array
     {
-        $response = $this->http->get($this->url, [
+        return $this->request([
             'numeroProcesso' => $cnj->digits,
             'dataDisponibilizacaoInicio' => ($since ?? new DateTimeImmutable('2015-01-01'))->format('Y-m-d'),
             'dataDisponibilizacaoFim' => $today->format('Y-m-d'),
             'tamanhoPagina' => self::PAGE_SIZE,
             'pagina' => $page,
-        ], [
+        ]);
+    }
+
+    /**
+     * @param array<string,scalar> $query
+     * @return array<string,mixed>
+     */
+    private function request(array $query): array
+    {
+        $response = $this->http->get($this->url, $query, [
             'Accept' => 'application/json, text/plain, */*',
             'Accept-Language' => 'pt-BR,pt;q=0.9',
             'Origin' => 'https://comunica.pje.jus.br',

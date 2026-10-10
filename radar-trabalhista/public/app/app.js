@@ -48,7 +48,9 @@ function desenharTopo() {
   const logado = sessao && sessao.authenticated && sessao.tenant;
   topo.hidden = !logado;
   if (!logado) return;
-  const itens = [['#/', 'Painel'], ['#/processos', 'Processos'], ['#/notificacoes', 'Notificações'], ['#/equipe', 'Equipe'], ['#/plano', 'Plano']];
+  const itens = [['#/', 'Painel'], ['#/processos', 'Processos'],
+    ...(pode('oab.view') ? [['#/uf', 'Ações por UF'], ['#/publicacoes', 'Publicações'], ['#/oabs', 'Advogados (OAB)']] : []),
+    ['#/notificacoes', 'Notificações'], ['#/equipe', 'Equipe'], ['#/plano', 'Plano']];
   const atual = location.hash || '#/';
   document.getElementById('menu').replaceChildren(...itens.map(([href, nome]) =>
     h('a', { href, class: (href === '#/' ? atual === '#/' : atual.startsWith(href)) ? 'ativo' : '' }, nome)));
@@ -114,6 +116,8 @@ async function telaPainel() {
       card('Aguardando 1ª consulta', d.never_checked, d.never_checked ? 'amar' : ''),
       card('Sem atualização há 7+ dias', d.stale, d.stale ? 'amar' : '', '#/processos?stale_days=7'),
       card('Notificações não lidas', d.unread_notifications, d.unread_notifications ? 'azul' : '', '#/notificacoes')),
+    d.oab_alerts_unseen ? h('a', { href: '#/uf', class: 'msg amarelo', style: 'text-decoration:none;display:block' },
+      'Atenção: ' + d.oab_alerts_unseen + ' alerta(s) de possível inscrição suplementar. Clique para ver.') : null,
     h('p', { class: 'suave' }, 'Última consulta bem-sucedida: ' + dataHoraBR(d.last_success_at)),
     h('div', { class: 'cartao' }, h('h2', {}, 'Movimentações dos últimos 7 dias'),
       d.recent_movements.length ? d.recent_movements.map((m) => h('div', { class: 'mov' },
@@ -238,7 +242,119 @@ async function telaPlano() {
     h('div', { class: 'cartao' }, h('h2', {}, 'Plano contratado'), h('div', { class: 'numero' }, p.plan_name),
       h('p', { class: 'suave' }, 'Situação: ' + { trialing: 'período de teste', active: 'ativa', past_due: 'pagamento em atraso', suspended: 'suspensa', cancelled: 'cancelada' }[p.status] +
         ' · cada processo é consultado no mínimo a cada ' + (p.min_interval_minutes / 60) + ' h')),
-    h('div', { class: 'grade' }, uso('Processos', p.processes_used, p.max_processes), uso('Usuários', p.users_used, p.max_users)));
+    h('div', { class: 'grade' }, uso('Processos', p.processes_used, p.max_processes), uso('Usuários', p.users_used, p.max_users), uso('OABs', p.oabs_used, p.max_oabs)));
+}
+
+// ── OABs, publicações e ações por UF ─────────────────────────────────────────
+const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SE','SP','TO'];
+const GRUPOS = { estadual: 'Estadual', federal: 'Federal', trabalho: 'Trabalho', outros: 'Outras' };
+
+async function telaOabs(recado) {
+  const r = await api('GET', '/api/oabs');
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
+  const msg = h('div', {}, recado || null);
+  const gerir = pode('oab.manage');
+  const suplementares = h('select', { name: 'supplementary_ufs', multiple: true, size: 6, title: 'Segure Ctrl para marcar várias' }, ...UFS.map((u) => h('option', { value: u }, u)));
+  const novo = gerir ? h('form', { class: 'linha', onsubmit: async (e) => {
+    e.preventDefault(); const f = e.target;
+    const x = await api('POST', '/api/oabs', { oab_number: f.oab_number.value, oab_uf: f.oab_uf.value, lawyer_name: f.lawyer_name.value,
+      supplementary_ufs: [...f.supplementary_ufs.selectedOptions].map((o) => o.value) });
+    if (x.ok) return telaOabs(aviso('OAB cadastrada. A primeira busca traz as publicações desde 1º de janeiro, sem gerar alertas.', 'ok'));
+    msg.replaceChildren(aviso(x.error, 'erro'));
+  } }, h('input', { name: 'lawyer_name', placeholder: 'Nome do advogado(a)', required: true }),
+    h('input', { name: 'oab_number', placeholder: 'Nº da OAB', required: true, size: 9 }),
+    h('select', { name: 'oab_uf', required: true }, ...UFS.map((u) => h('option', { value: u }, u))),
+    h('label', { class: 'suave' }, 'Inscrições suplementares que já tem: ', suplementares),
+    h('button', { class: 'principal' }, 'Cadastrar OAB')) : null;
+  const situacao = (o) => o.status === 'paused' ? h('span', { class: 'etq' }, 'Pausada')
+    : o.last_error ? h('span', { class: 'etq verm', title: o.last_error }, 'Falha na consulta')
+    : !o.last_success_at ? h('span', { class: 'etq amar' }, 'Aguardando 1ª consulta') : h('span', { class: 'etq verde' }, 'Monitorada');
+  app.replaceChildren(h('h1', {}, 'Advogados (OAB)'),
+    h('p', { class: 'suave' }, 'O sistema consulta o diário oficial (DJEN) pelo número da OAB e guarda as publicações em nome do advogado.'),
+    novo ? h('div', { class: 'cartao' }, h('h2', {}, 'Cadastrar OAB'), novo, msg) : null,
+    h('div', { class: 'cartao', style: 'overflow-x:auto' }, h('table', { class: 'larga' }, h('thead', {}, h('tr', {}, ...['Advogado(a)', 'OAB', 'Suplementares', 'Publicações', 'Última consulta', 'Situação', ''].map((t) => h('th', {}, t)))),
+      h('tbody', {}, ...(r.data.length ? r.data.map((o) => h('tr', {}, h('td', {}, o.lawyer_name), h('td', {}, o.oab_number + '/' + o.oab_uf),
+        h('td', {}, o.supplementary_ufs.join(', ') || '—'), h('td', {}, String(o.publications)), h('td', {}, dataHoraBR(o.last_success_at)), h('td', {}, situacao(o)),
+        h('td', {}, gerir ? h('div', { class: 'linha' },
+          o.status === 'active' ? h('button', { onclick: async () => { await api('POST', '/api/oabs/' + o.id + '/check'); telaOabs(aviso('Consulta agendada para os próximos minutos.', 'ok')); } }, 'Consultar agora') : null,
+          h('button', { onclick: async () => { await api('POST', '/api/oabs/' + o.id + (o.status === 'paused' ? '/resume' : '/pause')); telaOabs(); } }, o.status === 'paused' ? 'Retomar' : 'Pausar'),
+          h('button', { onclick: async () => {
+            const atual = o.supplementary_ufs.join(',');
+            const novo = prompt('UFs onde ' + o.lawyer_name + ' JÁ tem inscrição suplementar (separe por vírgula; vazio = nenhuma):', atual);
+            if (novo === null) return;
+            const x = await api('PATCH', '/api/oabs/' + o.id, { supplementary_ufs: novo.split(',').map((u) => u.trim()).filter(Boolean) });
+            telaOabs(x.ok ? aviso('Inscrições atualizadas.', 'ok') : aviso(x.error, 'erro'));
+          } }, 'Suplementares'),
+          h('button', { class: 'perigo', onclick: async () => { if (!confirm('Arquivar a OAB de ' + o.lawyer_name + '? As publicações já guardadas continuam.')) return; await api('POST', '/api/oabs/' + o.id + '/archive'); telaOabs(); } }, 'Arquivar')) : null)))
+        : [h('tr', {}, h('td', { colspan: 7, class: 'vazio' }, 'Nenhuma OAB cadastrada.'))])))));
+}
+
+async function telaPublicacoes(consulta) {
+  const filtros = { q: '', oab: '', uf: '', group: '', year: '', new_only: '', page: '1', ...consulta };
+  const lista = h('div');
+  const total = h('span', { class: 'suave' });
+  const msg = h('div');
+  const oabs = (await api('GET', '/api/oabs')).data || [];
+  const carregar = async () => {
+    const q = Object.fromEntries(Object.entries(filtros).filter(([, v]) => v));
+    const r = await api('GET', '/api/publications', null, q);
+    if (!r.ok) return lista.replaceChildren(aviso(r.error, 'erro'));
+    total.textContent = r.data.total + ' publicação(ões)';
+    lista.replaceChildren(...(r.data.items.length ? r.data.items.map((p) => h('div', { class: 'mov' },
+      h('div', { class: 'linha' }, p.is_baseline ? null : h('span', { class: 'etq azul' }, 'nova'), h('strong', {}, p.cnj), h('span', { class: 'etq' }, p.tribunal),
+        h('span', { class: 'etq' }, GRUPOS[p.group]), h('span', { class: 'etq' }, p.uf || 'UF indeterminada'),
+        h('span', { class: 'suave' }, 'publicada em ' + dataBR(p.published_at) + ' · ' + p.lawyer_name + ' (OAB ' + p.oab_number + '/' + p.oab_uf + ')'),
+        link(p.source_url) ? h('a', { href: link(p.source_url), target: '_blank', rel: 'noopener noreferrer' }, 'Fonte oficial') : null,
+        p.is_monitored ? h('span', { class: 'etq verde' }, 'já monitorado') : (pode('process.create') ? h('button', { class: 'link', onclick: async () => {
+          const x = await api('POST', '/api/publications/' + p.id + '/monitor');
+          msg.replaceChildren(aviso(x.ok ? 'Processo ' + p.cnj + ' cadastrado para monitoramento.' : x.error, x.ok ? 'ok' : 'erro')); if (x.ok) carregar();
+        } }, 'Monitorar este processo') : null)),
+      h('pre', {}, (p.excerpt || '').slice(0, 400)))) : [h('p', { class: 'vazio' }, 'Nenhuma publicação encontrada.')]));
+  };
+  const selecao = (nome, opcoes) => h('select', { onchange: (e) => { filtros[nome] = e.target.value; filtros.page = '1'; carregar(); } },
+    ...opcoes.map(([v, t]) => h('option', { value: v, selected: String(filtros[nome]) === String(v) }, t)));
+  app.replaceChildren(h('h1', {}, 'Publicações por OAB'),
+    h('p', { class: 'suave' }, 'O que o diário oficial publicou em nome dos advogados cadastrados. Nem toda publicação é prazo: leia o texto na fonte oficial.'),
+    h('div', { class: 'cartao' }, h('div', { class: 'filtros' },
+      h('input', { type: 'search', placeholder: 'Buscar por número ou texto…', value: filtros.q, oninput: (e) => { filtros.q = e.target.value; filtros.page = '1'; carregar(); } }),
+      selecao('oab', [['', 'Todos os advogados'], ...oabs.map((o) => [o.id, o.lawyer_name])]),
+      selecao('uf', [['', 'Todas as UFs'], ...UFS.map((u) => [u, u])]),
+      selecao('group', [['', 'Todas as justiças'], ...Object.entries(GRUPOS)]),
+      selecao('new_only', [['', 'Todas'], ['1', 'Só as novas']]), total), msg, lista));
+  carregar();
+}
+
+async function telaUf(ano) {
+  const r = await api('GET', '/api/oab-stats', null, ano ? { year: ano } : null);
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
+  const d = r.data;
+  const nomes = Object.fromEntries(d.oabs.map((o) => [o.id, o.name]));
+  const anos = [...new Set([d.year, ...d.years])].sort((a, b) => b - a);
+  const maximo = Math.max(1, ...d.rows.map((x) => x.total));
+  const alertas = d.alerts.map((a) => h('div', { class: 'msg amarelo' },
+    h('strong', {}, a.lawyer_name + ' (OAB ' + a.oab_number + '/' + a.oab_uf + ')'), ' tem ' + a.process_count + ' processos diferentes com publicação em ' + a.alert_year + ' no(a) ',
+    h('strong', {}, a.uf), ', onde não consta inscrição suplementar. O Estatuto da Advocacia (art. 10, §2º) considera habitual a atuação em mais de ' + d.threshold + ' causas por ano em uma Seccional. ',
+    h('span', { class: 'suave' }, 'Indicativo: confira com a Seccional. '),
+    !a.seen_at ? h('button', { class: 'link', onclick: async () => { await api('POST', '/api/oab-alerts/' + a.id + '/seen'); telaUf(d.year); } }, 'marcar como visto') : h('span', { class: 'etq' }, 'visto')));
+  app.replaceChildren(
+    h('div', { class: 'linha entre' }, h('h1', {}, 'Ações por UF'),
+      h('label', { class: 'linha suave' }, 'Ano ', h('select', { onchange: (e) => telaUf(e.target.value) }, ...anos.map((a) => h('option', { value: a, selected: a === d.year }, String(a)))))),
+    h('p', { class: 'suave' }, d.notice),
+    ...alertas,
+    h('div', { class: 'grade' }, h('div', { class: 'cartao' }, h('h2', {}, 'Processos no ano'), h('div', { class: 'numero' }, d.totals.total)),
+      h('div', { class: 'cartao' }, h('h2', {}, 'Estados'), h('div', { class: 'numero' }, d.totals.states)),
+      ...Object.entries(GRUPOS).map(([k, t]) => h('div', { class: 'cartao' }, h('h2', {}, t), h('div', { class: 'numero' }, d.totals[k])))),
+    h('div', { class: 'cartao', style: 'overflow-x:auto' }, h('table', { class: 'larga' },
+      h('thead', {}, h('tr', {}, ...['UF', 'Advogado(a)', 'Estadual', 'Federal', 'Trabalho', 'Outras', 'Total', ''].map((t) => h('th', {}, t)))),
+      h('tbody', {}, ...(d.rows.length ? d.rows.flatMap((row) => {
+        const porOab = Object.entries(row.by_oab);
+        return [h('tr', { class: 'uf' }, h('td', {}, h('strong', {}, row.uf)), h('td', {}, porOab.length + ' advogado(s)'),
+            ...Object.keys(GRUPOS).map((g) => h('td', {}, String(row.groups[g]))), h('td', {}, h('strong', {}, String(row.total))),
+            h('td', { style: 'width:22%' }, h('div', { class: 'barra' }, h('i', { style: 'width:' + Math.round(row.total / maximo * 100) + '%' })))),
+          ...porOab.map(([id, v]) => h('tr', {}, h('td', {}), h('td', { class: 'suave' }, nomes[id] || 'OAB ' + id),
+            ...Object.keys(GRUPOS).map((g) => h('td', { class: 'suave' }, String(v[g]))), h('td', { class: 'suave' }, String(v.total)), h('td', {})))];
+      }) : [h('tr', {}, h('td', { colspan: 8, class: 'vazio' }, 'Sem publicações em ' + d.year + '. Cadastre uma OAB e aguarde a primeira consulta.'))])))),
+    d.undetermined ? h('p', { class: 'suave' }, d.undetermined + ' processo(s) estão em tribunais que cobrem mais de um estado (por exemplo TRF1, TRF4, TRT8). Eles não entram na tabela por UF nem no alerta, porque a UF não pode ser afirmada.') : null);
 }
 
 // ── roteador ─────────────────────────────────────────────────────────────────
@@ -259,6 +375,9 @@ async function rota() {
   if (caminho === '/' || caminho === '') return telaPainel();
   if (caminho === '/processos') return telaProcessos(consulta);
   if ((m = caminho.match(/^\/processos\/(\d+)$/))) return telaProcesso(Number(m[1]));
+  if (caminho === '/oabs' && pode('oab.view')) return telaOabs();
+  if (caminho === '/publicacoes' && pode('oab.view')) return telaPublicacoes(consulta);
+  if (caminho === '/uf' && pode('oab.view')) return telaUf();
   if (caminho === '/notificacoes') return telaNotificacoes();
   if (caminho === '/equipe') return telaEquipe();
   if (caminho === '/plano') return telaPlano();

@@ -51,7 +51,7 @@ abstract class DbTestCase extends TestCase
             self::$migrated = true;
         }
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach (['audit_logs', 'notifications', 'monitoring_events', 'monitoring_jobs', 'process_movements', 'processes',
+        foreach (['oab_alerts', 'oab_publications', 'oab_registrations', 'audit_logs', 'notifications', 'monitoring_events', 'monitoring_jobs', 'process_movements', 'processes',
                      'password_resets', 'subscriptions', 'tenant_members', 'users', 'tenants'] as $table) {
             $this->pdo->exec('TRUNCATE TABLE ' . $table);
         }

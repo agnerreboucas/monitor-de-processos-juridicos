@@ -91,7 +91,7 @@ final class HttpApiTest extends DbTestCase
     public function testProtectedRoutesNeedLogin(): void
     {
         $this->call('GET', '/api/session');
-        foreach (['/api/dashboard', '/api/processes', '/api/notifications', '/api/team', '/api/plan', '/api/audit', '/api/processes/1'] as $path) {
+        foreach (['/api/dashboard', '/api/processes', '/api/notifications', '/api/team', '/api/plan', '/api/audit', '/api/processes/1', '/api/oabs', '/api/publications', '/api/oab-stats'] as $path) {
             $this->assertSame(401, $this->call('GET', $path)['status'], $path);
         }
         $this->assertSame(401, $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG])['status']);
@@ -365,5 +365,56 @@ final class HttpApiTest extends DbTestCase
         $this->assertSame('Algo deu errado. Tente de novo em instantes.', $r['json']['error']);
         $this->assertStringNotContainsString('audit_logs', json_encode($r['json']));
         $this->assertStringNotContainsString('SQLSTATE', json_encode($r['json']));
+    }
+
+    public function testOabRoutesEndToEndWithAlertInDashboardAndPlan(): void
+    {
+        $this->registerAndLogin();
+        $r = $this->call('POST', '/api/oabs', ['oab_number' => '12.345', 'oab_uf' => 'MG', 'lawyer_name' => 'Dra. Silva', 'supplementary_ufs' => ['RJ']]);
+        $this->assertSame(201, $r['status'], json_encode($r['json']));
+        $id = $r['json']['data']['id'];
+        $this->assertSame(['RJ'], $r['json']['data']['supplementary_ufs']);
+        $this->assertSame(422, $this->call('POST', '/api/oabs', ['oab_number' => 'x', 'oab_uf' => 'MG', 'lawyer_name' => 'A'])['status']);
+
+        // 6 processos em SP vindos da consulta do worker → alerta
+        $src = new Support\FakeOabSource();
+        $pubs = [];
+        for ($i = 1; $i <= 6; $i++) {
+            $pubs[] = Support\FakeOabSource::pub("p$i", Support\FakeOabSource::cnj($i, 2026, 8, '26'), '2026-02-01');
+        }
+        $src->then($pubs);
+        (new \Radar\Monitoring\OabMonitor($this->pdo, $src, $this->clock))->runDue();
+
+        $this->assertSame(1, $this->call('GET', '/api/dashboard')['json']['data']['oab_alerts_unseen']);
+        $stats = $this->call('GET', '/api/oab-stats', [], ['year' => '2026'])['json']['data'];
+        $this->assertSame(6, $stats['totals']['total']);
+        $this->assertCount(1, $stats['alerts']);
+        $this->assertSame(1, $this->call('POST', '/api/oab-alerts/' . $stats['alerts'][0]['id'] . '/seen')['json']['ok'] ? 1 : 0);
+        $this->assertSame(0, $this->call('GET', '/api/dashboard')['json']['data']['oab_alerts_unseen']);
+
+        $list = $this->call('GET', '/api/publications', [], ['uf' => 'SP', 'q' => 'Intima'])['json']['data'];
+        $this->assertSame(6, $list['total']);
+        $mon = $this->call('POST', '/api/publications/' . $list['items'][0]['id'] . '/monitor');
+        $this->assertSame(201, $mon['status'], json_encode($mon['json']));
+        $this->assertSame(1, $this->call('GET', '/api/plan')['json']['data']['oabs_used']);
+
+        $this->assertSame(200, $this->call('POST', "/api/oabs/$id/pause")['status']);
+        $this->assertSame('paused', $this->call('GET', '/api/oabs')['json']['data'][0]['status']);
+        $this->assertSame(200, $this->call('PATCH', "/api/oabs/$id", ['supplementary_ufs' => ['SP']])['status']);
+        $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM oab_alerts'));
+    }
+
+    public function testAssistantCannotSeeOabs(): void
+    {
+        $this->registerAndLogin();
+        $tenantId = (int) $this->scalar('SELECT id FROM tenants');
+        $this->member($tenantId, 'ass@silva.com', 'assistant');
+        $this->newClient('10.0.0.9');
+        $this->call('GET', '/api/session');
+        $this->assertSame(200, $this->call('POST', '/api/login', ['email' => 'ass@silva.com', 'password' => 'senha-segura-123'])['status']);
+        foreach (['/api/oabs', '/api/publications', '/api/oab-stats'] as $path) {
+            $this->assertSame(403, $this->call('GET', $path)['status'], $path);
+        }
+        $this->assertSame(0, $this->call('GET', '/api/dashboard')['json']['data']['oab_alerts_unseen']);
     }
 }

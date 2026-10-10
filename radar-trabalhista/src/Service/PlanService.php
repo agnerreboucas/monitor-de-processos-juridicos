@@ -16,11 +16,11 @@ final class PlanService
     {
     }
 
-    /** @return array{plan_code:string,plan_name:string,max_processes:int,max_users:int,min_interval_minutes:int,status:string,current_period_end:?string} */
+    /** @return array{plan_code:string,plan_name:string,max_processes:int,max_users:int,max_oabs:int,min_interval_minutes:int,status:string,current_period_end:?string} */
     public function forTenant(int $tenantId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT p.code, p.name, p.max_processes, p.max_users, p.min_interval_minutes, s.status, s.current_period_end
+            'SELECT p.code, p.name, p.max_processes, p.max_users, p.max_oabs, p.min_interval_minutes, s.status, s.current_period_end
                FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.tenant_id = ?'
         );
         $stmt->execute([$tenantId]);
@@ -30,7 +30,7 @@ final class PlanService
         }
         return [
             'plan_code' => (string) $row['code'], 'plan_name' => (string) $row['name'],
-            'max_processes' => (int) $row['max_processes'], 'max_users' => (int) $row['max_users'],
+            'max_processes' => (int) $row['max_processes'], 'max_users' => (int) $row['max_users'], 'max_oabs' => (int) $row['max_oabs'],
             'min_interval_minutes' => (int) $row['min_interval_minutes'],
             'status' => (string) $row['status'], 'current_period_end' => $row['current_period_end'],
         ];
