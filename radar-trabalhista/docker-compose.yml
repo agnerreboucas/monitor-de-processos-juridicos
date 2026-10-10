@@ -1,0 +1,29 @@
+# Radar Trabalhista rodando no seu computador (precisa estar no Brasil para o DJEN responder).
+#   docker compose up --build
+# Depois abra http://localhost:8080
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: radar
+      MARIADB_USER: radar
+      MARIADB_PASSWORD: radar_local
+      MARIADB_ROOT_PASSWORD: radar_root_local
+    volumes: [dados:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+  app:
+    build: { context: ., dockerfile: local/Dockerfile }
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["8080:8080"]
+    environment:
+      APP_ENV: local
+      APP_URL: http://localhost:8080
+      DB_HOST: db
+      DB_NAME: radar
+      DB_USER: radar
+      DB_PASS: radar_local
+volumes:
+  dados:
