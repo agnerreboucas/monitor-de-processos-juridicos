@@ -1,0 +1,5 @@
+# HTTPS automático (certificado grátis). O domínio vem do arquivo .env.producao.
+{$DOMINIO} {
+	encode gzip
+	reverse_proxy app:80
+}

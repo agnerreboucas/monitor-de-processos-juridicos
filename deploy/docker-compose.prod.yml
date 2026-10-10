@@ -1,0 +1,64 @@
+# Radar Trabalhista em produção: banco + sistema + robô + backup + HTTPS.
+# Uso (na pasta deploy):   docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
+name: radar
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: radar
+      MARIADB_USER: radar
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    volumes: [dados:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 30
+
+  app:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    env_file: .env.producao
+    environment: &app-env
+      DB_HOST: db
+      DB_NAME: radar
+      DB_USER: radar
+    # cria/atualiza as tabelas e sobe o Apache
+    command: ["sh", "-c", "php bin/migrate.php && exec apache2-foreground"]
+
+  # o robô: consulta os processos e as OABs a cada 5 minutos e envia os e-mails pendentes
+  worker:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    depends_on: { app: { condition: service_started } }
+    env_file: .env.producao
+    environment: *app-env
+    command: ["sh", "-c", "sleep 20; while true; do php bin/worker.php; sleep 300; done"]
+
+  # backup do banco todo dia, guardado na pasta ./backups do servidor (copie para FORA do servidor)
+  backup:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    env_file: .env.producao
+    environment: *app-env
+    volumes: [./backups:/var/www/html/storage/backups]
+    command: ["sh", "-c", "sleep 60; while true; do php bin/backup.php --keep=14 || true; sleep 86400; done"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443"]
+    env_file: .env.producao
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+
+volumes:
+  dados:
+  caddy_dados:
+  caddy_config:

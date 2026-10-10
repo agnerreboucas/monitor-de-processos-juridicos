@@ -21,7 +21,11 @@ final class Request
     ) {
     }
 
-    public static function fromGlobals(): self
+    /**
+     * @param list<string> $trustedProxies IPs ou faixas (CIDR) dos proxies reversos (ex.: Caddy/Nginx). Só deles se aceita
+     *                                     X-Forwarded-For e X-Forwarded-Proto; de qualquer outro, o cabeçalho é ignorado.
+     */
+    public static function fromGlobals(array $trustedProxies = []): self
     {
         $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
         $headers = [];
@@ -41,11 +45,54 @@ final class Request
         } elseif (strlen($raw) > 262144) {
             $body = ['__invalid' => true];
         }
-        return new self(
-            strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')), $path, $_GET, $body, $headers,
-            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
-            (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https',
-        );
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $viaProxy = $remote !== '' && self::ipInList($remote, $trustedProxies);
+        $ip = $remote;
+        if ($viaProxy && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // o último endereço que NÃO é de proxy nosso é o do visitante (o que vem antes pode ser inventado por ele)
+            $chain = array_reverse(array_map('trim', explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR'])));
+            foreach ($chain as $candidate) {
+                if (filter_var($candidate, FILTER_VALIDATE_IP) === false) {
+                    break;
+                }
+                $ip = $candidate;
+                if (!self::ipInList($candidate, $trustedProxies)) {
+                    break;
+                }
+            }
+        }
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($viaProxy && ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+        return new self(strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')), $path, $_GET, $body, $headers, $ip, $https);
+    }
+
+    /** @param list<string> $list IPs ou CIDR (IPv4 e IPv6) */
+    public static function ipInList(string $ip, array $list): bool
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
+            return false;
+        }
+        foreach ($list as $entry) {
+            $entry = trim($entry);
+            if ($entry === '') {
+                continue;
+            }
+            [$net, $bits] = array_pad(explode('/', $entry, 2), 2, null);
+            $netPacked = @inet_pton((string) $net);
+            if ($netPacked === false || strlen($netPacked) !== strlen($packed)) {
+                continue;
+            }
+            $bits = $bits === null ? strlen($packed) * 8 : (int) $bits;
+            $bytes = intdiv($bits, 8);
+            $rest = $bits % 8;
+            if (substr($packed, 0, $bytes) !== substr($netPacked, 0, $bytes)) {
+                continue;
+            }
+            if ($rest === 0 || ((ord($packed[$bytes]) ^ ord($netPacked[$bytes])) >> (8 - $rest)) === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function header(string $name): string

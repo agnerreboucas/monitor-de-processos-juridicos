@@ -15,7 +15,8 @@ use Radar\Http\NativeSession;
 use Radar\Http\Request;
 use Radar\Mail\MailerFactory;
 
-$request = Request::fromGlobals();
+$config = Config::fromEnvironment(__DIR__ . '/../.env');
+$request = Request::fromGlobals(array_filter(array_map('trim', explode(',', $config->get('TRUSTED_PROXIES')))));
 
 if (!str_starts_with($request->path, '/api/')) {
     $types = ['html' => 'text/html; charset=utf-8', 'js' => 'text/javascript; charset=utf-8', 'css' => 'text/css; charset=utf-8',
@@ -40,7 +41,6 @@ if (!str_starts_with($request->path, '/api/')) {
     exit;
 }
 
-$config = Config::fromEnvironment(__DIR__ . '/../.env');
 $app = new App(
     Database::connect($config),
     new NativeSession($config->get('SESSION_NAME', 'radar_sid'), $request->secure),

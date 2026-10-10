@@ -45,6 +45,7 @@ php bin/migrate.php
 
 - **Servidor no Brasil.** O DJEN (gov.br) responde 403 a IP de fora do país. Fora do Brasil, use `HTTP_PROXY_URL`.
 - **Backup diário:** `0 3 * * * php /caminho/radar-trabalhista/bin/backup.php` e copie o arquivo para FORA do servidor. **Monitoramento:** aponte um serviço (UptimeRobot etc.) para `/api/health`.
+- **Colocar no ar (VPS no Brasil, HTTPS, robô, backup):** veja `deploy/LEIA-ME-NO-AR.md` (kit Docker, **ainda não executado**). Atrás de proxy reverso, defina `TRUSTED_PROXIES` para o limite de tentativas enxergar o IP real. Senha esquecida sem e-mail: `php bin/redefinir-senha.php email`.
 - **Dono do SaaS:** crie a conta pela tela e rode `php bin/criar-admin.php seu@email.com`.
 - **Cron** (a cada 5 minutos): `*/5 * * * * php /caminho/radar-trabalhista/bin/worker.php >> /var/log/radar-worker.log 2>&1`. Cada rodada recupera trabalho preso, agenda o que venceu, consulta em lotes pequenos e envia os e-mails pendentes.
 - **Apache/Hostinger:** aponte o domínio para `public/` (o `.htaccess` já encaminha `/api/*` ao PHP). Sirva **só por HTTPS**.
@@ -61,7 +62,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-214 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
+220 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail e a API HTTP (CSRF, sessão, rotas protegidas).
 
 ## O que NÃO está garantido
 
