@@ -1,0 +1,19 @@
+# Radar Trabalhista na hospedagem compartilhada (Hostinger).
+# Este arquivo fica na RAIZ da pasta do subdomínio. Só a pasta "public" é servida; o resto fica trancado.
+Options -Indexes
+DirectoryIndex disabled
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# código, dependências, tabelas, scripts e dados nunca saem pela internet
+RewriteRule ^(src|vendor|migrations|bin|storage|tests|local)(/|$) - [F,L]
+RewriteRule ^\.env - [F,L]
+RewriteRule ^(composer\.(json|lock)|phpunit\.xml|README\.md|docker-compose\.yml)$ - [F,L]
+# tudo o mais vai para a pasta public
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "^\.(env|git)">
+  Require all denied
+</FilesMatch>
