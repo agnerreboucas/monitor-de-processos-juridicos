@@ -68,7 +68,7 @@ final class WorkerTest extends DbTestCase
     {
         $this->adapter->then($baseline);
         $this->worker->runBatch(10);
-        $this->clock->advance('PT7H');                                         // passou o intervalo do plano (6h)
+        $this->clock->advance('PT25H');                                         // passou o intervalo do plano (6h)
         $this->assertSame(1, $this->worker->enqueueDue());
     }
 
@@ -87,7 +87,7 @@ final class WorkerTest extends DbTestCase
         // as duas datas ficam separadas: a da movimentação e a da captura
         $row = $this->pdo->query("SELECT occurred_at, captured_at FROM process_movements WHERE external_id = 'djen-2'")->fetch();
         $this->assertSame('2026-10-09', $row['occurred_at']);
-        $this->assertSame('2026-10-10 19:00:00', $row['captured_at']);
+        $this->assertSame('2026-10-11 13:00:00', $row['captured_at']);
     }
 
     public function testSubsequentCheckAsksOnlyFromThreeDaysBeforeTheLastSuccess(): void
@@ -105,7 +105,7 @@ final class WorkerTest extends DbTestCase
         $this->adapter->then($same);
         $this->worker->runBatch(10);
         for ($i = 0; $i < 3; $i++) {                                           // o diário devolve o mesmo de novo e de novo
-            $this->clock->advance('PT7H');
+            $this->clock->advance('PT25H');
             $this->worker->enqueueDue();
             $this->adapter->then($same);
             $r = $this->worker->runBatch(10);
@@ -129,7 +129,7 @@ final class WorkerTest extends DbTestCase
     {
         $this->adapter->then([]);
         $this->worker->runBatch(10);
-        $this->assertSame('2026-10-10 18:00:00', $this->process()['next_check_at']);     // essencial: 360 min
+        $this->assertSame('2026-10-11 12:00:00', $this->process()['next_check_at']);     // essencial: 1 consulta por dia (1440 min)
     }
 
     // ── falha NÃO é "sem novidade" ───────────────────────────────────────────
@@ -255,7 +255,7 @@ final class WorkerTest extends DbTestCase
         $this->adapter->then([]);
         $this->worker->runBatch(10);
         $this->assertSame(0, $this->worker->enqueueDue());                       // ainda não é a hora
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $this->assertSame(1, $this->worker->enqueueDue());
         $this->assertSame(0, $this->worker->enqueueDue());                       // já tem trabalho na fila: não duplica
         $this->assertSame(1, (int) $this->scalar("SELECT COUNT(*) FROM monitoring_jobs WHERE status = 'queued'"));

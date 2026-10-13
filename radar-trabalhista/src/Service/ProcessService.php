@@ -183,7 +183,52 @@ final class ProcessService
         if ($process['status'] !== 'active') {
             throw new ValidationError('Só processos ativos são consultados.');
         }
+        if ($process['last_attempt_at'] !== null) {      // protege a fonte pública e o seu extrato: no máximo uma consulta a cada 5 minutos por processo
+            $last = new \DateTimeImmutable((string) $process['last_attempt_at'], new \DateTimeZone('UTC'));
+            if ($this->clock->now() < $last->add(new \DateInterval('PT5M'))) {
+                throw new LimitExceeded('Este processo foi consultado há poucos minutos. Tente de novo em 5 minutos.');
+            }
+        }
         return $this->enqueue($ctx->tenantId, $id, $this->clock->now());
+    }
+
+    /**
+     * "Consultar tudo agora": coloca na fila todos os processos ativos e as OABs do escritório.
+     * No máximo uma vez a cada 15 minutos por escritório. A busca sai na próxima rodada do robô (poucos minutos).
+     *
+     * @return array{processes:int,oabs:int}
+     */
+    public function requestCheckAll(TenantContext $ctx): array
+    {
+        $ctx->require('process.update');
+        $now = $this->clock->now();
+        $this->pdo->beginTransaction();
+        try {
+            $row = $this->pdo->prepare('SELECT manual_check_at FROM tenants WHERE id = ? FOR UPDATE');
+            $row->execute([$ctx->tenantId]);
+            $last = $row->fetchColumn();
+            if ($last !== false && $last !== null && $now < (new \DateTimeImmutable((string) $last, new \DateTimeZone('UTC')))->add(new \DateInterval('PT15M'))) {
+                throw new LimitExceeded('Você já pediu a consulta de tudo há poucos minutos. Tente de novo em 15 minutos.');
+            }
+            $this->pdo->prepare('UPDATE tenants SET manual_check_at = ? WHERE id = ?')->execute([Clock::sql($now), $ctx->tenantId]);
+            $ids = $this->pdo->prepare("SELECT id FROM processes WHERE tenant_id = ? AND status = 'active'");
+            $ids->execute([$ctx->tenantId]);
+            $queued = 0;
+            foreach ($ids->fetchAll(\PDO::FETCH_COLUMN) as $pid) {
+                $queued += $this->enqueue($ctx->tenantId, (int) $pid, $now) ? 1 : 0;
+            }
+            $oabs = $this->pdo->prepare("UPDATE oab_registrations SET next_check_at = ?, locked_until = NULL WHERE tenant_id = ? AND status = 'active'");
+            $oabs->execute([Clock::sql($now), $ctx->tenantId]);
+            $oabCount = $this->pdo->prepare("SELECT COUNT(*) FROM oab_registrations WHERE tenant_id = ? AND status = 'active'");
+            $oabCount->execute([$ctx->tenantId]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+        return ['processes' => $queued, 'oabs' => (int) $oabCount->fetchColumn()];
     }
 
     private function enqueue(int $tenantId, int $processId, \DateTimeImmutable $runAfter): bool

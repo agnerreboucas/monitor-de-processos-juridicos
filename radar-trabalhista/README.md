@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-302 testes (PHP) + 9 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+314 testes (PHP) + 9 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -128,3 +128,16 @@ Telas de administração: prontidão para venda, pedidos de contratação, **usu
 
 ## Cadastro de clientes
 Qualquer escritório se cadastra sozinho, tem 14 dias grátis, cadastra seus processos reais e pode pedir a contratação dentro do sistema (o dono é avisado por e-mail).
+
+
+## Assinatura mensal, teste de 14 dias e avisos
+- Planos mensais por escritório: **Essencial R$ 299 (50 processos), Profissional R$ 599 (100), Escritório R$ 1.499 (250)**; "Pague por busca" (R$ 0,30) continua como opção. Escolha feita na página de venda (`/entrar#/cadastro?plano=...`).
+- **14 dias grátis; a cobrança começa no 15º dia e o primeiro mês é de só 15 dias (meio mês).** A tela Plano mostra o valor; ao registrar o 1º pagamento (Administração > Renovar, sugere 15 dias), o escritório passa à mensalidade cheia.
+- Contagem regressiva do teste no painel e na faixa do topo; e-mails automáticos (`LifecycleNotifier`, no `bin/worker.php`): boas-vindas, metade do teste, 3 dias, último dia e **resumo do dia** depois da atualização (atualizados, sem acesso e o motivo, novidades). Cada aviso sai uma vez; quem desligou e-mails não recebe.
+- "Sigilo" no resumo só aparece quando a fonte informar o motivo; hoje a detecção automática de sigilo nos processos monitorados não existe.
+
+## Como o escritório é atualizado
+Na tela Plano: **uma vez por dia** (horário à escolha, ex.: 05:30) **ou de 6 em 6 horas**, mais o botão **"Consultar tudo agora"** (a cada 15 min por escritório) e o "Consultar agora" de cada processo (a cada 5 min por processo). O pedido entra na fila e sai na próxima rodada do robô; para sair em ~1 minuto, rode o `bin/worker.php` a cada minuto (servidor próprio).
+
+## Painel do processo
+Botão **"Ver o que fazer com este processo"**: resumo com ações, quem, prazo e impacto; depois o inteiro teor.

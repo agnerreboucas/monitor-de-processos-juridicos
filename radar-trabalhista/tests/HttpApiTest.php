@@ -53,6 +53,23 @@ final class HttpApiTest extends DbTestCase
         $this->assertSame(201, $r['status'], json_encode($r['json']));
     }
 
+    public function testRegistrationUsesThePlanChosenOnTheSalesPageAndShowsTrialAndSummary(): void
+    {
+        $this->call('GET', '/api/session');
+        $r = $this->call('POST', '/api/register', ['office_name' => 'Plano Escolhido', 'name' => 'Carlos', 'email' => 'c@c.com', 'password' => 'senha-segura-123', 'accept_terms' => true, 'plan' => 'profissional']);
+        $this->assertSame(201, $r['status']);
+        $plan = $this->call('GET', '/api/plan')['json']['data'];
+        $this->assertSame(['profissional', 59900, true, 29950, 14], [$plan['plan_code'], $plan['price_cents'], $plan['first_cycle'], $plan['first_charge_cents'], $plan['days_left']]);
+        $this->assertContains('essencial', array_column($plan['plans'], 'code'));
+        $summary = $this->call('GET', '/api/summary')['json']['data'];
+        $this->assertSame([0, 0, 0], [$summary['monitored'], $summary['updated_today'], $summary['failed_total']]);
+
+        $this->session->data = [];     // outro cadastro, com plano inventado, cai no padrão
+        $this->call('GET', '/api/session');
+        $this->call('POST', '/api/register', ['office_name' => 'Outro', 'name' => 'Ana', 'email' => 'a@a.com', 'password' => 'senha-segura-123', 'accept_terms' => true, 'plan' => 'gratis-vitalicio']);
+        $this->assertSame('por-busca', $this->call('GET', '/api/plan')['json']['data']['plan_code']);
+    }
+
     // ── segurança da sessão ──────────────────────────────────────────────────
 
     public function testSecurityHeadersOnEveryResponse(): void
@@ -309,7 +326,7 @@ final class HttpApiTest extends DbTestCase
             ->thenFor(self::CNJ_TJMG, [Support\FakeAdapter::movement('1')])
             ->thenFor(self::CNJ_TJMG, [Support\FakeAdapter::movement('1'), Support\FakeAdapter::movement('2', 'Sentença publicada')])], $this->clock);
         $worker->runBatch(10);
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $worker->enqueueDue();
         $worker->runBatch(10);
 

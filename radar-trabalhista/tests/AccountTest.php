@@ -97,7 +97,7 @@ final class AccountTest extends DbTestCase
         $adapter->then([FakeAdapter::movement('1')]);
         $worker->runBatch(10);
         $this->svc->update($o['user_id'], null, false);
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $worker->enqueueDue();
         $adapter->then([FakeAdapter::movement('1'), FakeAdapter::movement('2', 'Sentença')]);
         $worker->runBatch(10);

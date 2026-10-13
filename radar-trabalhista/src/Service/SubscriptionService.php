@@ -79,8 +79,8 @@ final class SubscriptionService
                 $base = $current;
             }
         }
-        $this->pdo->prepare("UPDATE subscriptions SET status = 'active', current_period_end = ?, suspended_reason = NULL, updated_at = ? WHERE tenant_id = ?")
-            ->execute([Clock::sql($base->add(new DateInterval('P' . $days . 'D'))), Clock::sql($this->clock->now()), $tenantId]);
+        $this->pdo->prepare("UPDATE subscriptions SET status = 'active', current_period_end = ?, suspended_reason = NULL, first_paid_at = COALESCE(first_paid_at, ?), updated_at = ? WHERE tenant_id = ?")
+            ->execute([Clock::sql($base->add(new DateInterval('P' . $days . 'D'))), Clock::sql($this->clock->now()), Clock::sql($this->clock->now()), $tenantId]);
         $this->audit->log('subscription.renewed', $tenantId, $byUserId, 'tenant', $tenantId, $ip, ['days' => $days]);
     }
 

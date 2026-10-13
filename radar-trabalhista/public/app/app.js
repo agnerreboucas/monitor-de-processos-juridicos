@@ -182,11 +182,12 @@ function telaEscolherEscritorio() {
   app.replaceChildren(layoutAuth('Escolha o escritório', 'Sua conta participa de mais de um escritório.',
     ...sessao.tenants.map((t) => h('p', {}, h('button', { class: 'principal', onclick: async () => { await api('POST', '/api/tenant/select', { tenant_id: t.tenant_id }); await carregarSessao(); location.hash = '#/'; rota(); } }, t.name + ' (' + t.role + ')')))));
 }
-function telaCadastro() {
+function telaCadastro(consulta) {
+  const plano = (consulta && /^[a-z0-9-]{2,40}$/.test(consulta.plano || '')) ? consulta.plano : '';
   app.replaceChildren(formulario('Criar conta do escritório', [campo('Nome do escritório', 'office_name'), campo('Seu nome', 'name'), campo('E-mail', 'email', 'email'), campo('Senha (mínimo 10 caracteres)', 'password', 'password', { minlength: 10, autocomplete: 'new-password' }),
     h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: '/app/termos.html', target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: '/app/privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
-    async (d) => { const r = await api('POST', '/api/register', { ...d, accept_terms: d.accept_terms === 'on' }); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
-    h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta')), 'Teste grátis por 14 dias. Não pede cartão de crédito.'));
+    async (d) => { const r = await api('POST', '/api/register', { ...d, plan: plano || undefined, accept_terms: d.accept_terms === 'on' }); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
+    h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta')), 'Teste grátis por 14 dias. Não pede cartão de crédito. A cobrança começa só no 15º dia.'));
 }
 function telaEsqueci() {
   app.replaceChildren(formulario('Redefinir senha', [campo('E-mail', 'email', 'email')], 'Enviar instruções',
@@ -202,10 +203,42 @@ function telaRedefinir(token) {
 const kpi = (titulo, valor, cor, ic, href, rodape) => h('a', { class: 'cartao kpi', href }, h('span', { class: 'rot' }, titulo), h('span', { class: 'chip ' + cor }, icone(ic)),
   h('span', { class: 'num', style: cor === 'verm' && valor ? 'color:var(--verm)' : '' }, String(valor)), h('span', { class: 'rod' }, rodape + ' →'));
 
+const reaisCent = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const primeiroNome = () => (String((sessao.user && sessao.user.name) || '').trim().split(/\s+/).filter((x) => !/^(dr|dra|sr|sra|prof)\.?$/i.test(x))[0]) || '';
+// contagem regressiva do teste grátis, com parabéns pelo que já foi acompanhado
+function cartaoTeste(plano, resumo) {
+  if (!plano || plano.status !== 'trialing' || plano.days_left == null) return null;
+  const dia = plano.trial_day || 1, total = plano.trial_days || 14, resta = plano.days_left;
+  const mensal = plano.billing_model === 'monthly';
+  return h('div', { class: 'cartao', style: 'border:2px solid var(--ambar)' },
+    h('div', { class: 'linha entre' }, h('h2', {}, 'Seu teste grátis'), h('a', { href: '#/plano' }, 'Ver plano e contratar')),
+    h('div', { class: 'numero' }, resta <= 0 ? 'Último dia' : 'Faltam ' + resta + ' dia' + (resta === 1 ? '' : 's')),
+    h('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': total, 'aria-valuenow': dia }, h('i', { style: 'width:' + Math.min(100, Math.round((dia / total) * 100)) + '%' })),
+    h('p', { class: 'suave' }, 'Dia ' + dia + ' de ' + total + '. A cobrança começa só no 15º dia' + (mensal ? ' e, no primeiro mês, você paga apenas esses 15 dias: ' + reaisCent(plano.first_charge_cents) + '.' : '.')),
+    resumo && resumo.monitored > 0 ? h('p', {}, 'Parabéns! Até agora o Radar acompanhou ', h('strong', {}, String(resumo.monitored)), ' processo(s) para você' + (resumo.new_movements_24h ? ' e capturou ' + resumo.new_movements_24h + ' movimentação(ões) nas últimas 24 horas.' : '.')) : h('p', {}, 'Cadastre seus processos para começar a acompanhar.'));
+}
+// o panorama do dia: o que foi atualizado, o que não deu para acessar e por quê
+function cartaoResumoDia(s) {
+  if (!s) return null;
+  const nome = primeiroNome();
+  const saud = h('p', {}, (nome ? 'Bem-vindo, ' + nome + '. ' : '') + (s.search_time ? 'Seus processos são atualizados todos os dias às ' + s.search_time + '.' : 'Você pode escolher o horário da atualização diária (ex.: 5h30) na tela Plano.'));
+  if (!s.monitored) return h('div', { class: 'cartao' }, h('h2', {}, 'Resumo de hoje'), saud, h('p', { class: 'vazio' }, 'Nenhum processo cadastrado ainda.'));
+  return h('div', { class: 'cartao' }, h('h2', {}, 'Resumo de hoje'), saud,
+    h('div', { class: 'kpis' }, h('div', { class: 'kpi-mini azul' }, h('span', { class: 'num' }, String(s.updated_today)), h('span', {}, 'atualizados hoje')),
+      h('div', { class: 'kpi-mini' }, h('span', { class: 'num' }, String(s.monitored)), h('span', {}, 'monitorados')),
+      h('div', { class: 'kpi-mini verde' }, h('span', { class: 'num' }, String(s.new_movements_24h)), h('span', {}, 'novidades em 24 h')),
+      h('div', { class: 'kpi-mini ' + (s.failed_total ? 'verm' : '') }, h('span', { class: 'num' }, String(s.failed_total)), h('span', {}, 'sem acesso hoje'))),
+    s.waiting_first ? h('p', { class: 'suave' }, s.waiting_first + ' processo(s) aguardam a primeira consulta.') : null,
+    s.failed_total ? h('div', {}, h('p', {}, h('strong', {}, 'Não conseguimos acessar ' + s.failed_total + ' processo(s):')),
+      h('ul', {}, ...s.failed.map((f) => h('li', {}, f.count + ' processo(s)' + (f.tribunals.length ? ' (' + f.tribunals.join(', ') + ')' : '') + ': ' + f.reason))),
+      h('p', { class: 'suave' }, 'Isso não significa “sem novidade”. O sistema tenta de novo sozinho.')) : h('p', { class: 'suave' }, 'Todos os processos ativos foram acessados com sucesso.'));
+}
+
 async function telaPainel() {
   const veOab = pode('oab.view');
-  const [r, st, pubs, feed] = await Promise.all([api('GET', '/api/dashboard'), veOab ? api('GET', '/api/oab-stats') : null,
-    veOab ? api('GET', '/api/publications', null, { new_only: '1', per_page: '1' }) : null, api('GET', '/api/feed', null, { days: '120' })]);
+  const [r, st, pubs, feed, resumoR, planoR] = await Promise.all([api('GET', '/api/dashboard'), veOab ? api('GET', '/api/oab-stats') : null,
+    veOab ? api('GET', '/api/publications', null, { new_only: '1', per_page: '1' }) : null, api('GET', '/api/feed', null, { days: '120' }),
+    api('GET', '/api/summary'), pode('plan.view') ? api('GET', '/api/plan') : null]);
   const acoesUrgentes = feed && feed.ok ? feed.data.filter((m) => m.action_status === 'open').map((m) => analisarItem(m)).filter((x) => ['vencido', 'hoje', 'ate3', 'ate7'].includes(x.urgencia)).length : 0;
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
   const d = r.data;
@@ -222,8 +255,10 @@ async function telaPainel() {
   const bloco = h('div');
   const montar = (dados) => bloco.replaceChildren(blocoUf(dados, async (ano) => { const x = await api('GET', '/api/oab-stats', null, { year: ano }); if (x.ok) montar(x.data); }));
   if (veOab && st && st.ok) montar(st.data);
+  const topoNovo = [cartaoTeste(planoR && planoR.ok ? planoR.data : null, resumoR && resumoR.ok ? resumoR.data : null), cartaoResumoDia(resumoR && resumoR.ok ? resumoR.data : null)].filter(Boolean);
   app.replaceChildren(
     h('div', { class: 'linha entre' }, h('h1', {}, 'Dashboard'), pode('process.create') ? h('a', { href: '#/processos' }, h('button', { class: 'principal' }, 'Cadastrar processo')) : null),
+    ...topoNovo,
     h('div', { class: 'grade' }, ...kpis), bloco,
     h('div', { class: 'cartao' }, h('h2', {}, 'Movimentações dos últimos 7 dias'),
       d.recent_movements.length ? d.recent_movements.map((m) => h('div', { class: 'mov' },
@@ -241,13 +276,13 @@ async function telaProcessos(consulta) {
   const carregar = async () => {
     const q = Object.fromEntries(Object.entries(filtros).filter(([, v]) => v));
     const r = await api('GET', '/api/processes', null, q);
-    if (!r.ok) return corpoTabela.replaceChildren(h('tr', {}, h('td', { colspan: 6 }, r.error)));
+    if (!r.ok) return corpoTabela.replaceChildren(h('tr', {}, h('td', { colspan: 7 }, r.error)));
     total.textContent = r.data.total + ' processo(s)';
     corpoTabela.replaceChildren(...(r.data.items.length ? r.data.items.map((p) =>
       h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/processos/' + p.id; } },
         h('td', {}, p.cnj), h('td', {}, p.client_label || '—'), h('td', {}, p.tribunal), h('td', {}, p.responsible_name || '—'),
-        h('td', {}, dataHoraBR(p.last_success_at)), h('td', {}, estadoMonitoramento(p))))
-      : [h('tr', {}, h('td', { colspan: 6, class: 'vazio' }, 'Nenhum processo encontrado.'))]));
+        h('td', {}, dataHoraBR(p.last_success_at)), h('td', {}, estadoMonitoramento(p)), h('td', { class: 'manter' }, h('a', { href: '#/processos/' + p.id + '?acoes=1', onclick: (e) => e.stopPropagation() }, 'Ver o que fazer'))))
+      : [h('tr', {}, h('td', { colspan: 7, class: 'vazio' }, 'Nenhum processo encontrado.'))]));
   };
   const busca = h('input', { type: 'search', placeholder: 'Buscar por número ou cliente…', value: filtros.q, oninput: (e) => { filtros.q = e.target.value; carregar(); } });
   const status = h('select', { onchange: (e) => { filtros.status = e.target.value; carregar(); } },
@@ -260,6 +295,8 @@ async function telaProcessos(consulta) {
     if (r.ok) { f.reset(); carregar(); }
   } }, h('input', { name: 'cnj', placeholder: 'Número CNJ (0000000-00.0000.0.00.0000)', required: true, size: 34 }), h('input', { name: 'client_label', placeholder: 'Cliente (opcional)' }), h('button', { class: 'principal' }, 'Cadastrar')) : null;
   const relatorio = h('div');
+  const msgTudo = h('div');
+  const consultarTudo = pode('process.update') ? h('button', { onclick: async () => { const x = await api('POST', '/api/processes/check-all'); msgTudo.replaceChildren(x.ok ? aviso('Pedido enviado: ' + x.data.processes + ' processo(s) e ' + x.data.oabs + ' OAB(s) entram na fila e são atualizados em poucos minutos.', 'ok') : aviso(x.error, 'erro')); } }, 'Consultar tudo agora') : null;
   const arquivo = h('input', { type: 'file', accept: '.csv,.txt', hidden: true, onchange: async (e) => {
     const f = e.target.files[0]; if (!f) return;
     relatorio.replaceChildren(aviso('Importando…'));
@@ -275,8 +312,8 @@ async function telaProcessos(consulta) {
   const exportar = h('button', { onclick: async () => { const e = await baixar('/api/export/processes', 'processos.csv'); if (e) msg.replaceChildren(aviso(e, 'erro')); } }, 'Exportar CSV');
   app.replaceChildren(h('h1', {}, 'Processos'),
     novo ? h('div', { class: 'cartao' }, h('h2', {}, 'Cadastrar processo'), novo, msg, h('div', { style: 'height:10px' }), importar, relatorio) : null,
-    h('div', { class: 'cartao' }, h('div', { class: 'filtros' }, busca, status, total, exportar),
-      h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Número', 'Cliente', 'Tribunal', 'Responsável', 'Última consulta com sucesso', 'Situação'].map((t) => h('th', {}, t)))), corpoTabela))));
+    h('div', { class: 'cartao' }, h('div', { class: 'filtros' }, busca, status, total, exportar, consultarTudo), msgTudo,
+      h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Número', 'Cliente', 'Tribunal', 'Responsável', 'Última consulta com sucesso', 'Situação', ''].map((t) => h('th', t === '' ? { class: 'manter' } : {}, t)))), corpoTabela))));
   carregar();
 }
 
@@ -496,7 +533,28 @@ function capaDosMovimentos(movs) {
 }
 const linhaOrigem = (md) => md && (md.orgao || md.meio) ? h('div', { class: 'suave' }, [md.orgao && 'Órgão: ' + md.orgao, md.tipo_documento && 'Documento: ' + md.tipo_documento, md.meio && 'Meio: ' + md.meio].filter(Boolean).join(' · ')) : null;
 
-async function telaProcesso(id) {
+// "Ver o que fazer com este processo": resumo curto com as ações, quem, prazo e impacto; o inteiro teor vem depois
+function painelOQueFazer(p, movimentos, depois) {
+  const lidos = movimentos.filter((m) => m.source === 'djen').map((m) => ({ it: { ...m, process_id: p.id, client_side: p.client_side, action_status: m.action_status || 'open' } }))
+    .map((x) => ({ ...x, r: analisarItem(x.it) }));
+  const abertos = lidos.filter((x) => x.it.action_status === 'open' && !x.it.is_baseline);
+  const ordem = (a, b) => ((a.r.proximo && a.r.proximo.vence) || '9').localeCompare((b.r.proximo && b.r.proximo.vence) || '9');
+  const comPrazo = abertos.filter((x) => x.r.proximo && x.r.proximo.vence).sort(ordem), semPrazo = abertos.filter((x) => !(x.r.proximo && x.r.proximo.vence));
+  const fila = [...comPrazo, ...semPrazo].slice(0, 6);
+  const irTeor = h('button', { class: 'principal', onclick: () => { const d = document.getElementById('inteiro-teor'); if (d) d.scrollIntoView({ behavior: 'smooth' }); } }, 'Ler o inteiro teor');
+  const resumo = !lidos.length ? 'Ainda não há publicação do Diário para ler neste processo. Quando houver, o resumo aparece aqui.'
+    : !fila.length ? 'Nenhuma ação pendente neste processo: tudo o que foi lido já foi marcado como feito ou é só histórico.'
+    : comPrazo.length ? 'Há ' + comPrazo.length + ' ação(ões) com data. A mais próxima: ' + comPrazo[0].r.proximo.rotulo + (comPrazo[0].r.proximo.vence ? ', até ' + dataBR(comPrazo[0].r.proximo.vence) : '') + '.'
+    : 'Há ' + fila.length + ' ato(s) para você conferir, sem prazo identificado.';
+  return h('div', { class: 'cartao', id: 'o-que-fazer', style: 'border:2px solid var(--ambar)' },
+    h('h2', {}, 'O que fazer com este processo'), h('p', {}, resumo),
+    ...fila.map((x, i) => h('div', { class: 'mov' }, h('div', { class: 'linha' }, pilulaUrgencia(x.r.urgencia, x.r.proximo), h('span', { class: 'suave' }, 'publicação de ' + dataBR(x.it.occurred_at))),
+      cartaoLeitura(x.it, x.r, depois))),
+    h('p', { class: 'suave' }, 'Leitura automática do Diário: confira o ato. Isto não é intimação nem prazo oficial.'),
+    h('div', { class: 'linha' }, irTeor));
+}
+
+async function telaProcesso(id, abrirAcoes) {
   const r = await api('GET', '/api/processes/' + id);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/processos' }, '← Voltar')));
   const { process: p, movements, events } = r.data;
@@ -506,10 +564,13 @@ async function telaProcesso(id) {
     const x = await api('POST', '/api/processes/' + id + caminho);
     if (x.ok) telaProcesso(id); else msg.replaceChildren(aviso(x.error, 'erro'));
   } }, rotulo);
+  const painel = h('div');
+  const mostrarAcoes = () => { painel.replaceChildren(painelOQueFazer(p, movements, () => telaProcesso(id, true))); painel.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   app.replaceChildren(
     h('p', {}, h('a', { href: '#/processos' }, '← Processos')),
     h('div', { class: 'cartao' },
       h('div', { class: 'linha entre' }, h('h1', {}, p.cnj), estadoMonitoramento(p)),
+      h('div', { class: 'linha' }, h('button', { class: 'principal', onclick: mostrarAcoes }, 'Ver o que fazer com este processo')),
       h('p', { class: 'suave' }, p.tribunal + ' · cliente: ' + (p.client_label || '—') + ' · incluído em ' + dataBR(p.created_at)),
       h('p', {}, 'Última consulta bem-sucedida: ', h('strong', {}, dataHoraBR(p.last_success_at)), ' · última tentativa: ', dataHoraBR(p.last_attempt_at)),
       p.last_error ? aviso('Última tentativa falhou: ' + p.last_error + ' — este processo NÃO está atualizado.', 'erro') : null,
@@ -522,7 +583,8 @@ async function telaProcesso(id) {
         p.status === 'paused' ? acao('Retomar', '/resume') : null,
         pode('process.archive') && p.status !== 'archived' ? acao('Arquivar', '/archive', { perigo: true, confirmar: 'Arquivar para de monitorar e libera uma vaga do plano. O histórico continua guardado. Continuar?' }) : null) : null,
       msg),
-    h('div', { class: 'cartao' }, h('h2', {}, 'Histórico de movimentações'),
+    painel,
+    h('div', { class: 'cartao', id: 'inteiro-teor' }, h('h2', {}, 'Histórico de movimentações e inteiro teor'),
       movements.length ? movements.map((m) => h('div', { class: 'mov' },
         h('div', { class: 'linha' }, h('strong', {}, 'Movimentação de ' + dataBR(m.occurred_at)), h('span', { class: 'suave' }, 'capturada em ' + dataHoraBR(m.captured_at)),
           h('span', { class: 'etq azul' }, NOME_FONTE[m.source] || m.source), m.kind ? h('span', { class: 'etq' }, m.kind) : null, m.is_baseline ? h('span', { class: 'etq' }, 'histórico inicial') : null,
@@ -537,6 +599,7 @@ async function telaProcesso(id) {
         h('tbody', {}, ...events.map((e) => h('tr', {}, h('td', {}, dataHoraBR(e.finished_at)),
           h('td', {}, h('span', { class: 'etq ' + (e.outcome === 'new_movements' ? 'verde' : e.outcome === 'no_news' ? '' : 'verm') }, { new_movements: 'Novidade', no_news: 'Sem novidade', source_error: 'Falha da fonte', invalid_response: 'Resposta inválida' }[e.outcome])),
           h('td', {}, e.message || ''))))) : h('p', { class: 'vazio' }, 'Nenhuma tentativa registrada ainda.')));
+  if (abrirAcoes) mostrarAcoes();
 }
 
 // ── notificações, equipe, plano ──────────────────────────────────────────────
@@ -586,8 +649,16 @@ async function telaPlano() {
   const teto = h('input', { type: 'text', id: 'teto-gasto', inputmode: 'decimal', placeholder: 'sem teto', value: e && e.spend_cap_cents ? String(e.spend_cap_cents / 100).replace('.', ',') : '', disabled: !admin, 'aria-label': 'Teto de gasto por mês (R$)', size: 10 });
   const salvar = async (corpo, ok) => { const x = await api('PATCH', '/api/billing/settings', corpo); if (x.ok) { telaPlano(); } else msg.replaceChildren(aviso(x.error, 'erro')); };
   const pedido = p.open_request;
+  const mensal = p.billing_model === 'monthly';
+  const pedir = async (codigo) => { const x = await api('POST', '/api/plan-request', { plan: codigo }); if (x.ok) telaPlano(); else msg.replaceChildren(aviso(x.error, 'erro')); };
+  const tabela = (p.plans || []).length ? h('div', { class: 'cartao' }, h('h2', {}, 'Planos'),
+    h('div', { class: 'grade' }, ...p.plans.map((x) => h('div', { class: 'cartao', style: x.code === p.plan_code ? 'border:2px solid var(--ambar)' : '' },
+      h('h2', {}, x.name), h('div', { class: 'numero' }, x.billing_model === 'per_search' ? reaisC(x.price_per_search_cents) : reaisC(x.price_cents)),
+      h('p', { class: 'suave' }, x.billing_model === 'per_search' ? 'por busca realizada; falha não é cobrada' : 'por mês · até ' + x.max_processes + ' processos · 1 atualização por dia'),
+      x.code === p.plan_code ? h('span', { class: 'etq verde' }, 'seu plano') : (admin && !pedido ? h('button', { onclick: () => pedir(x.code) }, 'Quero este plano') : null))))) : null;
   const blocoContratar = h('div', { class: 'cartao' }, h('h2', {}, 'Como contratar e pagar'),
-    p.status === 'trialing' ? h('p', {}, 'Você está no período de teste: as buscas não são cobradas até ' + dataBR(p.current_period_end) + '.') : null,
+    p.status === 'trialing' ? h('p', {}, 'Você está no teste grátis (faltam ' + p.days_left + ' dia(s), até ' + dataBR(p.current_period_end) + '). A cobrança começa no 15º dia.') : null,
+    mensal && p.first_cycle ? h('p', {}, h('strong', {}, 'Primeiro mês: ' + reaisC(p.first_charge_cents)), ' (só os ' + p.first_charge_days + ' dias depois do teste). Depois, ' + reaisC(p.price_cents) + ' por mês.') : (mensal ? h('p', {}, 'Mensalidade: ' + reaisC(p.price_cents) + ' por mês.') : null),
     p.payment_info ? h('pre', { style: 'white-space:pre-wrap;font:inherit' }, p.payment_info) : h('p', { class: 'suave' }, 'As instruções de pagamento serão informadas pelo suporte.'),
     p.support_contact ? h('p', { class: 'suave' }, 'Dúvidas ou ajuda: ' + p.support_contact) : null,
     pedido ? aviso('Pedido de contratação enviado em ' + dataBR(pedido.created_at) + '. Assim que o pagamento for confirmado, o acesso é liberado.', 'ok')
@@ -604,12 +675,16 @@ async function telaPlano() {
         h('button', { disabled: !admin, onclick: () => salvar({ spend_cap_cents: teto.value.trim() === '' ? null : Math.round(Number(teto.value.replace(',', '.')) * 100) }) }, 'Salvar teto'),
         h('span', { class: 'suave' }, 'Ao atingir o teto, as buscas pausam até o mês seguinte.')) : null) : null,
     h('div', { class: 'cartao' }, h('h2', {}, 'Buscas automáticas'),
-      h('p', {}, 'Escolha o horário em que o sistema faz todas as buscas do escritório (processos e OABs), uma vez por dia. Horário de Brasília.'),
-      h('div', { class: 'linha' }, h('label', { for: 'horario-buscas' }, 'Todos os dias às'), horario,
-        h('button', { class: 'principal', disabled: !admin, onclick: () => { if (!horario.value) return msg.replaceChildren(aviso('Escolha um horário.', 'erro')); salvar({ search_time: horario.value }); } }, 'Salvar horário'),
-        e && e.search_time ? h('button', { disabled: !admin, onclick: () => salvar({ search_time: '' }) }, 'Voltar ao intervalo do plano') : null),
-      h('p', { class: 'suave' }, e && e.search_time ? 'Hoje: todas as buscas rodam às ' + e.search_time + '.' : 'Hoje: cada processo é buscado conforme o intervalo do plano.' + (porBusca ? ' Para controlar o gasto, prefira um horário fixo.' : '')), msg),
-    blocoContratar,
+      h('p', {}, 'Escolha como o sistema atualiza todos os processos e OABs do escritório (horário de Brasília).'),
+      h('div', { class: 'linha' }, h('label', { class: 'linha' }, h('input', { type: 'radio', name: 'modo-busca', value: 'daily', checked: !e || e.search_mode !== 'six_hours', disabled: !admin, onchange: () => salvar({ search_mode: 'daily' }) }), 'Uma vez por dia, às'),
+        horario, h('button', { class: 'principal', disabled: !admin, onclick: () => { if (!horario.value) return msg.replaceChildren(aviso('Escolha um horário.', 'erro')); salvar({ search_mode: 'daily', search_time: horario.value }); } }, 'Salvar horário'),
+        e && e.search_time ? h('button', { disabled: !admin, onclick: () => salvar({ search_time: '' }) }, 'Sem horário fixo') : null),
+      h('div', { class: 'linha', style: 'margin-top:8px' }, h('label', { class: 'linha' }, h('input', { type: 'radio', name: 'modo-busca', value: 'six_hours', checked: !!e && e.search_mode === 'six_hours', disabled: !admin, onchange: () => salvar({ search_mode: 'six_hours' }) }), 'De 6 em 6 horas')),
+      h('p', { class: 'suave' }, e && e.search_mode === 'six_hours' ? 'Hoje: todos os processos são atualizados de 6 em 6 horas.' : e && e.search_time ? 'Hoje: todos os processos são atualizados todos os dias às ' + e.search_time + '.' : 'Hoje: cada processo é atualizado conforme o intervalo do plano.'),
+      porBusca ? h('p', { class: 'suave' }, 'No plano por busca, cada atualização bem-sucedida custa ' + reaisC(p.price_per_search_cents) + '; de 6 em 6 horas são até 4 por dia por processo. Use o teto de gasto para controlar.') : null,
+      h('div', { class: 'linha', style: 'margin-top:8px' }, h('button', { disabled: !pode('process.update'), onclick: async () => { const x = await api('POST', '/api/processes/check-all'); msg.replaceChildren(x.ok ? aviso('Pedido enviado: ' + x.data.processes + ' processo(s) e ' + x.data.oabs + ' OAB(s) entram na fila e são atualizados em poucos minutos.', 'ok') : aviso(x.error, 'erro')); } }, 'Consultar tudo agora'),
+        h('span', { class: 'suave' }, 'Atualiza na hora, fora da programação. Pode ser pedido a cada 15 minutos.')), msg),
+    blocoContratar, tabela,
     h('div', { class: 'grade' }, uso('Processos', p.processes_used, p.max_processes), uso('Usuários', p.users_used, p.max_users), uso('OABs', p.oabs_used, p.max_oabs)));
 }
 
@@ -1040,14 +1115,14 @@ async function telaAdminEscritorio(id, recado) {
   const { tenant: t, members, audit } = r.data;
   const msg = h('div', {}, recado || null);
   const chamar = async (caminho, corpo, texto) => { const x = await api('POST', '/api/admin/tenants/' + id + caminho, corpo); if (x.ok) telaAdminEscritorio(id, aviso(texto, 'ok')); else msg.replaceChildren(aviso(x.error, 'erro')); };
-  const dias = h('input', { type: 'number', min: 1, max: 3660, value: 30, style: 'width:90px' });
+  const dias = h('input', { type: 'number', min: 1, max: 3660, value: ['trialing', 'past_due', 'suspended'].includes(t.subscription_status) ? 15 : 30, style: 'width:90px' });
   const plano = h('select', {}, ...(planos.data || []).map((p) => h('option', { value: p.code, selected: p.code === t.plan_code }, p.name + ' (' + reais(p.price_cents) + ')')));
   const nota = h('input', { value: t.admin_note || '', placeholder: 'Anotação interna (só o dono vê)', size: 40, maxlength: 500 });
   app.replaceChildren(h('p', {}, h('a', { href: '#/admin' }, '← Administração')),
     h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h1', {}, t.name), h('span', { class: 'etq ' + COR[t.subscription_status] }, SITUACAO[t.subscription_status])),
       h('p', { class: 'suave' }, 'Plano ' + t.plan_name + ' · vence em ' + dataBR(t.current_period_end) + ' · usa ' + t.users + ' usuário(s), ' + t.processes + ' processo(s), ' + t.oabs + ' OAB(s)' + (t.suspended_reason ? ' · motivo: ' + t.suspended_reason : '')),
       t.tenant_status === 'suspended' ? aviso('O acesso deste escritório está bloqueado.', 'erro') : null, msg,
-      h('div', { class: 'linha' }, h('label', { class: 'linha suave' }, 'Renovar por ', dias, ' dias'), h('button', { class: 'principal', onclick: () => chamar('/renew', { days: Number(dias.value) }, 'Assinatura renovada.') }, 'Renovar')),
+      h('div', { class: 'linha' }, h('label', { class: 'linha suave' }, 'Renovar por ', dias, ' dias'), h('button', { class: 'principal', onclick: () => chamar('/renew', { days: Number(dias.value) }, 'Assinatura renovada.') }, 'Renovar'), h('span', { class: 'suave' }, 'Primeira cobrança depois do teste: 15 dias (meio mês). Depois, 30.')),
       h('div', { class: 'linha', style: 'margin-top:10px' }, plano, h('button', { onclick: () => chamar('/plan', { plan: plano.value }, 'Plano alterado.') }, 'Trocar plano')),
       h('div', { class: 'linha', style: 'margin-top:10px' }, nota, h('button', { onclick: () => chamar('/note', { note: nota.value }, 'Anotação salva.') }, 'Salvar anotação')),
       h('div', { class: 'linha', style: 'margin-top:14px' },
@@ -1107,7 +1182,7 @@ async function rota() {
   desenharTopo();
   const publicas = ['/entrar', '/cadastro', '/esqueci', '/redefinir'];
   if (!sessao.authenticated) {
-    if (caminho === '/cadastro') return telaCadastro();
+    if (caminho === '/cadastro') return telaCadastro(consulta);
     if (caminho === '/esqueci') return telaEsqueci();
     if (caminho === '/redefinir') return telaRedefinir(consulta.token || '');
     return telaEntrar();
@@ -1129,7 +1204,7 @@ async function rota() {
   if (caminho === '/acoes') return telaAcoes();
   if (caminho === '/consulta') return telaConsulta(consulta);
   if (caminho === '/processos') return telaProcessos(consulta);
-  if ((m = caminho.match(/^\/processos\/(\d+)$/))) return telaProcesso(Number(m[1]));
+  if ((m = caminho.match(/^\/processos\/(\d+)$/))) return telaProcesso(Number(m[1]), consulta.acoes === '1');
   if (caminho === '/oabs' && pode('oab.view')) return telaOabs();
   if (caminho === '/publicacoes' && pode('oab.view')) return telaPublicacoes(consulta);
   if (caminho === '/uf' && pode('oab.view')) return telaUf();

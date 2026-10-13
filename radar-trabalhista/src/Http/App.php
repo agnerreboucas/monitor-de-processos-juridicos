@@ -20,6 +20,7 @@ use Radar\Repository\OabPublicationRepository;
 use Radar\Repository\ProcessRepository;
 use Radar\Service\AccountService;
 use Radar\Service\BillingService;
+use Radar\Service\DailySummary;
 use Radar\Service\DashboardService;
 use Radar\Service\DataTransferService;
 use Radar\Service\LookupService;
@@ -84,7 +85,7 @@ final class App
         $this->auth = new AuthService($pdo, $clock, $maxFailures, $lockMinutes);
         $this->processes = new ProcessService($pdo, $clock);
         $this->members = new MemberService($pdo, $clock);
-        $this->plans = new PlanService($pdo);
+        $this->plans = new PlanService($pdo, $clock);
         $this->dashboard = new DashboardService($pdo, $clock);
         $this->oabs = new OabService($pdo, $clock);
         $this->oabStats = new OabStats($pdo, $clock);
@@ -206,6 +207,9 @@ final class App
         $ctx = $this->context($userId);
 
         // processos
+        if ($method === 'GET' && $path === '/api/summary') {
+            return Response::json(['ok' => true, 'data' => (new DailySummary($this->pdo, $this->clock))->forContext($ctx)]);
+        }
         if ($method === 'GET' && $path === '/api/dashboard') {
             $data = $this->dashboard->summary($ctx);
             $data['oab_alerts_unseen'] = $ctx->can('oab.view') ? $this->oabStats->unseenCount($ctx) : 0;
@@ -275,6 +279,9 @@ final class App
                 $this->processes->update($ctx, $id, $changes, $r->ip);
                 return Response::json(['ok' => true, 'data' => $this->processes->get($ctx, $id)['process']]);
             }
+        }
+        if ($method === 'POST' && $path === '/api/processes/check-all') {
+            return Response::json(['ok' => true, 'data' => $this->processes->requestCheckAll($ctx)]);
         }
         if ($method === 'POST' && preg_match('~^/api/processes/(\d+)/(pause|resume|archive|check)$~', $path, $m) === 1) {
             $id = (int) $m[1];
@@ -376,6 +383,9 @@ final class App
             $plan['banner'] = $this->subscriptions->banner((string) $plan['status'], $plan['current_period_end']);
             $plan['oabs_used'] = (int) $this->pdo->query('SELECT COUNT(*) FROM oab_registrations WHERE status <> \'archived\' AND tenant_id = ' . (int) $ctx->tenantId)->fetchColumn();
             $plan['users_used'] = count(array_filter($this->members->list($ctx), static fn (array $m) => $m['status'] !== 'disabled'));
+            $plan['plans'] = array_map(static fn (array $x) => ['code' => $x['code'], 'name' => $x['name'], 'price_cents' => (int) $x['price_cents'], 'max_processes' => (int) $x['max_processes'],
+                'billing_model' => $x['billing_model'], 'price_per_search_cents' => (int) $x['price_per_search_cents']],
+                $this->pdo->query("SELECT code, name, price_cents, max_processes, billing_model, price_per_search_cents FROM plans WHERE active = 1 ORDER BY billing_model = 'per_search', price_cents")->fetchAll());
             $plan['payment_info'] = $this->paymentInfo;
             $plan['support_contact'] = $this->supportContact;
             $plan['open_request'] = $this->sales->openFor($ctx);
@@ -656,9 +666,22 @@ final class App
             throw new ValidationError('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.');
         }
         $ids = $this->auth->registerTenant($r->str('office_name'), $r->str('name'), $r->str('email'), $r->str('password'),
-            $this->defaultPlan(), $r->strOrNull('phone'), $r->ip, PrivacyService::TERMS_VERSION);
+            $this->chosenPlan($r->strOrNull('plan')), $r->strOrNull('phone'), $r->ip, PrivacyService::TERMS_VERSION);
         $this->startSession($this->auth->login($r->str('email'), $r->str('password'), $r->ip), $ids['tenant_id']);
         return Response::json(['ok' => true, 'data' => ['tenant_id' => $ids['tenant_id']]], 201);
+    }
+
+    /** Plano escolhido na página de venda (só os que existem e estão ativos); sem escolha, o padrão. */
+    private function chosenPlan(?string $code): string
+    {
+        if ($code !== null && preg_match('/^[a-z0-9-]{2,40}$/', $code) === 1) {
+            $stmt = $this->pdo->prepare('SELECT 1 FROM plans WHERE code = ? AND active = 1');
+            $stmt->execute([$code]);
+            if ($stmt->fetchColumn() !== false) {
+                return $code;
+            }
+        }
+        return $this->defaultPlan();
     }
 
     /** Plano dos cadastros novos: "pague por busca" quando existe e está ativo; senão o Essencial. */

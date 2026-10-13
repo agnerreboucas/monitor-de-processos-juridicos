@@ -170,9 +170,13 @@ final class OabMonitor
     /** Horário fixo do escritório, se escolheu um; senão o intervalo padrão. */
     private function nextCheck(int $tenantId, DateTimeImmutable $now): DateTimeImmutable
     {
-        $time = $this->pdo->prepare('SELECT search_time FROM tenants WHERE id = ?');
+        $time = $this->pdo->prepare('SELECT search_time, search_mode FROM tenants WHERE id = ?');
         $time->execute([$tenantId]);
-        $t = $time->fetchColumn();
+        $row = $time->fetch();
+        if (($row['search_mode'] ?? 'daily') === 'six_hours') {
+            return $now->add(new DateInterval('PT6H'));
+        }
+        $t = $row['search_time'] ?? null;
         return $t !== false && $t !== null ? Schedule::nextRun($now, substr((string) $t, 0, 8)) : $now->add(new DateInterval('PT' . $this->intervalHours . 'H'));
     }
 }

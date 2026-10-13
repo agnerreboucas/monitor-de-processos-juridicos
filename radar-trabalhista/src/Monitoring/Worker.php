@@ -361,6 +361,9 @@ final class Worker
     /** Próxima busca: no horário fixo escolhido pelo escritório (se houver) ou pelo intervalo do plano. */
     private function nextCheck(array $plan, DateTimeImmutable $now): DateTimeImmutable
     {
+        if (($plan['search_mode'] ?? 'daily') === 'six_hours') {
+            return $now->add(new DateInterval('PT6H'));
+        }
         if (($plan['search_time'] ?? null) !== null) {
             return Schedule::nextRun($now, (string) $plan['search_time']);
         }

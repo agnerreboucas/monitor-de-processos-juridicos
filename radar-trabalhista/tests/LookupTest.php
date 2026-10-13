@@ -130,7 +130,7 @@ final class LookupTest extends DbTestCase
         $this->assertSame(['datajud', 'djen'], $this->pdo->query('SELECT DISTINCT s.code FROM process_movements m JOIN integration_sources s ON s.id = m.source_id ORDER BY 1')->fetchAll(\PDO::FETCH_COLUMN));
 
         // segunda rodada: Datajud cai, o diário traz novidade → vale, com aviso no registro
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $this->assertSame(1, $worker->enqueueDue());
         $djen->then([FakeAdapter::movement('2')]);
         $datajud->then(new \Radar\Monitoring\SourceUnavailable('Datajud fora do ar.'));

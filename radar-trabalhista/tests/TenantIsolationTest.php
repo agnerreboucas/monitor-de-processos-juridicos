@@ -47,7 +47,7 @@ final class TenantIsolationTest extends DbTestCase
             ->thenFor(self::CNJ_TJRO, [FakeAdapter::movement('b1', 'Movimento secreto do B'), FakeAdapter::movement('b2', 'Novo do B')]);
         $worker = new Worker($this->pdo, [$adapter], $this->clock);
         $worker->runBatch(10);
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $worker->enqueueDue();
         $worker->runBatch(10);
     }

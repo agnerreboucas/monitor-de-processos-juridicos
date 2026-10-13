@@ -35,7 +35,7 @@ final class NotificationDispatcherTest extends DbTestCase
         $id = (int) $svc->create($this->ctx($this->office['user_id'], $this->office['tenant_id']), $cnj, null, $this->office['user_id'])['id'];
         $this->adapter->thenFor($cnj, [FakeAdapter::movement('base')]);
         $this->worker->runBatch(10);
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $this->worker->enqueueDue();
         $this->adapter->thenFor($cnj, [FakeAdapter::movement('base'), ...$new]);
         $this->worker->runBatch(10);
@@ -55,7 +55,7 @@ final class NotificationDispatcherTest extends DbTestCase
         $this->assertStringContainsString(self::CNJ_TRT8, $mail['body']);
         $this->assertStringContainsString('Audiência designada', $mail['body']);
         $this->assertStringContainsString('Data da movimentação: 09/10/2026', $mail['body']);
-        $this->assertStringContainsString('Data da captura pelo sistema: 10/10/2026', $mail['body']);
+        $this->assertStringContainsString('Data da captura pelo sistema: 11/10/2026', $mail['body']);
         $this->assertStringContainsString('https://radar.exemplo.com.br/#/processos/', $mail['body']);
         $this->assertStringContainsString('não significa que o escritório foi intimado', $mail['body']);
         $this->assertSame(2, (int) $this->scalar("SELECT COUNT(*) FROM notifications WHERE channel = 'email' AND status = 'sent' AND sent_at IS NOT NULL"));

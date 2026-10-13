@@ -110,10 +110,11 @@ final class OabTest extends DbTestCase
 
     public function testPlanLimitCountsOnlyNonArchived(): void
     {
-        $o = $this->office('Peq', 'p@p.com', 'essencial');   // 2 OABs
+        $o = $this->office('Peq', 'p@p.com', 'essencial');   // 3 OABs
         $ctx = $this->ctx($o['user_id'], $o['tenant_id']);
         $first = (int) $this->svc->add($ctx, '1', 'MG', 'A')['id'];
         $this->svc->add($ctx, '2', 'MG', 'B');
+        $this->svc->add($ctx, '5', 'MG', 'E');
         try {
             $this->svc->add($ctx, '3', 'MG', 'C');
             $this->fail('passou do limite');

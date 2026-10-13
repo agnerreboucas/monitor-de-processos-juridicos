@@ -33,7 +33,7 @@ final class PrivacyTest extends DbTestCase
         $worker = new Worker($this->pdo, [$adapter], $this->clock, 'w');
         $adapter->thenFor($cnj, [FakeAdapter::movement("a$name")]);
         $worker->runBatch(10);
-        $this->clock->advance('PT7H');
+        $this->clock->advance('PT25H');
         $worker->enqueueDue();
         $adapter->thenFor($cnj, [FakeAdapter::movement("a$name"), FakeAdapter::movement("b$name", "Sentença $name")]);
         $worker->runBatch(10);

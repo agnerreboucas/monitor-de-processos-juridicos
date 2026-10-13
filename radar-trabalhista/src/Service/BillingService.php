@@ -48,11 +48,11 @@ final class BillingService
         $start = $this->monthStart($month);
         $end = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
         $plan = $this->pdo->prepare(
-            'SELECT p.name, p.price_cents, p.billing_model, p.price_per_search_cents, s.status, t.spend_cap_cents, t.search_time
+            'SELECT p.name, p.price_cents, p.billing_model, p.price_per_search_cents, s.status, t.spend_cap_cents, t.search_time, t.search_mode
                FROM tenants t JOIN subscriptions s ON s.tenant_id = t.id JOIN plans p ON p.id = s.plan_id WHERE t.id = ?'
         );
         $plan->execute([$tenantId]);
-        $p = $plan->fetch() ?: ['name' => '', 'price_cents' => 0, 'billing_model' => 'monthly', 'price_per_search_cents' => 0, 'status' => 'trialing', 'spend_cap_cents' => null, 'search_time' => null];
+        $p = $plan->fetch() ?: ['name' => '', 'price_cents' => 0, 'billing_model' => 'monthly', 'price_per_search_cents' => 0, 'status' => 'trialing', 'spend_cap_cents' => null, 'search_time' => null, 'search_mode' => 'daily'];
         $rows = $this->pdo->prepare('SELECT kind, SUM(ok) ok, SUM(failed) failed FROM search_usage_daily WHERE tenant_id = ? AND day >= ? AND day < ? GROUP BY kind');
         $rows->execute([$tenantId, $start, $end]);
         $byKind = ['process' => ['ok' => 0, 'failed' => 0], 'oab' => ['ok' => 0, 'failed' => 0], 'lookup' => ['ok' => 0, 'failed' => 0]];
@@ -67,7 +67,7 @@ final class BillingService
         return ['month' => substr($start, 0, 7), 'plan_name' => $p['name'], 'model' => $p['billing_model'], 'price_per_search_cents' => (int) $p['price_per_search_cents'],
             'ok' => $ok, 'failed' => $failed, 'by_kind' => $byKind, 'trial' => $trial, 'amount_cents' => $amount,
             'would_be_cents' => $perSearch ? $ok * (int) $p['price_per_search_cents'] : (int) $p['price_cents'],
-            'spend_cap_cents' => $p['spend_cap_cents'] !== null ? (int) $p['spend_cap_cents'] : null, 'search_time' => $p['search_time'] !== null ? substr((string) $p['search_time'], 0, 5) : null,
+            'spend_cap_cents' => $p['spend_cap_cents'] !== null ? (int) $p['spend_cap_cents'] : null, 'search_mode' => (string) $p['search_mode'], 'search_time' => $p['search_time'] !== null ? substr((string) $p['search_time'], 0, 5) : null,
             'note' => 'Só buscas bem-sucedidas são cobradas. Buscas que falham não custam nada.'];
     }
 
@@ -96,6 +96,19 @@ final class BillingService
                 $now = Clock::sql($this->clock->now());
                 foreach (['processes', 'oab_registrations'] as $table) {
                     $this->pdo->prepare("UPDATE $table SET next_check_at = ? WHERE tenant_id = ? AND status = 'active' AND next_check_at > ?")->execute([$next, $ctx->tenantId, $now]);
+                }
+            }
+        }
+        if (array_key_exists('search_mode', $in)) {
+            if (!in_array($in['search_mode'], ['daily', 'six_hours'], true)) {
+                throw new ValidationError('Modo de busca inválido. Escolha "uma vez por dia" ou "de 6 em 6 horas".');
+            }
+            $sets[] = 'search_mode = ?';
+            $params[] = $in['search_mode'];
+            if ($in['search_mode'] === 'six_hours') {      // o que estava agendado para mais de 6 horas adiante passa a ser em até 6 horas
+                $limit = Clock::sql($this->clock->now()->add(new \DateInterval('PT6H')));
+                foreach (['processes', 'oab_registrations'] as $table) {
+                    $this->pdo->prepare("UPDATE $table SET next_check_at = ? WHERE tenant_id = ? AND status = 'active' AND next_check_at > ?")->execute([$limit, $ctx->tenantId, $limit]);
                 }
             }
         }

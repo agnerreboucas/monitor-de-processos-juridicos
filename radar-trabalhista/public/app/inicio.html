@@ -44,10 +44,10 @@
   <h2 class="t">Do cadastro ao primeiro aviso em poucos minutos</h2>
   <p class="sub">Nada para instalar: o sistema roda no navegador e a consulta é feita por nós, todos os dias.</p>
   <div class="grade g4">
-    <div class="card passo"><span class="n">01</span><h3>Crie a conta do escritório</h3><p>Teste de 14 dias. Convide advogados e assistentes e defina o que cada papel pode fazer.</p></div>
+    <div class="card passo"><span class="n">01</span><h3>Crie a conta do escritório</h3><p>Teste grátis de 14 dias, com contagem regressiva na tela. Convide advogados e assistentes e defina o que cada papel pode fazer.</p></div>
     <div class="card passo"><span class="n">02</span><h3>Cadastre processos e OABs</h3><p>Digite o número, importe uma planilha ou informe a OAB de cada advogado para ver as publicações em nome dele.</p></div>
-    <div class="card passo"><span class="n">03</span><h3>O Radar consulta por você</h3><p>A primeira consulta traz o histórico em silêncio. Depois, só o que for novo gera aviso, no painel e por e-mail.</p></div>
-    <div class="card passo"><span class="n">04</span><h3>Veja o que fazer e até quando</h3><p>A tela “Ações e prazos” ordena tudo por urgência: ação, quem age, prazo estimado, impacto e riscos.</p></div>
+    <div class="card passo"><span class="n">03</span><h3>Atualização no horário que você escolher</h3><p>Escolha: uma vez por dia no horário que quiser (por exemplo, 5h30 da manhã, para o dia já começar em dia) ou de 6 em 6 horas. E, se precisar, clique em “Consultar agora”. A primeira consulta traz o histórico em silêncio; depois, só o que for novo gera aviso.</p></div>
+    <div class="card passo"><span class="n">04</span><h3>Veja o que fazer com cada processo</h3><p>Em cada processo, o botão “Ver o que fazer” mostra um resumo com as ações, quem age, o prazo estimado e o impacto. Depois você lê o inteiro teor.</p></div>
   </div>
   <p class="nota">Você só precisa de um navegador. A conferência na fonte oficial e o controle de prazos continuam sendo do escritório.</p>
 </div></section>
@@ -59,7 +59,8 @@
       <h2 class="t">Teste sem cartão. Os dados são do seu escritório.</h2>
       <p class="sub" style="margin-bottom:20px">Você experimenta com os seus processos antes de decidir, e continua dono do que cadastrou.</p>
       <ul>
-        <li>14 dias de teste sem pedir cartão de crédito</li>
+        <li>14 dias grátis, sem cartão. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias</li>
+        <li>Todo dia, depois da atualização, um resumo: quantos processos foram atualizados e quais não deu para acessar, com o motivo (tribunal fora do ar, oscilação, sigilo)</li>
         <li>Cada escritório enxerga somente os próprios dados</li>
         <li>Baixe uma cópia completa dos dados (JSON) e exporte processos e publicações em planilha (CSV)</li>
         <li>O administrador pode excluir todos os dados do escritório, direto na tela</li>
@@ -132,9 +133,28 @@
         <li>Visão por escritório e por advogado (OAB)</li>
       </ul>
     </div>
-    <div class="vitrine"><img src="/app/img/painel.png" width="1800" height="1200" alt="Painel do Radar Processual com indicadores, ações com prazo, alerta de inscrição suplementar e tabela de ações por UF"></div>
+    <div class="vitrine"><img src="/app/img/painel.png" width="1400" height="920" alt="Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores"></div>
   </div>
   <p class="vitrine-legenda">Imagem do painel com dados fictícios de exemplo.</p>
+</div></section>
+
+
+<section class="sec" id="celular"><div class="c">
+  <div class="dois">
+    <div class="celular"><img src="/app/img/celular.png" width="390" height="844" alt="Painel do Radar Processual no celular"></div>
+    <div>
+      <p class="rot">No celular</p>
+      <h2 class="t">Abra pelo celular e veja o dia já atualizado</h2>
+      <p class="sub" style="margin-bottom:20px">Sem aplicativo para instalar: o painel se adapta à tela do celular.</p>
+      <ul>
+        <li>Atualização automática: uma vez por dia no horário escolhido (ex.: 5h30) ou de 6 em 6 horas</li>
+        <li>Botão “Consultar tudo agora” para atualizar na hora</li>
+        <li>Resumo do dia: quantos processos foram atualizados e quais não deu para acessar</li>
+        <li>Botão “Ver o que fazer” em cada processo, com ações, prazo e impacto</li>
+        <li>Aviso por e-mail quando sai movimentação nova</li>
+      </ul>
+    </div>
+  </div>
 </div></section>
 
 <section class="sec alt" id="publico"><div class="c">
@@ -171,14 +191,16 @@
 </div></section>
 
 <section class="sec" id="planos"><div class="c">
-  <p class="rot">Preço</p>
-  <h2 class="t">Pague só pelas buscas que deram certo</h2>
-  <p class="sub">Sem mensalidade obrigatória: R$ 0,30 por busca realizada. Busca que falhou não é cobrada.</p>
-  <div class="planos">
-    <div class="card plano dest"><span class=etq>Pague por busca</span><h3>R$ 0,30 <small>por busca realizada</small></h3><p>Cada consulta concluída com sucesso (processo, OAB ou API) vale R$ 0,30.</p><ul><li>Falhas do tribunal ou da fonte não entram na conta</li><li>Buscas automáticas no horário que você escolher (ex.: todo dia às 5h30)</li><li>Teto de gasto mensal definido por você</li><li>Extrato de cada busca, por cliente</li><li>Processos, usuários e OABs sem limite de cadastro</li></ul><a class="btn p" href="/entrar#/cadastro">Testar grátis por 14 dias</a></div>
-    <div class="card plano"><h3>API para integrar</h3><p>Consulte processos e publicações no seu próprio sistema.</p><ul><li>Chave de acesso própria, com cota e limite por minuto</li><li>Mesmo preço: R$ 0,30 por consulta bem-sucedida</li><li>Documentação aberta e extrato de uso</li></ul><a class="btn o" href="/app/api-docs.html">Ver a documentação</a></div>
+  <p class="rot">Preços</p>
+  <h2 class="t">Assinatura mensal por escritório, com limite de processos</h2>
+  <p class="sub">14 dias grátis, sem cartão. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias (meio mês).</p>
+  <div class="planos quatro">
+    <div class="card plano"><h3>Essencial</h3><p>Autônomo ou escritório enxuto.</p><div class="preco">R$ 299<small> /mês</small></div><ul><li>Até 50 processos monitorados</li><li>Atualização diária no horário que você escolher</li><li>Alertas, histórico e painel</li><li>1º mês: R$ 149,50 (15 dias)</li></ul><a class="btn o" href="/entrar#/cadastro?plano=essencial">Começar 14 dias grátis</a></div>
+    <div class="card plano dest"><span class=etq>Mais escolhido</span><h3>Profissional</h3><p>Escritório pequeno, com equipe.</p><div class="preco">R$ 599<small> /mês</small></div><ul><li>Até 100 processos monitorados</li><li>Tudo do Essencial</li><li>Responsáveis por processo e alertas configuráveis</li><li>1º mês: R$ 299,50 (15 dias)</li></ul><a class="btn p" href="/entrar#/cadastro?plano=profissional">Começar 14 dias grátis</a></div>
+    <div class="card plano"><h3>Escritório</h3><p>Vários advogados.</p><div class="preco">R$ 1.499<small> /mês</small></div><ul><li>Até 250 processos monitorados</li><li>Tudo do Profissional</li><li>Distribuição por advogado e visão da carteira</li><li>1º mês: R$ 749,50 (15 dias)</li></ul><a class="btn o" href="/entrar#/cadastro?plano=equipe">Começar 14 dias grátis</a></div>
+    <div class="card plano"><h3>Pague por busca</h3><p>Uso irregular ou integração por API.</p><div class="preco">R$ 0,30<small> /busca</small></div><ul><li>Só busca realizada com sucesso é cobrada</li><li>Falha do tribunal não entra na conta</li><li>Teto de gasto mensal definido por você</li><li>Chave de API com extrato de uso</li></ul><a class="btn o" href="/entrar#/cadastro?plano=por-busca">Começar 14 dias grátis</a></div>
   </div>
-  <p class="nota">O teste de 14 dias não pede cartão e não cobra buscas. Depois, o fechamento é mensal, com extrato detalhado; as formas de pagamento são informadas antes do fim do teste.</p>
+  <p class="nota">Como pagar: no 15º dia, abra a tela Plano e clique em “Quero contratar”; você recebe as instruções de pagamento (Pix) e, confirmado o pagamento, a assinatura segue sem interrupção. Valores iniciais, sujeitos a ajuste antes do lançamento.</p>
   </div></section>
 
 <section class="sec alt" id="perguntas"><div class="c" style="max-width:820px">
@@ -194,7 +216,9 @@
   <details><summary>Preciso instalar alguma coisa?</summary><p>Não. Você acessa pelo navegador, no computador ou no celular.</p></details>
   <details><summary>Posso trazer meus processos de uma planilha?</summary><p>Sim. Importe um CSV com o número do processo e, se quiser, o cliente. O sistema mostra linha a linha o que foi importado e o que foi recusado, e respeita o limite do plano.</p></details>
   <details><summary>Existe API para integrar ao meu sistema?</summary><p>Sim. A API por chave consulta processos e publicações por OAB, com cota mensal e limite por minuto. A documentação, com exemplos em curl, JavaScript, Python e PHP, está em <a href="/app/api-docs.html">/app/api-docs.html</a>.</p></details>
-  <details><summary>Como funciona o teste grátis e o pagamento?</summary><p>Você tem 14 dias para testar, sem cartão. Depois, a contratação é por plano mensal. As formas de pagamento serão informadas antes do fim do teste.</p></details>
+  <details><summary>Como funciona o teste grátis e o pagamento?</summary><p>Você tem 14 dias grátis, sem cartão, com contagem regressiva na tela e avisos por e-mail. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias (meio mês). Para contratar, use o botão “Quero contratar” na tela Plano.</p></details>
+  <details><summary>Posso atualizar na hora?</summary><p>Sim. Além da atualização programada (uma vez por dia no horário que você escolher, ou de 6 em 6 horas), há o botão “Consultar tudo agora” e o “Consultar agora” de cada processo. O pedido entra na fila e sai em poucos minutos.</p></details>
+  <details><summary>E se o tribunal estiver fora do ar?</summary><p>O resumo do dia mostra quantos processos não foram acessados e o motivo (por exemplo, o sistema do tribunal fora do ar ou oscilando). O sistema tenta de novo sozinho, e esse processo nunca aparece como “sem novidade”.</p></details>
 </div></section>
 
 <section class="final"><div class="c">

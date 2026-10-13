@@ -18,6 +18,7 @@ use Radar\Monitoring\DjenAdapter;
 use Radar\Mail\MailerFactory;
 use Radar\Monitoring\OabMonitor;
 use Radar\Monitoring\Worker;
+use Radar\Service\LifecycleNotifier;
 use Radar\Service\NotificationDispatcher;
 use Radar\Service\PrivacyService;
 use Radar\Service\SubscriptionService;
@@ -61,9 +62,11 @@ $oab = (new OabMonitor($pdo, $djenOab, pauseBetweenMicros: $pauseMs * 1000))->ru
 
 $mail = (new NotificationDispatcher($pdo, MailerFactory::fromConfig($config, __DIR__ . '/../storage'), $config->get('APP_URL')))->sendPending();
 
+$lifecycle = (new LifecycleNotifier($pdo, MailerFactory::fromConfig($config, __DIR__ . '/../storage'), (string) $config->get('APP_URL')))->run();      // boas-vindas, marcos do teste e resumo do dia
+
 $pdo->prepare('UPDATE worker_runs SET finished_at = UTC_TIMESTAMP(), summary = ? WHERE id = ?')->execute([
     json_encode(['checked' => $total['claimed'], 'failed' => $total['failed'], 'new_movements' => $total['new_movements'],
-        'oabs' => $oab['claimed'], 'emails' => $mail['emails'], 'past_due' => $lapsed['past_due'], 'suspended' => $lapsed['suspended']]), $runId]);
+        'oabs' => $oab['claimed'], 'emails' => $mail['emails'] + $lifecycle['sent'], 'past_due' => $lapsed['past_due'], 'suspended' => $lapsed['suspended']]), $runId]);
 $pdo->exec('DELETE FROM worker_runs WHERE started_at < UTC_TIMESTAMP() - INTERVAL 30 DAY');
 (new PrivacyService($pdo))->purgeExpired();            // prazos de guarda da política de privacidade
 

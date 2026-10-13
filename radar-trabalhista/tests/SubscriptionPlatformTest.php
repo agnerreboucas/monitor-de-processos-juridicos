@@ -127,11 +127,11 @@ final class SubscriptionPlatformTest extends DbTestCase
         $o = $this->office('A', 'a@a.com', 'profissional');                    // 5 OABs
         $ctx = $this->ctx($o['user_id'], $o['tenant_id']);
         $oabs = new OabService($this->pdo, $this->clock);
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= 4; $i++) {
             $oabs->add($ctx, (string) $i, 'MG', "Adv $i");
         }
         try {
-            $this->subs->setPlan($o['tenant_id'], 'essencial');                 // essencial: 2 OABs
+            $this->subs->setPlan($o['tenant_id'], 'essencial');                 // essencial: 3 OABs
             $this->fail('deixou reduzir acima do uso');
         } catch (ValidationError) {
             $this->addToAssertionCount(1);
