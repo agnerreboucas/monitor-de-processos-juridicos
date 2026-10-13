@@ -63,6 +63,7 @@ const ICONES = {
   card: 'M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z M1 10h22',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 6v6l4 2',
+  key: 'M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16 M21 21l-4.3-4.3',
   radar: 'M19.1 4.9A10 10 0 1 0 21 12 M15.5 8.5A5 5 0 1 0 17 12 M12 12l7-7',
   pulse: 'M22 12h-4l-3 9L9 3l-3 9H2',
@@ -99,14 +100,14 @@ function desenharTopo() {
     icone(ic), nome, extra && extra.selo ? h('span', { class: 'selo' }, extra.selo) : null);
   const grupo = (t) => h('div', { class: 'grupo' }, t);
   const partes = [];
-  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
+  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'));
   else {
     partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/acoes', 'Ações e prazos', 'clock'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
     partes.push(grupo('Escritório'), item('#/equipe', 'Equipe', 'users'), item('#/plano', 'Plano', 'card'), item('#/conta', 'Minha conta', 'user'));
-    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
+    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'));
   }
   document.getElementById('menu').replaceChildren(...partes);
   document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
@@ -726,6 +727,130 @@ const reais = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', curr
 const SITUACAO = { trialing: 'Em teste', active: 'Ativa', past_due: 'Vencida', suspended: 'Suspensa', cancelled: 'Cancelada' };
 const COR = { trialing: 'azul', active: 'verde', past_due: 'amar', suspended: 'verm', cancelled: '' };
 
+
+// ── API comercial: clientes, planos, chaves e uso (só administrador da plataforma) ──
+const num = (n) => Number(n || 0).toLocaleString('pt-BR');
+const ST_API = { active: ['verde', 'Ativo'], suspended: ['verm', 'Suspenso'], cancelled: ['', 'Cancelado'] };
+const barraUso = (usado, cota) => { const pct = cota ? Math.min(100, Math.round((usado / cota) * 100)) : 0;
+  return h('div', {}, h('div', { class: 'suave' }, num(usado) + ' de ' + num(cota) + ' consultas (' + pct + '%)'), h('div', { class: 'barra' }, h('div', { style: 'height:100%;width:' + pct + '%;background:' + (pct >= 100 ? 'var(--verm)' : pct >= 80 ? 'var(--amar)' : 'var(--verde)') }))); };
+const copiar = async (texto, aviso_) => { try { await navigator.clipboard.writeText(texto); aviso_.textContent = 'Copiado.'; } catch (e) { aviso_.textContent = 'Não consegui copiar sozinho: selecione o texto e use Ctrl+C.'; } };
+
+async function telaApiPainel() {
+  const [ov, planos, clientes] = await Promise.all([api('GET', '/api/admin/api/overview'), api('GET', '/api/admin/api/plans'), api('GET', '/api/admin/api/clients')]);
+  if (!ov.ok) return app.replaceChildren(aviso(ov.error, 'erro'));
+  const o = ov.data; let planoEmEdicao = null; const filtro = { q: '', status: '' };
+  const kpis = h('div', { class: 'kpis' }, ...[['Clientes ativos', num(o.clients.active), ''], ['Chaves ativas', num(o.keys_active), ''], ['Consultas no mês', num(o.billable_month), 'azul'],
+    ['Receita mensal estimada', reais(o.mrr_cents), 'verde'], ['Erros no mês', num(o.errors_month), o.errors_month ? 'amar' : '']].map(([t, v, c]) => h('div', { class: 'kpi-mini ' + c }, h('span', { class: 'num' }, v), h('span', {}, t))));
+  const tabelaClientes = h('div'), tabelaPlanos = h('div'), formCliente = h('div', { hidden: true }), formPlano = h('div', { hidden: true });
+  async function recarregar() { const [p, c] = await Promise.all([api('GET', '/api/admin/api/plans'), api('GET', '/api/admin/api/clients', null, Object.fromEntries(Object.entries(filtro).filter(([, v]) => v)))]); planos.data = p.data; clientes.data = c.data; desenhar(); }
+  function desenharPlanos() {
+    tabelaPlanos.replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Plano', 'Preço/mês', 'Cota/mês', 'Limite/min', 'Clientes', ''].map((t) => h('th', {}, t)))),
+      h('tbody', {}, ...planos.data.map((pl) => h('tr', {}, h('td', {}, pl.name, Number(pl.active) ? null : h('span', { class: 'etq' }, 'desativado')), h('td', {}, reais(pl.price_cents)), h('td', {}, num(pl.monthly_quota)), h('td', {}, num(pl.rate_per_minute)), h('td', {}, num(pl.clients)),
+        h('td', {}, h('button', { onclick: () => { planoEmEdicao = pl; desenharFormPlano(); } }, 'Editar'))))))));
+  }
+  function desenharFormPlano() {
+    const pl = planoEmEdicao, msg = h('div');
+    const f = h('form', { class: 'empilhado', onsubmit: async (e) => { e.preventDefault(); const d = Object.fromEntries(new FormData(f));
+      const corpo = { code: d.code, name: d.name, price_cents: Math.round(Number(String(d.preco).replace(',', '.')) * 100), monthly_quota: Number(d.monthly_quota), rate_per_minute: Number(d.rate_per_minute), active: d.active === 'on' };
+      const r = pl ? await api('PATCH', '/api/admin/api/plans/' + pl.id, corpo) : await api('POST', '/api/admin/api/plans', corpo);
+      if (!r.ok) return msg.replaceChildren(aviso(r.error, 'erro')); formPlano.hidden = true; recarregar(); } },
+      h('h3', {}, pl ? 'Editar plano ' + pl.name : 'Novo plano'),
+      pl ? null : campo('Código (letras minúsculas, ex.: ouro)', 'code', 'text', { pattern: '[a-z0-9_-]{2,40}' }), campo('Nome', 'name', 'text', { value: pl ? pl.name : '' }),
+      campo('Preço por mês (R$)', 'preco', 'text', { value: pl ? String(pl.price_cents / 100).replace('.', ',') : '', inputmode: 'decimal' }),
+      campo('Consultas por mês', 'monthly_quota', 'number', { min: 1, value: pl ? pl.monthly_quota : '' }), campo('Consultas por minuto (por chave)', 'rate_per_minute', 'number', { min: 1, value: pl ? pl.rate_per_minute : '' }),
+      h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'active', checked: pl ? !!Number(pl.active) : true }), 'Plano ativo (pode ser vendido a novos clientes)'),
+      h('div', { class: 'linha' }, h('button', { class: 'principal' }, 'Salvar plano'), h('button', { type: 'button', onclick: () => { formPlano.hidden = true; } }, 'Cancelar')), msg);
+    formPlano.replaceChildren(h('div', { class: 'cartao' }, f)); formPlano.hidden = false;
+  }
+  function desenharFormCliente() {
+    const msg = h('div'), ativos = planos.data.filter((x) => Number(x.active));
+    const f = h('form', { class: 'empilhado', onsubmit: async (e) => { e.preventDefault(); const d = Object.fromEntries(new FormData(f));
+      const r = await api('POST', '/api/admin/api/clients', { ...d, plan_id: Number(d.plan_id) }); if (!r.ok) return msg.replaceChildren(aviso(r.error, 'erro')); location.hash = '#/apis/cliente/' + r.data.client.id; } },
+      h('h3', {}, 'Novo cliente da API'), campo('Nome do cliente', 'name'), campo('E-mail', 'email', 'email'), campo('CPF ou CNPJ (opcional)', 'document', 'text', { required: false, inputmode: 'numeric' }), campo('Empresa (opcional)', 'company', 'text', { required: false }),
+      h('label', {}, 'Plano', h('select', { name: 'plan_id', required: true }, ...ativos.map((x) => h('option', { value: x.id }, x.name + ' — ' + reais(x.price_cents) + '/mês · ' + num(x.monthly_quota) + ' consultas')))),
+      h('label', {}, 'Observações (só você vê)', h('textarea', { name: 'notes', rows: 2 })),
+      h('div', { class: 'linha' }, h('button', { class: 'principal' }, 'Cadastrar cliente'), h('button', { type: 'button', onclick: () => { formCliente.hidden = true; } }, 'Cancelar')), msg);
+    formCliente.replaceChildren(h('div', { class: 'cartao' }, f)); formCliente.hidden = false;
+  }
+  function desenharClientes() {
+    const busca = h('input', { type: 'search', placeholder: 'Buscar cliente, e-mail ou documento…', 'aria-label': 'Buscar', value: filtro.q, oninput: (e) => { filtro.q = e.target.value; clearTimeout(busca.t); busca.t = setTimeout(recarregar, 300); } });
+    const st = h('select', { 'aria-label': 'Situação', onchange: (e) => { filtro.status = e.target.value; recarregar(); } }, h('option', { value: '' }, 'Todas as situações'), ...Object.entries(ST_API).map(([k, v]) => h('option', { value: k, selected: filtro.status === k }, v[1])));
+    const itens = clientes.data.items;
+    tabelaClientes.replaceChildren(h('div', { class: 'filtros' }, busca, st, h('span', { class: 'suave' }, itens.length + ' cliente(s)')),
+      h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Cliente', 'Plano', 'Uso no mês', 'Chaves', 'Último uso', 'Situação'].map((t) => h('th', {}, t)))),
+        h('tbody', {}, ...(itens.length ? itens.map((c) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/apis/cliente/' + c.id; } },
+          h('td', {}, h('strong', {}, c.name), h('div', { class: 'suave' }, c.email)), h('td', {}, c.plan_name, h('div', { class: 'suave' }, reais(c.price_cents))), h('td', { style: 'min-width:190px' }, barraUso(Number(c.used_month), Number(c.quota))),
+          h('td', {}, num(c.keys_active)), h('td', {}, c.last_used_at ? dataHoraBR(c.last_used_at) : 'nunca'), h('td', {}, h('span', { class: 'etq ' + ST_API[c.status][0] }, ST_API[c.status][1]))))
+          : [h('tr', {}, h('td', { colspan: 6, class: 'vazio' }, 'Nenhum cliente ainda. Clique em “Novo cliente” para cadastrar o primeiro.'))])))));
+  }
+  function desenhar() { desenharPlanos(); desenharClientes(); }
+  const topo = h('div', { class: 'linha entre' }, h('h1', {}, 'API e clientes'), h('div', { class: 'linha' },
+    h('a', { href: '/app/api-docs.html', target: '_blank', rel: 'noopener' }, h('button', {}, 'Documentação da API')),
+    h('button', { onclick: async () => { const e = await baixar('/api/admin/api/usage.csv', 'api-uso.csv', {}); if (e) alert(e); } }, 'Baixar uso do mês (CSV)'),
+    h('button', { class: 'principal', onclick: desenharFormCliente }, 'Novo cliente')));
+  app.replaceChildren(topo, h('p', { class: 'suave' }, 'Cadastre seus clientes, escolha o plano, gere a chave (token) e acompanhe o consumo. A cobrança é feita por você: use o CSV de uso no fechamento do mês.'), kpis, formCliente,
+    h('div', { class: 'cartao' }, h('h2', {}, 'Clientes'), tabelaClientes), h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h2', {}, 'Planos'), h('button', { onclick: () => { planoEmEdicao = null; desenharFormPlano(); } }, 'Novo plano')), tabelaPlanos), formPlano,
+    aviso('Os preços e cotas dos planos iniciais são exemplos: ajuste ao seu modelo. Antes de vender, confirme os termos de uso do DJEN e do Datajud para uso comercial e tenha contrato e política de privacidade próprios.', 'aviso'));
+  desenhar();
+}
+
+async function telaApiCliente(id) {
+  const r = await api('GET', '/api/admin/api/clients/' + id);
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/apis' }, '← Voltar')));
+  const planos = await api('GET', '/api/admin/api/plans');
+  const { client: c, plan, keys, days, quota, used_month: usado, by_endpoint: porRota } = r.data;
+  const msg = h('div'), painelToken = h('div'), formEdit = h('div', { hidden: true });
+  const acao = (rotulo, status, perigo) => h('button', { class: perigo ? 'perigo' : '', onclick: async () => { const x = await api('PATCH', '/api/admin/api/clients/' + id, { status }); if (x.ok) telaApiCliente(id); else msg.replaceChildren(aviso(x.error, 'erro')); } }, rotulo);
+  const max = Math.max(1, ...days.map((d) => d.requests));
+  const grafico = h('div', { class: 'dias', role: 'img', 'aria-label': 'Consultas por dia nos últimos 30 dias' }, ...days.map((d) => h('div', { class: 'dia', title: dataBR(d.day) + ': ' + d.billable + ' consultas ok, ' + d.errors + ' erro(s), ' + d.requests + ' chamadas' },
+    h('div', { class: 'col', style: 'height:' + Math.max(d.requests ? 3 : 0, Math.round((d.requests / max) * 100)) + '%' }, h('div', { class: 'col-erro', style: 'height:' + (d.requests ? Math.round((d.errors / d.requests) * 100) : 0) + '%' })))));
+  async function novaChave(e) {
+    e.preventDefault(); const d = Object.fromEntries(new FormData(e.target));
+    const x = await api('POST', '/api/admin/api/clients/' + id + '/keys', { label: d.label, expires_in_days: d.validade ? Number(d.validade) : null });
+    if (!x.ok) return msg.replaceChildren(aviso(x.error, 'erro'));
+    const token = x.data.token, aviso_ = h('span', { class: 'suave' }), caixa = h('code', { class: 'token' }, token);
+    painelToken.replaceChildren(h('div', { class: 'cartao token-painel' }, h('h3', {}, 'Chave criada: ' + x.data.key.label),
+      aviso('Copie e entregue ao cliente AGORA. Por segurança, o sistema guarda só uma impressão digital da chave e não consegue mostrá-la de novo. Se perder, gere outra e revogue esta.', 'aviso'),
+      caixa, h('div', { class: 'linha' }, h('button', { class: 'principal', onclick: () => copiar(token, aviso_) }, 'Copiar chave'), aviso_),
+      h('p', { class: 'suave' }, 'Teste rápido (no servidor do cliente):'), h('pre', {}, 'curl -H "Authorization: Bearer ' + token + '" \\\n  "' + location.origin + '/v1/uso"')));
+    e.target.reset(); setTimeout(() => telaApiChavesAtualizar(), 0);
+  }
+  const corpoChaves = h('tbody');
+  function telaApiChavesAtualizar() { api('GET', '/api/admin/api/clients/' + id).then((n) => { if (n.ok) desenharChaves(n.data.keys); }); }
+  function desenharChaves(lista) {
+    corpoChaves.replaceChildren(...(lista.length ? lista.map((k) => { const revogada = !!k.revoked_at, expirada = k.expires_at && k.expires_at < new Date().toISOString().slice(0, 19).replace('T', ' ');
+      return h('tr', {}, h('td', {}, k.label), h('td', {}, h('code', {}, k.prefix + '••••••••')), h('td', {}, dataBR(k.created_at)), h('td', {}, k.last_used_at ? dataHoraBR(k.last_used_at) : 'nunca'), h('td', {}, k.expires_at ? dataBR(k.expires_at) : 'não expira'),
+        h('td', {}, revogada ? h('span', { class: 'etq verm' }, 'revogada') : expirada ? h('span', { class: 'etq amar' }, 'expirada') : h('span', { class: 'etq verde' }, 'ativa')),
+        h('td', {}, revogada ? null : h('button', { class: 'perigo', onclick: async () => { const x = await api('POST', '/api/admin/api/keys/' + k.id + '/revoke'); if (x.ok) telaApiChavesAtualizar(); else msg.replaceChildren(aviso(x.error, 'erro')); } }, 'Revogar'))); })
+      : [h('tr', {}, h('td', { colspan: 7, class: 'vazio' }, 'Nenhuma chave. Gere a primeira abaixo.'))]));
+  }
+  desenharChaves(keys);
+  const f = h('form', { class: 'empilhado', onsubmit: async (e) => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.target));
+      const x = await api('PATCH', '/api/admin/api/clients/' + id, { name: d.name, email: d.email, document: d.document, company: d.company, notes: d.notes, plan_id: Number(d.plan_id), quota_override: d.quota_override === '' ? null : Number(d.quota_override) });
+      if (!x.ok) return msg.replaceChildren(aviso(x.error, 'erro')); telaApiCliente(id); } },
+    campo('Nome', 'name', 'text', { value: c.name }), campo('E-mail', 'email', 'email', { value: c.email }), campo('CPF ou CNPJ', 'document', 'text', { value: c.document || '', required: false }), campo('Empresa', 'company', 'text', { value: c.company || '', required: false }),
+    h('label', {}, 'Plano', h('select', { name: 'plan_id' }, ...planos.data.map((x) => h('option', { value: x.id, selected: Number(x.id) === Number(c.plan_id) }, x.name + ' — ' + reais(x.price_cents) + '/mês')))),
+    campo('Cota especial por mês (deixe em branco para usar a do plano)', 'quota_override', 'number', { value: c.quota_override || '', required: false, min: 1 }),
+    h('label', {}, 'Observações (só você vê)', h('textarea', { name: 'notes', rows: 3 }, c.notes || '')), h('button', { class: 'principal' }, 'Salvar alterações'));
+  formEdit.replaceChildren(h('div', { class: 'cartao' }, f));
+  app.replaceChildren(h('p', {}, h('a', { href: '#/apis' }, '← API e clientes')),
+    h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h1', {}, c.name), h('span', { class: 'etq ' + ST_API[c.status][0] }, ST_API[c.status][1])),
+      h('p', { class: 'suave' }, c.email + (c.company ? ' · ' + c.company : '') + (c.document ? ' · ' + c.document : '') + ' · cliente desde ' + dataBR(c.created_at)),
+      h('p', {}, h('strong', {}, plan.name), ' — ' + reais(plan.price_cents) + '/mês · ' + num(quota) + ' consultas/mês' + (c.quota_override ? ' (cota especial)' : '') + ' · ' + num(plan.rate_per_minute) + ' por minuto, por chave'),
+      barraUso(usado, quota),
+      h('div', { class: 'linha', style: 'margin-top:10px' }, h('button', { onclick: () => { formEdit.hidden = !formEdit.hidden; } }, 'Editar dados e plano'),
+        c.status === 'active' ? acao('Suspender acesso', 'suspended', true) : acao('Reativar', 'active'), c.status !== 'cancelled' ? acao('Cancelar cliente', 'cancelled', true) : null), msg),
+    formEdit,
+    h('div', { class: 'cartao' }, h('h2', {}, 'Uso nos últimos 30 dias'), grafico, h('p', { class: 'suave' }, 'Altura = chamadas do dia; a parte vermelha são os erros.'),
+      porRota.length ? h('table', {}, h('thead', {}, h('tr', {}, ...['Consulta', 'Ok no mês', 'Erros no mês'].map((t) => h('th', {}, t)))), h('tbody', {}, ...porRota.map((x) => h('tr', {}, h('td', {}, x.endpoint), h('td', {}, num(x.billable)), h('td', {}, num(x.errors)))))) : h('p', { class: 'suave' }, 'Ainda sem consultas neste mês.')),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Chaves (tokens)'), h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Nome', 'Chave', 'Criada', 'Último uso', 'Validade', 'Situação', ''].map((t) => h('th', {}, t)))), corpoChaves)),
+      painelToken,
+      c.status === 'active' ? h('form', { class: 'linha', style: 'margin-top:12px', onsubmit: novaChave }, h('input', { name: 'label', required: true, maxlength: 80, placeholder: 'Nome da chave (ex.: Produção)', 'aria-label': 'Nome da chave' }),
+        h('select', { name: 'validade', 'aria-label': 'Validade' }, h('option', { value: '' }, 'Não expira'), h('option', { value: '30' }, 'Expira em 30 dias'), h('option', { value: '90' }, 'Expira em 90 dias'), h('option', { value: '365' }, 'Expira em 1 ano')),
+        h('button', { class: 'principal' }, 'Gerar nova chave')) : aviso('Reative o cliente para gerar chaves.', 'aviso')),
+    h('div', { class: 'cartao' }, h('h2', {}, 'O que enviar ao cliente'), h('p', {}, 'A chave e o link da documentação: ', h('a', { href: '/app/api-docs.html', target: '_blank', rel: 'noopener' }, location.origin + '/app/api-docs.html'), '. A descrição técnica (OpenAPI) está em ', h('a', { href: '/v1/openapi.json', target: '_blank', rel: 'noopener' }, location.origin + '/v1/openapi.json'), '.')));
+}
+
 async function telaAdmin(consulta) {
   const filtros = { q: '', status: '', ...consulta };
   const [ov, planos] = await Promise.all([api('GET', '/api/admin/overview'), api('GET', '/api/admin/plans')]);
@@ -841,6 +966,8 @@ async function rota() {
   if (publicas.includes(caminho) && caminho !== '/redefinir') { location.hash = '#/'; return; }
   if (caminho === '/conta') { document.getElementById('faixa').hidden = true; return telaConta(); }
   let a;
+  if (sessao.platform_admin && caminho === '/apis') { document.getElementById('faixa').hidden = true; return telaApiPainel(); }
+  if (sessao.platform_admin && (a = caminho.match(/^\/apis\/cliente\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaApiCliente(Number(a[1])); }
   if (sessao.platform_admin && caminho === '/admin') { document.getElementById('faixa').hidden = true; return telaAdmin(consulta); }
   if (sessao.platform_admin && (a = caminho.match(/^\/admin\/escritorio\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaAdminEscritorio(Number(a[1])); }
   if (!sessao.tenant && sessao.platform_admin && sessao.tenants.length === 0) { location.hash = '#/admin'; return; }

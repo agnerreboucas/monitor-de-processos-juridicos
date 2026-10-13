@@ -2,7 +2,10 @@
 Options -Indexes
 DirectoryIndex app/inicio.html
 RewriteEngine On
-RewriteCond %{REQUEST_URI} ^(/public)?/api/
+# o Apache/CGI às vezes esconde o cabeçalho Authorization do PHP: repassa
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{REQUEST_URI} ^(/public)?/(api|v1)/
 RewriteRule ^ index.php [L]
 RewriteRule ^entrar/?$ app/index.html [L]
 RewriteCond %{REQUEST_FILENAME} !-f

@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Radar\Http;
 
 use PDO;
+use Radar\Api\ApiAdminService;
+use Radar\Api\PublicApi;
 use Radar\Auth\AuthService;
 use Radar\Exception\AuthError;
 use Radar\Exception\Forbidden;
@@ -56,6 +58,7 @@ final class App
     private DataTransferService $transfer;
     private PrivacyService $privacy;
     private SubscriptionService $subscriptions;
+    private ApiAdminService $apiAdmin;
 
     public function __construct(
         private PDO $pdo,
@@ -66,6 +69,7 @@ final class App
         int $maxFailures = 5,
         int $lockMinutes = 15,
         private ?LookupService $lookup = null,
+        private ?PublicApi $publicApi = null,
     ) {
         $this->auth = new AuthService($pdo, $clock, $maxFailures, $lockMinutes);
         $this->processes = new ProcessService($pdo, $clock);
@@ -79,6 +83,7 @@ final class App
         $this->transfer = new DataTransferService($pdo, $clock);
         $this->privacy = new PrivacyService($pdo, $clock);
         $this->subscriptions = new SubscriptionService($pdo, $clock);
+        $this->apiAdmin = new ApiAdminService($pdo, $clock);
     }
 
     public function handle(Request $request): Response
@@ -111,6 +116,9 @@ final class App
 
     private function dispatch(Request $r): Response
     {
+        if (PublicApi::handles($r->path)) {           // API comercial: chave no cabeçalho, sem sessão nem cookie
+            return $this->publicApi?->handle($r) ?? Response::error('API não habilitada neste servidor.', 404, 'not_found');
+        }
         if (!str_starts_with($r->path, '/api/')) {
             return Response::error('Endereço desconhecido.', 404, 'not_found');
         }
@@ -415,6 +423,57 @@ final class App
                 'note' => $this->platform->setNote($userId, $id, $r->str('note')),
             };
             return Response::json(['ok' => true, 'data' => $this->platform->tenant($userId, $id)]);
+        }
+        if (str_starts_with($p, '/api/admin/api/')) {
+            return $this->adminApi($r, $userId);
+        }
+        return Response::error('Endereço desconhecido.', 404, 'not_found');
+    }
+
+    /** Venda da API: clientes, planos, chaves e uso (somente administrador da plataforma). */
+    private function adminApi(Request $r, int $userId): Response
+    {
+        $m = $r->method;
+        $p = $r->path;
+        $x = [];
+        $json = fn ($data, int $status = 200) => Response::json(['ok' => true, 'data' => $data], $status);
+        if ($m === 'GET' && $p === '/api/admin/api/overview') {
+            return $json($this->apiAdmin->overview($userId));
+        }
+        if ($m === 'GET' && $p === '/api/admin/api/plans') {
+            return $json($this->apiAdmin->plans($userId));
+        }
+        if ($m === 'POST' && $p === '/api/admin/api/plans') {
+            return $json($this->apiAdmin->savePlan($userId, null, $r->body, $r->ip), 201);
+        }
+        if ($m === 'PATCH' && preg_match('~^/api/admin/api/plans/(\d+)$~', $p, $x) === 1) {
+            return $json($this->apiAdmin->savePlan($userId, (int) $x[1], $r->body, $r->ip));
+        }
+        if ($m === 'GET' && $p === '/api/admin/api/clients') {
+            return $json($this->apiAdmin->clients($userId, $r->strQuery('q'), $r->strQuery('status')));
+        }
+        if ($m === 'POST' && $p === '/api/admin/api/clients') {
+            return $json($this->apiAdmin->createClient($userId, $r->body, $r->ip), 201);
+        }
+        if (preg_match('~^/api/admin/api/clients/(\d+)$~', $p, $x) === 1) {
+            if ($m === 'GET') {
+                return $json($this->apiAdmin->client($userId, (int) $x[1]));
+            }
+            if ($m === 'PATCH') {
+                return $json($this->apiAdmin->updateClient($userId, (int) $x[1], $r->body, $r->ip));
+            }
+        }
+        if ($m === 'POST' && preg_match('~^/api/admin/api/clients/(\d+)/keys$~', $p, $x) === 1) {
+            $days = $r->body['expires_in_days'] ?? null;
+            return $json($this->apiAdmin->createKey($userId, (int) $x[1], $r->str('label'), $days === null || $days === '' ? null : (int) $days, $r->ip), 201);
+        }
+        if ($m === 'POST' && preg_match('~^/api/admin/api/keys/(\d+)/revoke$~', $p, $x) === 1) {
+            $this->apiAdmin->revokeKey($userId, (int) $x[1], $r->ip);
+            return $json(null);
+        }
+        if ($m === 'GET' && $p === '/api/admin/api/usage.csv') {
+            $month = $r->strQuery('month');
+            return $this->csv($this->apiAdmin->usageCsv($userId, $month !== '' ? $month : null), 'api-uso-' . ($month !== '' ? $month : $this->clock->now()->format('Y-m')) . '.csv');
         }
         return Response::error('Endereço desconhecido.', 404, 'not_found');
     }

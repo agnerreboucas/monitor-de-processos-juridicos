@@ -575,4 +575,38 @@ final class HttpApiTest extends DbTestCase
         $this->assertSame('A', $this->call('GET', '/api/feed', [], ['days' => '365'])['json']['data'][0]['client_side']);
         $this->assertSame(422, $this->call('PATCH', "/api/processes/$pid", ['client_side' => 'Z'])['status']);
     }
+
+    public function testApiSalesPanelIsAdminOnlyAndKeysWorkOnV1(): void
+    {
+        $this->registerAndLogin();
+        $lookup = new \Radar\Service\LookupService($this->pdo, null, null);
+        $this->app = new App($this->pdo, $this->session, $this->mailer, 'https://radar.exemplo.com.br', $this->clock, lookup: $lookup,
+            publicApi: new \Radar\Api\PublicApi($this->pdo, $lookup, null, $this->clock));
+        $plan = (int) $this->scalar("SELECT id FROM api_plans WHERE code = 'starter'");
+
+        $this->assertSame(403, $this->call('GET', '/api/admin/api/clients')['status']);                        // dono comum não entra
+        $this->pdo->exec('UPDATE users SET is_platform_admin = 1');
+        $this->assertSame(200, $this->call('GET', '/api/admin/api/clients')['status']);
+        $this->assertSame(403, $this->call('POST', '/api/admin/api/clients', ['name' => 'Cli', 'email' => 'c@c.com', 'plan_id' => $plan], [], ['content-type' => 'application/json'])['status']);   // sem CSRF
+        $created = $this->call('POST', '/api/admin/api/clients', ['name' => 'Cli', 'email' => 'c@c.com', 'plan_id' => $plan]);
+        $this->assertSame(201, $created['status'], json_encode($created['json']));
+        $cid = (int) $created['json']['data']['client']['id'];
+        $key = $this->call('POST', "/api/admin/api/clients/$cid/keys", ['label' => 'Produção', 'expires_in_days' => 30]);
+        $this->assertSame(201, $key['status']);
+        $token = $key['json']['data']['token'];
+        $this->assertStringStartsWith('rdr_live_', $token);
+        $detail = $this->call('GET', "/api/admin/api/clients/$cid");
+        $this->assertStringNotContainsString($token, json_encode($detail['json']));                           // depois de criada, o token não volta mais
+
+        $uso = $this->app->handle(new Request('GET', '/v1/uso', [], [], ['authorization' => 'Bearer ' . $token], '198.51.100.7', true));
+        $this->assertSame(200, $uso->status);
+        $this->assertSame(2000, json_decode($uso->body, true)['cota_mensal']);
+        $this->assertSame(['X-Content-Type-Options', 'Cache-Control'], array_values(array_intersect(['X-Content-Type-Options', 'Cache-Control'], array_keys($uso->headers))));
+
+        $this->assertSame(200, $this->call('POST', '/api/admin/api/keys/' . $key['json']['data']['key']['id'] . '/revoke')['status']);
+        $this->assertSame(403, $this->app->handle(new Request('GET', '/v1/uso', [], [], ['authorization' => 'Bearer ' . $token], '198.51.100.7', true))->status);
+        $csv = $this->raw('GET', '/api/admin/api/usage.csv');
+        $this->assertStringContainsString('text/csv', $csv->headers['Content-Type']);
+        $this->assertSame(401, $this->app->handle(new Request('GET', '/v1/uso', [], [], [], '1.1.1.1', true))->status);
+    }
 }

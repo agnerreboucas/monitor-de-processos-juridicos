@@ -119,6 +119,12 @@ final class PrivacyService
             'audit' => $run('DELETE FROM audit_logs WHERE created_at < ?', $cut(self::RETENTION_AUDIT_DAYS)),
             'events' => $run('DELETE FROM monitoring_events WHERE finished_at < ?', $cut(self::RETENTION_EVENTS_DAYS)),
             'resets' => $run('DELETE FROM password_resets WHERE expires_at < ?', $cut(self::RETENTION_RESET_DAYS)),
+            'api_cache' => $run('DELETE FROM api_cache WHERE expires_at < ?', Clock::sql($this->clock->now())),
+            'api_rate' => (function () {
+                $stmt = $this->pdo->prepare('DELETE FROM api_rate WHERE bucket < ?');
+                $stmt->execute([intdiv($this->clock->now()->getTimestamp(), 60) - 180]);
+                return $stmt->rowCount();
+            })(),
         ];
     }
 }

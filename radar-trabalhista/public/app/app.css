@@ -186,3 +186,9 @@ form.empilhado label.linha{display:flex;flex-wrap:wrap;align-items:center;gap:6p
 .leitura .item-acao{margin:0 0 8px}.leitura-det{margin:6px 0}.leitura-det>summary{cursor:pointer;color:var(--link);font-size:13.5px}
 @media (max-width:700px){.acao-topo{grid-template-columns:1fr}.acao-topo button{justify-self:start}}
 main,#app,.cartao,.acao-meio{min-width:0}select{max-width:100%}.filtros select,.filtros input{min-width:0}
+
+.dias{display:flex;align-items:flex-end;gap:3px;height:110px;margin:10px 0}.dia{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end}
+.dia .col{width:100%;background:var(--azul);border-radius:3px 3px 0 0;position:relative;overflow:hidden;opacity:.85}.dia .col-erro{position:absolute;bottom:0;width:100%;background:var(--verm)}
+.token-painel{border:2px solid var(--ambar);margin-top:12px}.token{display:block;padding:12px;background:var(--fundo);border:1px dashed var(--ambar);border-radius:8px;word-break:break-all;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}
+.token-painel pre{white-space:pre-wrap;word-break:break-all;background:var(--fundo);padding:10px;border-radius:8px;font-size:12.5px}
+textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--linha);border-radius:8px;background:var(--cartao);color:var(--texto)}

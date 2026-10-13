@@ -30,7 +30,19 @@ final class LookupService
     {
         $ctx->require('process.view');
         $cnj = Cnj::parse($input) ?? throw new ValidationError('Número fora do padrão CNJ. Confira os dígitos (0000000-00.0000.0.00.0000).');
+        $data = $this->consolidate($cnj);
+        $monitored = $this->pdo->prepare("SELECT id FROM processes WHERE tenant_id = ? AND cnj_digits = ? AND status <> 'archived' LIMIT 1");
+        $monitored->execute([$ctx->tenantId, $cnj->digits]);
+        $id = $monitored->fetchColumn();
+        return $data + ['monitored_id' => $id === false ? null : (int) $id];
+    }
 
+    /**
+     * Consulta as fontes e junta tudo, sem saber quem pediu (serve ao painel e à API comercial).
+     * @return array<string,mixed>
+     */
+    public function consolidate(Cnj $cnj): array
+    {
         $timeline = [];
         $sources = [];
         $case = null;
@@ -86,14 +98,9 @@ final class LookupService
 
         usort($timeline, fn (array $a, array $b) => [$b['date'] ?? '', $b['time'], $b['source']] <=> [$a['date'] ?? '', $a['time'], $a['source']]);
 
-        $monitored = $this->pdo->prepare("SELECT id FROM processes WHERE tenant_id = ? AND cnj_digits = ? AND status <> 'archived' LIMIT 1");
-        $monitored->execute([$ctx->tenantId, $cnj->digits]);
-        $id = $monitored->fetchColumn();
-
         return [
             'cnj' => $cnj->formatted(), 'tribunal' => $cnj->tribunal(), 'segment' => $cnj->segmentName(), 'uf' => Tribunals::uf($cnj->tribunal()),
             'case' => $case, 'parties' => array_slice(array_values($parties), 0, 40), 'lawyers' => array_slice(array_values($lawyers), 0, 40), 'sources' => $sources, 'timeline' => $timeline,
-            'monitored_id' => $id === false ? null : (int) $id,
         ];
     }
 

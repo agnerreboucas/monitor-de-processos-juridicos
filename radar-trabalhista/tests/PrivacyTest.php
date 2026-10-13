@@ -151,6 +151,6 @@ final class PrivacyTest extends DbTestCase
         $r = $this->svc->purgeExpired();
         $this->assertGreaterThan(0, $r['audit']);                              // o registro do cadastro, com mais de 730 dias
         $this->assertSame(1, (int) $this->scalar("SELECT COUNT(*) FROM audit_logs WHERE action = 'recente'"));
-        $this->assertSame(['audit' => 0, 'events' => 0, 'resets' => 0], $this->svc->purgeExpired());   // repetir não apaga mais nada
+        $this->assertSame(['audit' => 0, 'events' => 0, 'resets' => 0, 'api_cache' => 0, 'api_rate' => 0], $this->svc->purgeExpired());   // repetir não apaga mais nada
     }
 }

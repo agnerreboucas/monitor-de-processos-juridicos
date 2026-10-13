@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-261 testes (PHP) + 8 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+281 testes (PHP) + 8 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -94,3 +94,16 @@ O menu **Ações e prazos** lê o texto de cada publicação do Diário e mostra
 - Cada publicação pode ser marcada como **tratada** ou **não requer ação** (vale para todo o escritório).
 - A leitura é feita por **regras simples** (frases do próprio texto) no navegador (`public/app/analise.js`). É triagem: **pode errar ou deixar passar algo e não substitui a conferência do advogado nem o controle de prazos**. Os prazos são **estimados em dias úteis** (feriados nacionais, Sexta-feira Santa, Corpus Christi e recesso de 20/12 a 20/01); feriados locais e suspensões do tribunal não entram.
 - Testes: `node --test tests/js/analise.test.cjs` (inclui o despacho real do TRT8 e uma varredura nos itens reais).
+
+## API comercial (vender o acesso por chave)
+No menu **API e clientes** (só o administrador da plataforma) você cadastra os **clientes da API**, escolhe o **plano** (cota por mês e limite por minuto), gera a **chave (token)** e acompanha o **consumo** de cada um. A cobrança é sua: no fechamento do mês, baixe o **CSV de uso** (consultas, cota e quanto passou dela).
+
+- **Chave**: `rdr_live_` + 40 caracteres. Aparece **uma única vez**, na hora de gerar; o sistema guarda só o SHA-256. Cada cliente pode ter até 10 chaves, com validade opcional, e você revoga na hora.
+- **Endpoints** (`/v1`, só GET): `/processos/{numero}` (capa + andamento completo do Datajud + publicações do Diário, partes e advogados), `/oab/{uf}/{numero}/publicacoes` (até 31 dias por consulta), `/uso` (cota do mês, não gasta cota), `/saude` e `/openapi.json` (sem chave).
+- **Autenticação**: `Authorization: Bearer <chave>` ou `X-API-Key`. Sem sessão, sem cookie e sem CORS (a chave é para servidor).
+- **Cota e limite**: só consulta bem-sucedida conta na cota; erro, fonte fora do ar (502) e limite estourado (429) não contam. Cabeçalhos `X-RateLimit-*` e `X-Quota-*` em toda resposta. Cache de 10 minutos protege as fontes públicas (consulta repetida do cache conta na cota).
+- **Fonte que falha nunca vira "sem andamento"**: cada resposta traz `fontes[].status`.
+- **Documentação para o cliente**: `/app/api-docs.html` (com exemplos em curl, JavaScript, Python e PHP) e `/v1/openapi.json`.
+- Testes: `tests/ApiTest.php` (chaves, limites, cota, cache, cobrança e isolamento) e a rota completa em `tests/HttpApiTest.php`.
+
+**Antes de vender (pendências suas):** confirmar os termos de uso do DJEN e do Datajud para uso comercial; ter contrato/termos da API e política de privacidade próprios (os textos de publicações trazem dados pessoais: LGPD); definir preços (os três planos iniciais são exemplos); cobrança automática (hoje é manual). A análise de ações e prazos (menu Ações e prazos) ainda roda só no navegador e **não** está na API.

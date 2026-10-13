@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Documentação da API · Radar Trabalhista</title><link rel="stylesheet" href="/app/legal.css">
+<style>pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace}table{border-collapse:collapse;width:100%;font-size:14.5px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}.tabela{overflow-x:auto}.metodo{display:inline-block;background:var(--blue);color:#fff;border-radius:6px;padding:0 8px;font:600 12px/22px ui-monospace,monospace;margin-inline-end:6px}main{max-width:860px}</style></head>
+<body><main>
+<p><a href="/">← Radar Trabalhista</a></p>
+<h1>API de Processos e Publicações</h1>
+<p class="sub">Versão 1 · base <code>/v1</code> · respostas em JSON (UTF-8)</p>
+
+<p>Consulte, pelo seu sistema, o <strong>andamento completo</strong> de um processo e as <strong>publicações do Diário</strong> em nome de um advogado. A API junta duas fontes oficiais e públicas: o <strong>Datajud</strong> (CNJ, andamento interno, atualiza com alguns dias de atraso) e o <strong>Diário (DJEN/Comunica)</strong>, que publica em tempo real e traz o texto, as partes e os advogados.</p>
+<div class="rascunho">Dados públicos de fontes oficiais. Podem estar incompletos ou atrasados e não substituem a conferência no tribunal. Cada resposta informa, em <code>fontes</code>, se cada fonte respondeu: quando uma falha, o quadro está incompleto.</div>
+
+<h2>Autenticação</h2>
+<p>Envie a chave que recebemos para você em todo pedido (exceto <code>/v1/saude</code> e <code>/v1/openapi.json</code>):</p>
+<pre>Authorization: Bearer rdr_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# ou, se o seu servidor remove o Authorization:
+X-API-Key: rdr_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</pre>
+<p><strong>Use a chave só no seu servidor.</strong> Nunca a coloque em página web, aplicativo ou repositório público: quem a vê pode gastar a sua cota. A API não aceita chamadas diretas de navegador (sem CORS). Se a chave vazar, peça a troca; revogamos na hora.</p>
+
+<h2>Limites e cota</h2>
+<ul>
+<li><strong>Cota mensal</strong>: cada consulta bem-sucedida conta 1. Consulta repetida que vem do cache também conta. Erros e consultas em que nenhuma fonte respondeu <em>não</em> contam. A cota renova no dia 1º.</li>
+<li><strong>Limite por minuto</strong>: por chave. Ao passar, a API responde <code>429</code> com <code>Retry-After</code> (segundos).</li>
+<li><strong>Cache</strong>: respostas completas ficam 10 minutos. O campo <code>cache</code> avisa quando veio dele.</li>
+</ul>
+<p>Todas as respostas trazem os cabeçalhos <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-Quota-Limit</code> e <code>X-Quota-Remaining</code>.</p>
+
+<h2>Endpoints</h2>
+
+<h3><span class="metodo">GET</span><code>/v1/processos/{numero}</code></h3>
+<p>Capa e andamento completo. <code>numero</code> é o número CNJ, com ou sem pontuação (<code>0001457-85.2026.5.08.0106</code>).</p>
+<pre>curl -H "Authorization: Bearer $RADAR_KEY" \
+  "https://SEU-DOMINIO/v1/processos/0001457-85.2026.5.08.0106"</pre>
+<pre>{
+  "numero": "0001457-85.2026.5.08.0106",
+  "tribunal": "TRT8", "segmento": "Justiça do Trabalho", "uf": null,
+  "capa": { "classe": "Ação Trabalhista - Rito Sumaríssimo", "assuntos": ["Horas Extras"],
+            "orgao_julgador": "Vara do Trabalho de Castanhal", "grau": "G1",
+            "data_ajuizamento": "2026-01-20", "nivel_sigilo": 0, "atualizado_em": "2026-07-02" },
+  "partes":    [ { "nome": "FULANO", "polo": "A" }, { "nome": "EMPRESA X", "polo": "P" } ],
+  "advogados": [ { "nome": "DRA. BELTRANA", "oab": "42370", "uf": "PA" } ],
+  "andamento": [
+    { "fonte": "djen", "data": "2026-10-09", "tipo": "Intimação", "descricao": "…texto da publicação…",
+      "link": "https://…", "orgao": "Vara do Trabalho de Castanhal", "meio": "Diário de Justiça Eletrônico Nacional" },
+    { "fonte": "datajud", "data": "2026-02-02", "hora": "10:30", "tipo": "Citação", "descricao": "Citação" }
+  ],
+  "fontes": [ { "codigo": "djen", "status": "ok", "quantidade": 1, "mensagem": null },
+              { "codigo": "datajud", "status": "ok", "quantidade": 11, "mensagem": null } ],
+  "consultado_em": "2026-10-13T10:00:00-03:00", "cache": false
+}</pre>
+<p><code>polo</code>: <code>A</code> = ativo (autor/reclamante), <code>P</code> = passivo (réu/reclamado). <code>fontes[].status</code>: <code>ok</code>, <code>erro</code>, <code>nao_encontrado</code> ou <code>nao_configurada</code>. Se <em>nenhuma</em> fonte responder, a API devolve <code>502</code> e não gasta cota.</p>
+
+<h3><span class="metodo">GET</span><code>/v1/oab/{uf}/{numero}/publicacoes</code></h3>
+<p>Publicações do Diário em nome de um advogado. Parâmetros opcionais: <code>inicio</code> e <code>fim</code> (<code>AAAA-MM-DD</code>; padrão: últimos 7 dias; <strong>máximo de 31 dias</strong> por consulta). A letra final do número da OAB (<code>128733A</code>) é ignorada.</p>
+<pre>curl -H "Authorization: Bearer $RADAR_KEY" \
+  "https://SEU-DOMINIO/v1/oab/SP/128733/publicacoes?inicio=2026-10-01&amp;fim=2026-10-12"</pre>
+<pre>{ "oab": "128733", "uf": "SP", "inicio": "2026-10-01", "fim": "2026-10-12", "total": 1,
+  "publicacoes": [ { "id": "djen-751951120", "numero": "0001457-85.2026.5.08.0106", "tribunal": "TRT8", "data": "2026-10-09",
+                     "tipo": "Intimação", "orgao": "…", "classe": "…", "texto": "…", "link": "https://…" } ],
+  "consultado_em": "…", "cache": false }</pre>
+
+<h3><span class="metodo">GET</span><code>/v1/uso</code></h3>
+<p>Seu plano, cota e consumo do mês. Não gasta cota e funciona mesmo com a cota esgotada.</p>
+<pre>{ "cliente": "Sua Empresa", "plano": "Pro", "cota_mensal": 15000, "usadas_no_mes": 312, "restantes": 14688,
+  "limite_por_minuto": 120, "cota_renova_em": "2026-11-01T00:00:00+00:00" }</pre>
+
+<h3><span class="metodo">GET</span><code>/v1/saude</code> e <code>/v1/openapi.json</code></h3>
+<p>Disponibilidade e a descrição OpenAPI 3 (importe no Postman, Insomnia ou gerador de SDK). Sem chave.</p>
+
+<h2>Erros</h2>
+<p>Sempre neste formato: <code>{ "erro": { "codigo": "…", "mensagem": "…" } }</code></p>
+<div class="tabela"><table>
+<tr><th>HTTP</th><th>codigo</th><th>Quando</th></tr>
+<tr><td>401</td><td>chave_ausente, chave_invalida</td><td>Sem chave ou chave desconhecida.</td></tr>
+<tr><td>403</td><td>chave_revogada, chave_expirada, cliente_suspenso</td><td>A chave foi revogada/expirou ou a conta está suspensa.</td></tr>
+<tr><td>404</td><td>nao_encontrado</td><td>Endereço inexistente.</td></tr>
+<tr><td>405</td><td>metodo_nao_permitido</td><td>Só GET.</td></tr>
+<tr><td>422</td><td>parametro_invalido</td><td>Número CNJ inválido, UF ou datas fora do permitido.</td></tr>
+<tr><td>429</td><td>limite_por_minuto, cota_mensal_esgotada</td><td>Veja <code>Retry-After</code>. Não gasta cota.</td></tr>
+<tr><td>502</td><td>fonte_indisponivel</td><td>Nenhuma fonte oficial respondeu. Tente de novo; não gasta cota.</td></tr>
+<tr><td>500</td><td>erro_interno</td><td>Falha nossa. Tente de novo.</td></tr>
+</table></div>
+
+<h2>Exemplos</h2>
+<p><strong>JavaScript (Node 18+)</strong></p>
+<pre>const r = await fetch("https://SEU-DOMINIO/v1/processos/0001457-85.2026.5.08.0106", {
+  headers: { Authorization: `Bearer ${process.env.RADAR_KEY}` },
+});
+if (r.status === 429) await new Promise((ok) =&gt; setTimeout(ok, Number(r.headers.get("retry-after")) * 1000));
+const processo = await r.json();
+for (const f of processo.fontes) if (f.status !== "ok") console.warn("Fonte incompleta:", f);</pre>
+<p><strong>Python</strong></p>
+<pre>import os, requests
+r = requests.get("https://SEU-DOMINIO/v1/oab/SP/128733/publicacoes",
+                 params={"inicio": "2026-10-01", "fim": "2026-10-12"},
+                 headers={"Authorization": "Bearer " + os.environ["RADAR_KEY"]}, timeout=60)
+r.raise_for_status()
+print(r.json()["total"], "publicações")</pre>
+<p><strong>PHP</strong></p>
+<pre>$ch = curl_init('https://SEU-DOMINIO/v1/uso');
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER =&gt; true, CURLOPT_HTTPHEADER =&gt; ['Authorization: Bearer ' . getenv('RADAR_KEY')]]);
+$uso = json_decode(curl_exec($ch), true);</pre>
+
+<h2>Boas práticas</h2>
+<ul>
+<li>Guarde a chave em variável de ambiente no seu servidor.</li>
+<li>Não consulte o mesmo processo toda hora: o andamento muda poucas vezes por dia. Guarde o resultado do seu lado.</li>
+<li>Trate <code>429</code> esperando o <code>Retry-After</code> e <code>502</code> tentando de novo mais tarde.</li>
+<li>Mostre ao seu usuário final quando uma fonte falhou. "Sem andamento" e "não consegui consultar" são coisas diferentes.</li>
+<li>Os textos das publicações podem trazer dados pessoais: trate-os conforme a LGPD.</li>
+</ul>
+<p class="sub">Suporte: fale com quem lhe entregou a chave.</p>
+</main></body></html>
