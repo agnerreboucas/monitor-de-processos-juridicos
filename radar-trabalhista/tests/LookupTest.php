@@ -152,4 +152,16 @@ final class LookupTest extends DbTestCase
         $this->assertSame(1, $r['failed']);
         $this->assertNull($this->scalar('SELECT last_success_at FROM processes WHERE id = ?', [$pid]));   // não finge sucesso: pode ter perdido o diário
     }
+
+    public function testProcessDetailReturnsStoredMetadataAsAList(): void
+    {
+        $o = $this->office('A', 'a@a.com');
+        $ctx = $this->ctx($o['user_id'], $o['tenant_id']);
+        $service = new ProcessService($this->pdo, $this->clock);
+        $pid = (int) $service->create($ctx, self::CNJ_TRT8, 'Cliente', $o['user_id'])['id'];
+        $djen = (new FakeAdapter('djen'))->then([FakeAdapter::movement('1')]);
+        (new Worker($this->pdo, [$djen], $this->clock, 'w1'))->runBatch(10);
+        $movements = $service->get($ctx, $pid)['movements'];
+        $this->assertSame('Vara Teste', $movements[0]['metadata']['orgao']);
+    }
 }

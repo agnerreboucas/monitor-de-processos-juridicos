@@ -338,6 +338,20 @@ function desenharConsulta(alvo, d) {
   alvo.replaceChildren(capa, fontes, h('div', { class: 'cartao' }, h('h2', {}, 'Andamento completo'), h('div', { class: 'filtros' }, busca, filtro, total), lista));
 }
 
+// partes, advogados e órgão reunidos das publicações do Diário já guardadas
+function capaDosMovimentos(movs) {
+  const partes = new Map(), advs = new Map(); let orgao = '', classe = '';
+  for (const m of movs) { const md = m.metadata || {};
+    if (!orgao && md.orgao) orgao = md.orgao; if (!classe && md.classe) classe = md.classe;
+    for (const x of md.partes || []) partes.set(x.polo + '|' + x.nome, x);
+    for (const x of md.advogados || []) advs.set(x.uf + x.oab + '|' + x.nome, x); }
+  const linhas = [['Órgão', orgao], ['Classe', classe],
+    ['Parte(s)', [...partes.values()].map((x) => x.nome + (x.polo ? ' (' + (x.polo === 'A' ? 'ativo' : 'passivo') + ')' : '')).join('; ')],
+    ['Advogado(s)', [...advs.values()].map((x) => x.nome + (x.oab ? ' — OAB ' + x.uf + ' ' + x.oab : '')).join('; ')]].filter(([, v]) => v);
+  return linhas.length ? h('dl', { class: 'capa' }, ...linhas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])) : null;
+}
+const linhaOrigem = (md) => md && (md.orgao || md.meio) ? h('div', { class: 'suave' }, [md.orgao && 'Órgão: ' + md.orgao, md.tipo_documento && 'Documento: ' + md.tipo_documento, md.meio && 'Meio: ' + md.meio].filter(Boolean).join(' · ')) : null;
+
 async function telaProcesso(id) {
   const r = await api('GET', '/api/processes/' + id);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/processos' }, '← Voltar')));
@@ -356,6 +370,7 @@ async function telaProcesso(id) {
       h('p', {}, 'Última consulta bem-sucedida: ', h('strong', {}, dataHoraBR(p.last_success_at)), ' · última tentativa: ', dataHoraBR(p.last_attempt_at)),
       p.last_error ? aviso('Última tentativa falhou: ' + p.last_error + ' — este processo NÃO está atualizado.', 'erro') : null,
       p.notes ? h('p', {}, h('span', { class: 'suave' }, 'Observações: '), p.notes) : null,
+      capaDosMovimentos(movements),
       pode('process.update') ? h('div', { class: 'linha' },
         p.status === 'active' ? acao('Consultar agora', '/check') : null,
         p.status === 'active' ? acao('Pausar', '/pause') : null,
@@ -366,7 +381,8 @@ async function telaProcesso(id) {
       movements.length ? movements.map((m) => h('div', { class: 'mov' },
         h('div', { class: 'linha' }, h('strong', {}, 'Movimentação de ' + dataBR(m.occurred_at)), h('span', { class: 'suave' }, 'capturada em ' + dataHoraBR(m.captured_at)),
           h('span', { class: 'etq azul' }, NOME_FONTE[m.source] || m.source), m.kind ? h('span', { class: 'etq' }, m.kind) : null, m.is_baseline ? h('span', { class: 'etq' }, 'histórico inicial') : null,
-          link(m.source_url) ? h('a', { href: link(m.source_url), target: '_blank', rel: 'noopener noreferrer' }, 'Fonte oficial') : null),
+          link(m.source_url) ? h('a', { href: link(m.source_url), target: '_blank', rel: 'noopener noreferrer' }, 'Inteiro teor') : null),
+        linhaOrigem(m.metadata),
         h('pre', {}, m.description)))
         : h('p', { class: 'vazio' }, p.last_success_at ? 'A fonte não retornou movimentações para este processo.' : 'Ainda sem histórico: a primeira consulta não foi concluída.')),
     h('div', { class: 'cartao' }, h('h2', {}, 'Tentativas de consulta'),
