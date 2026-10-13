@@ -121,6 +121,14 @@ final class ProcessService
             $sets[] = 'notes = ?';
             $params[] = self::cleanText($changes['notes'], 5000);
         }
+        if (array_key_exists('client_side', $changes)) {
+            $side = $changes['client_side'];
+            if ($side !== null && $side !== '' && !in_array($side, ['A', 'P'], true)) {
+                throw new ValidationError('Lado inválido: use A (autor/reclamante) ou P (réu/reclamado).');
+            }
+            $sets[] = 'client_side = ?';
+            $params[] = $side === '' ? null : $side;
+        }
         if (array_key_exists('responsible_user_id', $changes)) {
             if ($changes['responsible_user_id'] !== null) {
                 $this->assertActiveMember($ctx->tenantId, (int) $changes['responsible_user_id']);

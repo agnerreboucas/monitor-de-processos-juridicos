@@ -12,6 +12,7 @@ use Radar\Exception\NotFound;
 use Radar\Exception\ValidationError;
 use Radar\Mail\Mailer;
 use Radar\Mail\MailerException;
+use Radar\Repository\MovementRepository;
 use Radar\Repository\NotificationRepository;
 use Radar\Repository\OabPublicationRepository;
 use Radar\Repository\ProcessRepository;
@@ -205,6 +206,20 @@ final class App
             $this->throttleLookups();
             return Response::json(['ok' => true, 'data' => $this->lookup->lookup($ctx, $r->strQuery('cnj'))]);
         }
+        if ($method === 'GET' && $path === '/api/feed') {
+            $ctx->require('process.view');
+            $days = max(1, min(365, $r->intQuery('days', 120)));
+            return Response::json(['ok' => true, 'data' => (new MovementRepository($this->pdo, $ctx))->feed($this->clock->now()->modify("-$days days"), 400)]);
+        }
+        if ($method === 'POST' && preg_match('~^/api/movements/(\d+)/action$~', $path, $m) === 1) {
+            $ctx->require('process.update');
+            $status = $r->str('status');
+            if (!in_array($status, ['open', 'done', 'ignored'], true)) {
+                throw new ValidationError('Situação inválida.');
+            }
+            (new MovementRepository($this->pdo, $ctx))->setAction((int) $m[1], $status, $r->strOrNull('note'), $this->clock->now());
+            return Response::json(['ok' => true]);
+        }
         if ($method === 'POST' && $path === '/api/processes/import') {
             return Response::json(['ok' => true, 'data' => $this->transfer->importProcesses($ctx, $r->str('csv'), $r->ip)]);
         }
@@ -228,7 +243,7 @@ final class App
             }
             if ($method === 'PATCH') {
                 $changes = [];
-                foreach (['client_label', 'notes'] as $field) {
+                foreach (['client_label', 'notes', 'client_side'] as $field) {
                     if (array_key_exists($field, $r->body)) {
                         $changes[$field] = is_string($r->body[$field]) ? $r->body[$field] : null;
                     }

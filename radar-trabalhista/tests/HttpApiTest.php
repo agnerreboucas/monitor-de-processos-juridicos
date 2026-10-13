@@ -547,4 +547,32 @@ final class HttpApiTest extends DbTestCase
         }
         $this->assertSame(409, $this->call('GET', '/api/lookup', [], ['cnj' => self::CNJ_TRT8])['status']);
     }
+
+    public function testFeedAndActionEndpointsFollowCsrfAndTenant(): void
+    {
+        $this->registerAndLogin();
+        $tenant = (int) $this->scalar('SELECT id FROM tenants LIMIT 1');
+        $this->call('POST', '/api/tenant/select', ['tenant_id' => $tenant]);
+        $p = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TRT8]);
+        $this->assertSame(201, $p['status']);
+        $pid = (int) $p['json']['data']['id'];
+        $source = (int) $this->scalar("SELECT id FROM integration_sources WHERE code = 'djen'");
+        $this->pdo->prepare("INSERT INTO process_movements (tenant_id, process_id, source_id, external_id, occurred_at, captured_at, kind, description, is_baseline) VALUES (?, ?, ?, 'djen-9', '2026-10-09', '2026-10-09 08:00:00', 'Intimação', 'Prazo de 5 dias.', 0)")
+            ->execute([$tenant, $pid, $source]);
+        $mid = (int) $this->pdo->lastInsertId();
+
+        $feed = $this->call('GET', '/api/feed', [], ['days' => '365']);
+        $this->assertSame(200, $feed['status']);
+        $this->assertCount(1, $feed['json']['data']);
+        $this->assertSame('open', $feed['json']['data'][0]['action_status']);
+
+        $this->assertSame(403, $this->call('POST', "/api/movements/$mid/action", ['status' => 'done'], [], ['content-type' => 'application/json'])['status']);   // sem CSRF
+        $this->assertSame(422, $this->call('POST', "/api/movements/$mid/action", ['status' => 'qualquer'])['status']);
+        $this->assertSame(200, $this->call('POST', "/api/movements/$mid/action", ['status' => 'done', 'note' => 'ok'])['status']);
+        $this->assertSame('done', $this->call('GET', '/api/feed', [], ['days' => '365'])['json']['data'][0]['action_status']);
+
+        $this->assertSame(200, $this->call('PATCH', "/api/processes/$pid", ['client_side' => 'A'])['status']);
+        $this->assertSame('A', $this->call('GET', '/api/feed', [], ['days' => '365'])['json']['data'][0]['client_side']);
+        $this->assertSame(422, $this->call('PATCH', "/api/processes/$pid", ['client_side' => 'Z'])['status']);
+    }
 }

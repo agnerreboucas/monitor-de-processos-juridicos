@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-256 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+261 testes (PHP) + 8 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -87,3 +87,10 @@ O Diário (DJEN) só traz o que foi **publicado**. Para ver **todo o andamento**
 3. No sistema, menu **Consultar processo**: digite o número e veja a capa e o andamento completo. O botão **Acompanhar este processo** cadastra para monitorar.
 
 Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário (Comunica) é a fonte em tempo real.
+
+## Ações e prazos (triagem das publicações)
+O menu **Ações e prazos** lê o texto de cada publicação do Diário e mostra, com filtros: **que ato é**, **o que fazer**, **quem** tem de agir, **como**, **prazo** (urgência), **impacto** (favorável, desfavorável, atenção ou neutro), **riscos** e **atores** (juiz/relator, perito, intimados, partes e advogados).
+- Informe em cada processo **de que lado o escritório atua** (autor/reclamante ou réu/reclamado): só assim o impacto aparece como favorável ou desfavorável.
+- Cada publicação pode ser marcada como **tratada** ou **não requer ação** (vale para todo o escritório).
+- A leitura é feita por **regras simples** (frases do próprio texto) no navegador (`public/app/analise.js`). É triagem: **pode errar ou deixar passar algo e não substitui a conferência do advogado nem o controle de prazos**. Os prazos são **estimados em dias úteis** (feriados nacionais, Sexta-feira Santa, Corpus Christi e recesso de 20/12 a 20/01); feriados locais e suspensões do tribunal não entram.
+- Testes: `node --test tests/js/analise.test.cjs` (inclui o despacho real do TRT8 e uma varredura nos itens reais).

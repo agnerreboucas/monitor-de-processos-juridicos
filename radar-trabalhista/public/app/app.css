@@ -174,3 +174,15 @@ body:not(.logado) footer{display:none}
 .capa{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:10px 0 14px}.capa dt{color:var(--suave)}.capa dd{margin:0;min-width:0;overflow-wrap:anywhere}.mov details summary{cursor:pointer;color:var(--suave)}
 @media (max-width:560px){.capa{grid-template-columns:1fr}.capa dd{margin-bottom:6px}}
 form.empilhado label.linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}form.empilhado label.linha input[type=checkbox]{width:auto;margin:0}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.kpi-mini{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;background:var(--cartao);border:1px solid var(--linha);border-radius:10px;cursor:pointer;text-align:left;color:var(--texto);font:inherit}
+.kpi-mini .num{font-size:24px;font-weight:700}.kpi-mini.verm .num{color:var(--verm)}.kpi-mini.amar .num{color:var(--amar)}.kpi-mini.azul .num{color:var(--azul)}.kpi-mini.ativo{outline:2px solid var(--ambar)}
+.acao{margin-bottom:10px;border-inline-start:4px solid var(--linha)}.acao.u-vencido,.acao.u-hoje{border-inline-start-color:var(--verm)}.acao.u-ate3,.acao.u-ate7{border-inline-start-color:var(--amar)}.acao.u-depois{border-inline-start-color:var(--azul)}.acao.feita{opacity:.65}
+.acao-topo{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:14px;align-items:start}
+.acao-prazo .data{font-weight:700;margin-top:4px}
+.acao-meio{min-width:0}.acao-meio .linha{margin-top:6px}
+.leitura{margin-top:12px;padding-top:12px;border-top:1px solid var(--linha)}.leitura ul{margin:0;padding-inline-start:18px}.leitura blockquote{margin:0;padding-inline-start:10px;border-inline-start:3px solid var(--linha);color:var(--suave)}
+.leitura .item-acao{margin:0 0 8px}.leitura-det{margin:6px 0}.leitura-det>summary{cursor:pointer;color:var(--link);font-size:13.5px}
+@media (max-width:700px){.acao-topo{grid-template-columns:1fr}.acao-topo button{justify-self:start}}
+main,#app,.cartao,.acao-meio{min-width:0}select{max-width:100%}.filtros select,.filtros input{min-width:0}

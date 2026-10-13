@@ -101,7 +101,7 @@ function desenharTopo() {
   const partes = [];
   if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
   else {
-    partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
+    partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/acoes', 'Ações e prazos', 'clock'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
@@ -192,14 +192,16 @@ const kpi = (titulo, valor, cor, ic, href, rodape) => h('a', { class: 'cartao kp
 
 async function telaPainel() {
   const veOab = pode('oab.view');
-  const [r, st, pubs] = await Promise.all([api('GET', '/api/dashboard'), veOab ? api('GET', '/api/oab-stats') : null,
-    veOab ? api('GET', '/api/publications', null, { new_only: '1', per_page: '1' }) : null]);
+  const [r, st, pubs, feed] = await Promise.all([api('GET', '/api/dashboard'), veOab ? api('GET', '/api/oab-stats') : null,
+    veOab ? api('GET', '/api/publications', null, { new_only: '1', per_page: '1' }) : null, api('GET', '/api/feed', null, { days: '120' })]);
+  const acoesUrgentes = feed && feed.ok ? feed.data.filter((m) => m.action_status === 'open').map((m) => analisarItem(m)).filter((x) => ['vencido', 'hoje', 'ate3', 'ate7'].includes(x.urgencia)).length : 0;
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
   const d = r.data;
   selos = { alertas: d.oab_alerts_unseen || 0, notif: d.unread_notifications || 0 }; desenharTopo();
   const kpis = [kpi('Processos ativos', d.processes_active, 'azul', 'folder', '#/processos', 'Ver todos'),
     kpi('Notificações não lidas', d.unread_notifications, 'ambar', 'bell', '#/notificacoes', 'Ver notificações'),
     kpi('Movimentações (7 dias)', d.recent_movements.length, 'roxo', 'pulse', '#/notificacoes', 'Últimos 7 dias'),
+    kpi('Ações com prazo até 7 dias', acoesUrgentes, 'amar', 'clock', '#/acoes', 'Ver ações e prazos'),
     kpi('Falha de consulta', d.with_error, 'verm', 'alert', '#/processos?with_error=1', 'Ver processos'),
     ...(veOab ? [kpi('Publicações novas', pubs && pubs.ok ? pubs.data.total : 0, 'azul', 'file', '#/publicacoes?new_only=1', 'Ver publicações'),
       kpi('Alertas OAB', d.oab_alerts_unseen, 'verm', 'alert', '#/alertas', 'Ver central de alertas')] : []),
@@ -331,11 +333,141 @@ function desenharConsulta(alvo, d) {
         h('div', { class: 'linha' }, h('strong', {}, dataBR(t.date) + (t.time ? ' ' + t.time : '')), h('span', { class: 'etq azul' }, NOME_FONTE[t.source] || t.source), t.kind ? h('span', { class: 'etq' }, t.kind) : null,
           link(t.url) ? h('a', { href: link(t.url), target: '_blank', rel: 'noopener noreferrer' }, 'Inteiro teor') : null),
         t.source === 'djen' && (t.orgao || t.meio) ? h('div', { class: 'suave' }, [t.orgao && 'Órgão: ' + t.orgao, t.tipo_documento && 'Documento: ' + t.tipo_documento, t.meio && 'Meio: ' + t.meio].filter(Boolean).join(' · ')) : null,
+        t.source === 'djen' ? h('details', { class: 'leitura-det' }, h('summary', {}, 'Leitura automática: o que fazer, quem, prazo, impacto e riscos'),
+          cartaoLeitura({ description: t.text, occurred_at: t.date, kind: t.kind, metadata: { orgao: t.orgao, partes: t.partes, advogados: t.advogados } }, analisarItem({ description: t.text, occurred_at: t.date, kind: t.kind, metadata: { orgao: t.orgao, partes: t.partes, advogados: t.advogados } }), null)) : null,
         longo ? h('details', {}, h('summary', {}, t.text.slice(0, 220).replace(/\s+/g, ' ') + '… (ver tudo)'), h('pre', {}, t.text)) : h('pre', {}, t.text));
     }) : [h('p', { class: 'vazio' }, d.timeline.length ? 'Nada com esse filtro.' : 'Nenhum andamento retornado pelas fontes consultadas.')]));
   };
   busca.addEventListener('input', desenhar); filtro.addEventListener('change', desenhar); desenhar();
   alvo.replaceChildren(capa, fontes, h('div', { class: 'cartao' }, h('h2', {}, 'Andamento completo'), h('div', { class: 'filtros' }, busca, filtro, total), lista));
+}
+
+
+// ── Ações e prazos: leitura automática das publicações ───────────────────────
+// A leitura é feita aqui no navegador, com regras simples (public/app/analise.js). É triagem, não parecer jurídico.
+const hojeISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const COR_URG = { vencido: 'verm', hoje: 'verm', ate3: 'amar', ate7: 'amar', depois: 'azul', sem_prazo: '' };
+const ROT_IMPACTO = { favoravel: ['verde', 'Favorável ao seu cliente'], desfavoravel: ['verm', 'Desfavorável ao seu cliente'], atencao: ['amar', 'Atenção'], depende: ['azul', 'Depende de quem você representa'], neutro: ['', 'Neutro / informativo'] };
+const LADO_ROT = { A: 'autor/reclamante', P: 'réu/reclamado' };
+const analisarItem = (it) => window.Analise.analisar({ texto: it.description || '', data: it.occurred_at, tipo: it.kind, metadata: it.metadata || {} }, { hoje: hojeISO(), ladoCliente: it.client_side || null });
+const prazoTexto = (a) => a.vence ? dataBR(a.vence) + (a.hora ? ' ' + a.hora : '') + (a.dias === 0 ? ' (hoje)' : a.dias > 0 ? ' (em ' + a.dias + ' dia' + (a.dias === 1 ? '' : 's') + ')' : ' (venceu há ' + (-a.dias) + ' dia' + (a.dias === -1 ? '' : 's') + ')') : (a.prazoTexto || 'sem prazo identificado');
+const pilulaUrgencia = (u, prox) => h('span', { class: 'etq ' + COR_URG[u] }, window.Analise.ROTULO_URGENCIA[u] + (prox && prox.vence && u !== 'sem_prazo' ? ' · ' + dataBR(prox.vence) : ''));
+
+// painel de leitura de UMA publicação. `it`: { id?, process_id?, client_side?, description, occurred_at, kind, source_url, metadata, action_status }
+function cartaoLeitura(it, r, depois) {
+  const [corI, rotI] = ROT_IMPACTO[r.impacto.grau] || ['', r.impacto.rotulo];
+  const meta = it.metadata || {}, ator = r.atores;
+  const linhas = [];
+  linhas.push(['O que fazer', h('div', {}, r.acoes.map((a) => h('div', { class: 'item-acao' },
+    h('strong', {}, a.rotulo), ' ', h('span', { class: 'etq ' + (a.dias != null && a.dias <= 3 ? 'verm' : '') }, prazoTexto(a)), a.estimado ? h('span', { class: 'etq', title: 'Contagem automática em dias úteis, sem feriados locais' }, 'estimado') : null,
+    h('div', { class: 'suave' }, 'Quem: ' + (a.quem || []).join(', ')), h('div', {}, 'Como: ' + a.como)))) ]);
+  linhas.push(['Impacto', h('div', {}, h('span', { class: 'etq ' + corI }, rotI), ' ', r.impacto.motivo,
+    !it.client_side && it.process_id && pode('process.update') ? h('div', { class: 'suave' }, 'Diga de que lado seu escritório atua neste processo para ver o que é favorável ou não: ',
+      ...['A', 'P'].map((l) => h('button', { onclick: async () => { const x = await api('PATCH', '/api/processes/' + it.process_id, { client_side: l }); if (x.ok) depois && depois(); } }, 'Represento o ' + LADO_ROT[l]))) : null,
+    it.client_side ? h('div', { class: 'suave' }, 'Você atua pelo ' + LADO_ROT[it.client_side] + ' neste processo.') : null)]);
+  if (r.riscos.length) linhas.push(['Riscos', h('ul', {}, r.riscos.map((x) => h('li', {}, x.texto, x.lado ? h('span', { class: 'suave' }, ' (para ' + (it.client_side ? (x.lado === it.client_side ? 'o seu cliente' : 'a parte contrária') : 'o ' + LADO_ROT[x.lado]) + ')') : null)))]);
+  const atores = [];
+  if (ator.orgao) atores.push('Juízo/órgão: ' + ator.orgao); if (ator.juiz) atores.push('Juiz(a): ' + ator.juiz); if (ator.relator) atores.push('Relator(a): ' + ator.relator); if (ator.perito) atores.push('Perito: ' + ator.perito);
+  if (r.intimados.length) atores.push('Intimado(s): ' + r.intimados.join('; '));
+  if ((meta.partes || []).length) atores.push('Partes: ' + meta.partes.map((x) => x.nome + (x.polo ? ' (' + (x.polo === 'A' ? 'ativo' : 'passivo') + ')' : '')).join('; '));
+  if ((meta.advogados || []).length) atores.push('Advogados: ' + meta.advogados.map((x) => x.nome + (x.oab ? ' — OAB ' + x.uf + ' ' + x.oab : '')).join('; '));
+  if (atores.length) linhas.push(['Atores', h('ul', {}, atores.map((x) => h('li', {}, x)))]);
+  if (r.acoes.some((a) => a.tipoPrazo === 'dias' || a.tipoPrazo === 'padrao')) linhas.push(['Como contamos o prazo', h('span', { class: 'suave' }, 'Disponibilizado em ' + dataBR(it.occurred_at) + '; publicação considerada em ' + dataBR(r.publicacao) + ' (1º dia útil seguinte); o prazo começa a contar no dia útil seguinte. Dias úteis, sem feriados nacionais, Sexta-feira Santa, Corpus Christi e recesso de 20/12 a 20/01. Feriados locais e suspensões do tribunal NÃO são considerados: confira o prazo no ato antes de confiar na data.')]);
+  linhas.push(['Trecho-chave', h('blockquote', {}, r.trecho)]);
+  const acoesBotoes = it.id && pode('process.update') ? h('div', { class: 'linha' },
+    it.action_status !== 'done' ? h('button', { class: 'principal', onclick: async () => { const x = await api('POST', '/api/movements/' + it.id + '/action', { status: 'done' }); if (x.ok) depois && depois(); } }, 'Marcar como tratado') : null,
+    it.action_status !== 'ignored' ? h('button', { onclick: async () => { const x = await api('POST', '/api/movements/' + it.id + '/action', { status: 'ignored' }); if (x.ok) depois && depois(); } }, 'Não requer ação') : null,
+    it.action_status && it.action_status !== 'open' ? h('button', { onclick: async () => { const x = await api('POST', '/api/movements/' + it.id + '/action', { status: 'open' }); if (x.ok) depois && depois(); } }, 'Reabrir') : null) : null;
+  return h('div', { class: 'leitura' },
+    h('div', { class: 'linha' }, h('strong', {}, r.ato.rotulo), h('span', { class: 'etq' }, 'confiança da leitura: ' + r.confianca), pilulaUrgencia(r.urgencia, r.proximo)),
+    h('dl', { class: 'capa' }, ...linhas.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])),
+    acoesBotoes,
+    h('details', {}, h('summary', {}, 'Ver o texto inteiro da publicação'), h('pre', {}, it.description || '')),
+    h('p', { class: 'suave' }, 'Leitura automática do texto. Pode errar ou deixar passar algo: não substitui a conferência do advogado nem o controle de prazos.'));
+}
+
+async function telaAcoes() {
+  const estado = { dias: 120, urg: '', sit: 'abertas', acao: '', quem: '', imp: '', proc: '', trib: '', q: '', ordem: 'urgencia' };
+  const lista = h('div'), kpis = h('div', { class: 'kpis' }), filtros = h('div', { class: 'filtros' });
+  const ordemUrg = { vencido: 0, hoje: 1, ate3: 2, ate7: 3, depois: 4, sem_prazo: 5 };
+  let itens = [];
+  const sel = (rotulo, chave, opcoes) => { const e = h('select', { 'aria-label': rotulo, onchange: () => { estado[chave] = e.value; desenhar(); } }, h('option', { value: '' }, rotulo), ...opcoes.map(([v, t]) => h('option', { value: v }, t))); return e; };
+  async function carregar() {
+    lista.replaceChildren(h('p', { class: 'suave' }, 'Lendo as publicações…'));
+    const r = await api('GET', '/api/feed', null, { days: String(estado.dias) });
+    if (!r.ok) return lista.replaceChildren(aviso(r.error, 'erro'));
+    itens = r.data.map((it) => ({ it, r: analisarItem(it) }));
+    montarFiltros(); desenhar();
+  }
+  function montarFiltros() {
+    const unicos = (f) => [...new Map(itens.map(f).filter(Boolean)).entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+    const busca = h('input', { type: 'search', placeholder: 'Buscar no texto, cliente ou número…', 'aria-label': 'Buscar', value: estado.q, oninput: (e) => { estado.q = e.target.value; desenhar(); } });
+    const periodo = h('select', { 'aria-label': 'Período', onchange: (e) => { estado.dias = Number(e.target.value); carregar(); } }, ...[[30, 'Últimos 30 dias'], [120, 'Últimos 120 dias'], [365, 'Último ano']].map(([v, t]) => h('option', { value: v, selected: v === estado.dias }, t)));
+    filtros.replaceChildren(busca,
+      sel('Situação: abertas', 'sit', [['tratadas', 'Já tratadas'], ['ignoradas', 'Sem ação necessária'], ['todas', 'Todas']]),
+      sel('Qualquer urgência', 'urg', Object.entries(window.Analise.ROTULO_URGENCIA)),
+      sel('Qualquer ação', 'acao', unicos(({ r }) => r.proximo || r.acoes[0] ? [(r.proximo || r.acoes[0]).id, (r.proximo || r.acoes[0]).rotulo.replace(/ até a audiência| às .*/, '')] : null)),
+      sel('Quem tem de agir', 'quem', [['A', 'Parte autora / reclamante'], ['P', 'Parte ré / reclamada'], ['AP', 'Ambas as partes'], ['perito', 'Perito'], ['juizo', 'Secretaria / juízo']]),
+      sel('Qualquer impacto', 'imp', Object.entries(ROT_IMPACTO).map(([k, v]) => [k, v[1]])),
+      sel('Todos os processos', 'proc', unicos(({ it }) => [String(it.process_id), it.cnj + (it.client_label ? ' — ' + it.client_label : '')])),
+      sel('Todos os tribunais', 'trib', unicos(({ it }) => [it.tribunal, it.tribunal])), periodo);
+  }
+  const passa = ({ it, r }) => {
+    const sit = it.action_status;
+    if (estado.sit === 'abertas' && sit !== 'open') return false; if (estado.sit === 'tratadas' && sit !== 'done') return false; if (estado.sit === 'ignoradas' && sit !== 'ignored') return false;
+    if (estado.urg && r.urgencia !== estado.urg) return false;
+    if (estado.acao && !r.acoes.some((a) => a.id === estado.acao)) return false;
+    if (estado.quem) { const f = estado.quem; if (!r.acoes.some((a) => f === 'perito' ? a.quem.includes('perito') : f === 'juizo' ? a.quem.some((x) => /secretaria|Minist/.test(x)) : a.lado === f || a.lado === 'AP')) return false; }
+    if (estado.imp && r.impacto.grau !== estado.imp) return false;
+    if (estado.proc && String(it.process_id) !== estado.proc) return false;
+    if (estado.trib && it.tribunal !== estado.trib) return false;
+    if (estado.q && !((it.description || '') + ' ' + it.cnj + ' ' + (it.client_label || '')).toLowerCase().includes(estado.q.toLowerCase())) return false;
+    return true;
+  };
+  function desenhar() {
+    const abertos = itens.filter(({ it }) => it.action_status === 'open');
+    const cont = (u) => abertos.filter(({ r }) => r.urgencia === u).length;
+    kpis.replaceChildren(...[['vencido', 'Vencidos', 'verm'], ['hoje', 'Vencem hoje', 'verm'], ['ate3', 'Até 3 dias', 'amar'], ['ate7', 'Até 7 dias', 'amar'], ['depois', 'Mais de 7 dias', 'azul'], ['sem_prazo', 'Sem prazo identificado', '']].map(([u, t, c]) =>
+      h('button', { class: 'kpi-mini ' + c + (estado.urg === u ? ' ativo' : ''), onclick: () => { estado.urg = estado.urg === u ? '' : u; if (!estado.urg || estado.sit !== 'abertas') estado.sit = 'abertas'; montarFiltros(); desenhar(); } }, h('span', { class: 'num' }, String(cont(u))), h('span', {}, t))));
+    const vis = itens.filter(passa).sort((a, b) => estado.ordem === 'data' ? (b.it.occurred_at || '').localeCompare(a.it.occurred_at || '')
+      : (ordemUrg[a.r.urgencia] - ordemUrg[b.r.urgencia]) || ((a.r.proximo && a.r.proximo.vence) || '9').localeCompare((b.r.proximo && b.r.proximo.vence) || '9'));
+    lista.replaceChildren(h('p', { class: 'suave' }, vis.length + ' publicação(ões) · ordenadas por ',
+      h('select', { 'aria-label': 'Ordem', onchange: (e) => { estado.ordem = e.target.value; desenhar(); } }, h('option', { value: 'urgencia', selected: estado.ordem === 'urgencia' }, 'urgência'), h('option', { value: 'data', selected: estado.ordem === 'data' }, 'data de publicação'))),
+      ...(vis.length ? vis.map(({ it, r }) => linhaAcao(it, r, carregar)) : [h('p', { class: 'vazio' }, itens.length ? 'Nenhuma publicação com esses filtros.' : 'Nenhuma publicação do Diário no período. Cadastre processos para o sistema acompanhar.')]));
+  }
+  app.replaceChildren(h('h1', {}, 'Ações e prazos'),
+    aviso('Leitura automática do texto das publicações (Diário). Os prazos são ESTIMADOS em dias úteis, sem feriados locais: confira sempre o ato original antes de agir ou de confiar numa data.', 'aviso'),
+    kpis, h('div', { class: 'cartao' }, filtros), lista);
+  carregar();
+}
+
+function linhaAcao(it, r, recarregar) {
+  const prox = r.proximo || r.acoes[0], [corI, rotI] = ROT_IMPACTO[r.impacto.grau] || ['', ''];
+  const painel = h('div', { hidden: true }); let aberto = false;
+  const alternar = () => { aberto = !aberto; painel.hidden = !aberto; if (aberto && !painel.childNodes.length) painel.append(cartaoLeitura(it, r, recarregar)); botao.textContent = aberto ? 'Fechar' : 'Detalhes'; };
+  const botao = h('button', { onclick: alternar }, 'Detalhes');
+  return h('div', { class: 'cartao acao u-' + r.urgencia + (it.action_status !== 'open' ? ' feita' : '') },
+    h('div', { class: 'acao-topo' },
+      h('div', { class: 'acao-prazo' }, pilulaUrgencia(r.urgencia, null), h('div', { class: 'data' }, prox && prox.vence ? dataBR(prox.vence) + (prox.hora ? ' ' + prox.hora : '') : '—'), h('div', { class: 'suave' }, prox && prox.estimado ? 'prazo estimado' : prox && prox.vence ? 'data marcada' : '')),
+      h('div', { class: 'acao-meio' },
+        h('strong', {}, prox ? prox.rotulo : r.ato.rotulo), h('div', { class: 'suave' }, r.ato.rotulo + ' · publicado em ' + dataBR(it.occurred_at)),
+        h('div', {}, h('a', { href: '#/processos/' + it.process_id }, it.cnj), ' ', h('span', { class: 'etq' }, it.tribunal), it.client_label ? h('span', { class: 'suave' }, ' ' + it.client_label) : null),
+        h('div', { class: 'linha' }, h('span', { class: 'suave' }, 'Quem: ' + (prox ? prox.quem.join(', ') : '—')), h('span', { class: 'etq ' + corI }, rotI),
+          r.riscos.length ? h('span', { class: 'etq amar' }, r.riscos.length + ' risco(s)') : null, r.acoes.length > 1 ? h('span', { class: 'etq' }, r.acoes.length + ' ações') : null,
+          it.action_status === 'done' ? h('span', { class: 'etq verde' }, 'tratada') : it.action_status === 'ignored' ? h('span', { class: 'etq' }, 'sem ação necessária') : null)),
+      botao), painel);
+}
+
+// resumo das ações abertas de um processo (topo da página do processo)
+function resumoAcoesProcesso(p, movimentos, depois) {
+  const abertos = movimentos.filter((m) => m.source === 'djen').map((m) => ({ it: { ...m, process_id: p.id, client_side: p.client_side, action_status: m.action_status || 'open' }, r: null }))
+    .map((x) => ({ ...x, r: analisarItem(x.it) })).filter((x) => x.it.action_status === 'open' && x.r.urgencia !== 'sem_prazo')
+    .sort((a, b) => ((a.r.proximo && a.r.proximo.vence) || '9').localeCompare((b.r.proximo && b.r.proximo.vence) || '9')).slice(0, 5);
+  const lado = h('div', { class: 'linha' }, h('span', { class: 'suave' }, 'Seu escritório atua pelo: '),
+    h('select', { 'aria-label': 'Quem você representa', disabled: !pode('process.update'), onchange: async (e) => { const x = await api('PATCH', '/api/processes/' + p.id, { client_side: e.target.value }); if (x.ok) depois(); } },
+      h('option', { value: '' }, 'não informado'), h('option', { value: 'A', selected: p.client_side === 'A' }, 'autor / reclamante'), h('option', { value: 'P', selected: p.client_side === 'P' }, 'réu / reclamado')),
+    h('span', { class: 'suave' }, '(com isso o impacto de cada ato aparece como favorável ou desfavorável)'));
+  return h('div', {}, lado, abertos.length ? h('div', {}, h('h2', {}, 'Ações com data neste processo'), ...abertos.map(({ it, r }) => h('div', { class: 'linha', style: 'margin:4px 0' }, pilulaUrgencia(r.urgencia, r.proximo), h('strong', {}, r.proximo.rotulo), h('span', { class: 'suave' }, 'publicado em ' + dataBR(it.occurred_at))))) : null);
 }
 
 // partes, advogados e órgão reunidos das publicações do Diário já guardadas
@@ -371,6 +503,7 @@ async function telaProcesso(id) {
       p.last_error ? aviso('Última tentativa falhou: ' + p.last_error + ' — este processo NÃO está atualizado.', 'erro') : null,
       p.notes ? h('p', {}, h('span', { class: 'suave' }, 'Observações: '), p.notes) : null,
       capaDosMovimentos(movements),
+      resumoAcoesProcesso(p, movements, () => telaProcesso(id)),
       pode('process.update') ? h('div', { class: 'linha' },
         p.status === 'active' ? acao('Consultar agora', '/check') : null,
         p.status === 'active' ? acao('Pausar', '/pause') : null,
@@ -383,6 +516,8 @@ async function telaProcesso(id) {
           h('span', { class: 'etq azul' }, NOME_FONTE[m.source] || m.source), m.kind ? h('span', { class: 'etq' }, m.kind) : null, m.is_baseline ? h('span', { class: 'etq' }, 'histórico inicial') : null,
           link(m.source_url) ? h('a', { href: link(m.source_url), target: '_blank', rel: 'noopener noreferrer' }, 'Inteiro teor') : null),
         linhaOrigem(m.metadata),
+        m.source === 'djen' ? h('details', { class: 'leitura-det' }, h('summary', {}, 'Leitura automática: o que fazer, quem, prazo, impacto e riscos'),
+          cartaoLeitura({ ...m, process_id: p.id, client_side: p.client_side, action_status: m.action_status || 'open' }, analisarItem({ ...m, client_side: p.client_side }), () => telaProcesso(id))) : null,
         h('pre', {}, m.description)))
         : h('p', { class: 'vazio' }, p.last_success_at ? 'A fonte não retornou movimentações para este processo.' : 'Ainda sem histórico: a primeira consulta não foi concluída.')),
     h('div', { class: 'cartao' }, h('h2', {}, 'Tentativas de consulta'),
@@ -713,6 +848,7 @@ async function rota() {
   desenharFaixa(); atualizarSelos();
   let m;
   if (caminho === '/' || caminho === '') return telaPainel();
+  if (caminho === '/acoes') return telaAcoes();
   if (caminho === '/consulta') return telaConsulta(consulta);
   if (caminho === '/processos') return telaProcessos(consulta);
   if ((m = caminho.match(/^\/processos\/(\d+)$/))) return telaProcesso(Number(m[1]));

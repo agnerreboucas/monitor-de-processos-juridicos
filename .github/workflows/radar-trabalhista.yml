@@ -39,6 +39,8 @@ jobs:
       - name: Sintaxe de todos os arquivos PHP
         run: find src bin public tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
       - name: Sintaxe da tela (JavaScript)
-        run: node --check public/app/app.js
+        run: node --check public/app/app.js && node --check public/app/analise.js
+      - name: Testes da leitura das publicações (JavaScript)
+        run: node --test tests/js/analise.test.cjs
       - name: Testes
         run: ./vendor/bin/phpunit
