@@ -201,8 +201,38 @@ final class DjenAdapter implements SourceAdapter, OabSource
                 'classe' => $item['nomeClasse'] ?? null,
                 'tribunal' => $item['siglaTribunal'] ?? null,
                 'hash' => $item['hash'] ?? null,
-            ], static fn ($v) => $v !== null && $v !== ''),
+                'meio' => $item['meiocompleto'] ?? null,
+                'partes' => self::parties($item['destinatarios'] ?? null),
+                'advogados' => self::lawyers($item['destinatarioadvogados'] ?? null),
+            ], static fn ($v) => $v !== null && $v !== '' && $v !== []),
         );
+    }
+
+    /** @return list<array{nome:string,polo:string}> partes citadas na publicação (A = ativo, P = passivo), no máximo 30 */
+    private static function parties(mixed $list): array
+    {
+        $out = [];
+        foreach (is_array($list) ? $list : [] as $p) {
+            $name = is_array($p) ? trim((string) ($p['nome'] ?? '')) : '';
+            if ($name !== '' && count($out) < 30) {
+                $out[] = ['nome' => mb_substr($name, 0, 150), 'polo' => in_array($p['polo'] ?? '', ['A', 'P'], true) ? $p['polo'] : ''];
+            }
+        }
+        return $out;
+    }
+
+    /** @return list<array{nome:string,oab:string,uf:string}> advogados citados (o número da OAB vem como foi publicado, ex.: 128733A) */
+    private static function lawyers(mixed $list): array
+    {
+        $out = [];
+        foreach (is_array($list) ? $list : [] as $row) {
+            $l = is_array($row) && is_array($row['advogado'] ?? null) ? $row['advogado'] : null;
+            $name = $l !== null ? trim((string) ($l['nome'] ?? '')) : '';
+            if ($name !== '' && count($out) < 30) {
+                $out[] = ['nome' => mb_substr($name, 0, 150), 'oab' => mb_substr(trim((string) ($l['numero_oab'] ?? '')), 0, 20), 'uf' => strtoupper(mb_substr(trim((string) ($l['uf_oab'] ?? '')), 0, 2))];
+            }
+        }
+        return $out;
     }
 
     private static function date(mixed $value): ?string

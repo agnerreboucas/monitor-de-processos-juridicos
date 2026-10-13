@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-252 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+255 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -86,4 +86,4 @@ O Diário (DJEN) só traz o que foi **publicado**. Para ver **todo o andamento**
 2. Cole no `.env`, na linha `DATAJUD_API_KEY=`.
 3. No sistema, menu **Consultar processo**: digite o número e veja a capa e o andamento completo. O botão **Acompanhar este processo** cadastra para monitorar.
 
-Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário é mais rápido para publicações.
+Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário (Comunica) é a fonte em tempo real.

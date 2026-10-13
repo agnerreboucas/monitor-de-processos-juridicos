@@ -130,4 +130,29 @@ final class DjenAdapterRealFormatTest extends TestCase
         $this->assertCount(13, $got);
         $this->assertLessThanOrEqual(2, count($http->requests));
     }
+
+    public function testPartiesAndLawyersComeFromTheRealPayload(): void
+    {
+        $cnj = Cnj::parse('0001457-85.2026.5.08.0106') ?? throw new \LogicException();
+        $payload = $this->payload();
+        $payload['items'] = array_values(array_filter($payload['items'], fn ($i) => $i['numero_processo'] === $cnj->digits));
+        $m = (new DjenAdapter($this->http($payload)))->fetch($cnj, null)[0];
+
+        $this->assertSame('Diário de Justiça Eletrônico Nacional', $m->metadata['meio']);
+        $this->assertCount(3, $m->metadata['partes']);
+        $this->assertSame(['nome' => 'ARLEY DOS SANTOS FERREIRA', 'polo' => 'A'], $m->metadata['partes'][0]);
+        $this->assertSame('P', $m->metadata['partes'][1]['polo']);
+        $this->assertSame([['nome' => 'EDUARDA MIKAELE BARROS TEIXEIRA', 'oab' => '42370', 'uf' => 'PA']], $m->metadata['advogados']);
+    }
+
+    public function testItemsWithoutLawyersKeepNoEmptyMetadata(): void
+    {
+        $item = $this->byId()[687179689];                       // sem advogados no retorno real
+        $this->assertSame([], $item['destinatarioadvogados']);
+        $cnj = Cnj::parse($item['numero_processo']) ?? throw new \LogicException();
+        $payload = $this->payload();
+        $payload['items'] = [$item];
+        $m = (new DjenAdapter($this->http($payload)))->fetch($cnj, null)[0];
+        $this->assertArrayNotHasKey('advogados', $m->metadata);
+    }
 }

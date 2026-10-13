@@ -297,7 +297,7 @@ function desenharConsulta(alvo, d) {
   const msg = h('div');
   const caso = d.case;
   const fontes = h('div', { class: 'cartao' }, h('h2', {}, 'De onde veio'),
-    ...d.sources.map((f) => { const [cor, rotulo] = ESTADO_FONTE[f.status] || ['', f.status];
+    ...d.sources.slice().sort((a, b) => (a.code === 'djen' ? -1 : 1) - (b.code === 'djen' ? -1 : 1)).map((f) => { const [cor, rotulo] = ESTADO_FONTE[f.status] || ['', f.status];
       return h('div', { class: 'linha', style: 'margin:4px 0' }, h('strong', {}, f.name), h('span', { class: 'etq ' + cor }, rotulo),
         f.status === 'ok' ? h('span', { class: 'suave' }, f.count + ' registro(s)') : null, f.message ? h('span', { class: 'suave' }, f.message) : null); }),
     d.sources.some((f) => f.status === 'error' || f.status === 'not_configured')
@@ -310,10 +310,13 @@ function desenharConsulta(alvo, d) {
           if (x.ok) location.hash = '#/processos/' + x.data.id; else msg.replaceChildren(aviso(x.error, 'erro'));
         } }, 'Acompanhar este processo') : null),
     h('p', { class: 'suave' }, d.tribunal + ' · ' + d.segment + (d.uf ? ' · ' + d.uf : '')),
-    caso ? h('dl', { class: 'capa' },
-      ...[['Classe', caso.classe], ['Assunto', (caso.assuntos || []).join('; ')], ['Órgão julgador', caso.orgao], ['Grau', caso.grau],
-        ['Distribuído em', caso.ajuizamento ? dataBR(caso.ajuizamento) : ''], ['Última atualização no Datajud', caso.atualizado ? dataBR(caso.atualizado) : ''],
-        ['Sigilo', caso.sigilo > 0 ? 'Nível ' + caso.sigilo + ' (dados limitados)' : '']].filter(([, v]) => v).flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])) : null,
+    (caso || d.parties.length || d.lawyers.length) ? h('dl', { class: 'capa' },
+      ...[['Classe', caso ? caso.classe : ''], ['Assunto', caso ? (caso.assuntos || []).join('; ') : ''], ['Órgão julgador', caso ? caso.orgao : ''], ['Grau', caso ? caso.grau : ''],
+        ['Distribuído em', caso && caso.ajuizamento ? dataBR(caso.ajuizamento) : ''], ['Última atualização no Datajud', caso && caso.atualizado ? dataBR(caso.atualizado) : ''],
+        ['Sigilo', caso && caso.sigilo > 0 ? 'Nível ' + caso.sigilo + ' (dados limitados)' : ''],
+        ['Órgão (Diário)', !caso || !caso.orgao ? ((d.timeline.find((t) => t.source === 'djen' && t.orgao) || {}).orgao || '') : ''],
+        ['Parte(s)', d.parties.map((x) => x.nome + (x.polo ? ' (' + (x.polo === 'A' ? 'ativo' : 'passivo') + ')' : '')).join('; ')],
+        ['Advogado(s)', d.lawyers.map((x) => x.nome + (x.oab ? ' — OAB ' + x.uf + ' ' + x.oab : '')).join('; ')]].filter(([, v]) => v).flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])) : null,
     msg);
   const busca = h('input', { type: 'search', placeholder: 'Buscar no andamento…', 'aria-label': 'Buscar no andamento' });
   const filtro = h('select', { 'aria-label': 'Fonte' }, h('option', { value: '' }, 'Todas as fontes'), h('option', { value: 'datajud' }, 'Só Datajud'), h('option', { value: 'djen' }, 'Só Diário (DJEN)'));
@@ -326,7 +329,8 @@ function desenharConsulta(alvo, d) {
       const longo = t.text.length > 500;
       return h('div', { class: 'mov' },
         h('div', { class: 'linha' }, h('strong', {}, dataBR(t.date) + (t.time ? ' ' + t.time : '')), h('span', { class: 'etq azul' }, NOME_FONTE[t.source] || t.source), t.kind ? h('span', { class: 'etq' }, t.kind) : null,
-          link(t.url) ? h('a', { href: link(t.url), target: '_blank', rel: 'noopener noreferrer' }, 'Fonte oficial') : null),
+          link(t.url) ? h('a', { href: link(t.url), target: '_blank', rel: 'noopener noreferrer' }, 'Inteiro teor') : null),
+        t.source === 'djen' && (t.orgao || t.meio) ? h('div', { class: 'suave' }, [t.orgao && 'Órgão: ' + t.orgao, t.tipo_documento && 'Documento: ' + t.tipo_documento, t.meio && 'Meio: ' + t.meio].filter(Boolean).join(' · ')) : null,
         longo ? h('details', {}, h('summary', {}, t.text.slice(0, 220).replace(/\s+/g, ' ') + '… (ver tudo)'), h('pre', {}, t.text)) : h('pre', {}, t.text));
     }) : [h('p', { class: 'vazio' }, d.timeline.length ? 'Nada com esse filtro.' : 'Nenhum andamento retornado pelas fontes consultadas.')]));
   };

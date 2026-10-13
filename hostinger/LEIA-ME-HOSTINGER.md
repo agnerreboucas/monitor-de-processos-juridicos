@@ -81,4 +81,4 @@ O Diário (DJEN) só traz o que foi **publicado**. Para ver **todo o andamento**
 2. Cole no `.env`, na linha `DATAJUD_API_KEY=`.
 3. No sistema, menu **Consultar processo**: digite o número e veja a capa e o andamento completo. O botão **Acompanhar este processo** cadastra para monitorar.
 
-Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário é mais rápido para publicações.
+Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário (Comunica) é a fonte em tempo real.

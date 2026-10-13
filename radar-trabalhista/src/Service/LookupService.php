@@ -34,39 +34,53 @@ final class LookupService
         $timeline = [];
         $sources = [];
         $case = null;
+        $parties = [];
+        $lawyers = [];
 
         if ($this->datajud === null) {
-            $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento completo', 'status' => 'not_configured', 'count' => 0,
+            $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento interno (atrasa alguns dias)', 'status' => 'not_configured', 'count' => 0,
                 'message' => 'Não configurado: falta a chave DATAJUD_API_KEY no arquivo .env do servidor.'];
         } else {
             try {
                 $found = $this->datajud->lookup($cnj);
                 if ($found === null) {
-                    $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento completo', 'status' => 'not_found', 'count' => 0,
+                    $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento interno (atrasa alguns dias)', 'status' => 'not_found', 'count' => 0,
                         'message' => 'O Datajud não tem este processo (pode ser sigiloso, muito recente ou de outro tribunal).'];
                 } else {
                     $case = array_diff_key($found, ['movements' => 1]);
                     foreach ($found['movements'] as $m) {
                         $timeline[] = $this->row('datajud', $m->occurredAt, (string) ($m->metadata['hora'] ?? ''), $m->kind, $m->description, null);
                     }
-                    $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento completo', 'status' => 'ok', 'count' => count($found['movements']), 'message' => null];
+                    $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento interno (atrasa alguns dias)', 'status' => 'ok', 'count' => count($found['movements']), 'message' => null];
                 }
             } catch (SourceUnavailable | InvalidResponse $e) {
-                $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento completo', 'status' => 'error', 'count' => 0, 'message' => $e->getMessage()];
+                $sources[] = ['code' => 'datajud', 'name' => 'Datajud (CNJ) — andamento interno (atrasa alguns dias)', 'status' => 'error', 'count' => 0, 'message' => $e->getMessage()];
             }
         }
 
         if ($this->djen === null) {
-            $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN) — publicações', 'status' => 'not_configured', 'count' => 0, 'message' => 'Fonte não configurada.'];
+            $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN/Comunica) — publicações em tempo real', 'status' => 'not_configured', 'count' => 0, 'message' => 'Fonte não configurada.'];
         } else {
             try {
                 $items = $this->djen->fetch($cnj, null);
                 foreach ($items as $m) {
-                    $timeline[] = $this->row('djen', $m->occurredAt, '', $m->kind, $m->description, $m->sourceUrl);
+                    $row = $this->row('djen', $m->occurredAt, '', $m->kind, $m->description, $m->sourceUrl);
+                    $row['orgao'] = (string) ($m->metadata['orgao'] ?? '');
+                    $row['meio'] = (string) ($m->metadata['meio'] ?? '');
+                    $row['tipo_documento'] = (string) ($m->metadata['tipo_documento'] ?? '');
+                    $row['partes'] = $m->metadata['partes'] ?? [];
+                    $row['advogados'] = $m->metadata['advogados'] ?? [];
+                    $timeline[] = $row;
+                    foreach ($row['partes'] as $p) {
+                        $parties[$p['polo'] . '|' . $p['nome']] = $p;
+                    }
+                    foreach ($row['advogados'] as $l) {
+                        $lawyers[$l['uf'] . $l['oab'] . '|' . $l['nome']] = $l;
+                    }
                 }
-                $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN) — publicações', 'status' => 'ok', 'count' => count($items), 'message' => null];
+                $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN/Comunica) — publicações em tempo real', 'status' => 'ok', 'count' => count($items), 'message' => null];
             } catch (SourceUnavailable | InvalidResponse $e) {
-                $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN) — publicações', 'status' => 'error', 'count' => 0, 'message' => $e->getMessage()];
+                $sources[] = ['code' => 'djen', 'name' => 'Diário (DJEN/Comunica) — publicações em tempo real', 'status' => 'error', 'count' => 0, 'message' => $e->getMessage()];
             }
         }
 
@@ -78,7 +92,7 @@ final class LookupService
 
         return [
             'cnj' => $cnj->formatted(), 'tribunal' => $cnj->tribunal(), 'segment' => $cnj->segmentName(), 'uf' => Tribunals::uf($cnj->tribunal()),
-            'case' => $case, 'sources' => $sources, 'timeline' => $timeline,
+            'case' => $case, 'parties' => array_slice(array_values($parties), 0, 40), 'lawyers' => array_slice(array_values($lawyers), 0, 40), 'sources' => $sources, 'timeline' => $timeline,
             'monitored_id' => $id === false ? null : (int) $id,
         ];
     }

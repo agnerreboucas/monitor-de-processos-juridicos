@@ -63,6 +63,20 @@ final class LookupTest extends DbTestCase
         $this->assertNull($r['monitored_id']);
     }
 
+    public function testShowsPartiesAndLawyersFromTheDiario(): void
+    {
+        $o = $this->office('A', 'a@a.com');
+        $item = $this->djenItem(1, '2026-10-09') + [
+            'meiocompleto' => 'Diário de Justiça Eletrônico Nacional',
+            'destinatarios' => [['nome' => 'ANA', 'polo' => 'A'], ['nome' => 'EMPRESA X', 'polo' => 'P']],
+            'destinatarioadvogados' => [['advogado' => ['nome' => 'DR. FULANO', 'numero_oab' => '128733A', 'uf_oab' => 'sp']]],
+        ];
+        $r = $this->service($this->djenOk([$item, $item]), null, withDatajud: false)->lookup($this->ctx($o['user_id'], $o['tenant_id']), self::CNJ_TRT8);
+        $this->assertCount(2, $r['parties']);                      // sem repetir a mesma parte de várias publicações
+        $this->assertSame([['nome' => 'DR. FULANO', 'oab' => '128733A', 'uf' => 'SP']], $r['lawyers']);
+        $this->assertSame('Diário de Justiça Eletrônico Nacional', $r['timeline'][0]['meio']);
+    }
+
     public function testAFailingSourceIsReportedNeverHiddenAsEmpty(): void
     {
         $o = $this->office('A', 'a@a.com');
