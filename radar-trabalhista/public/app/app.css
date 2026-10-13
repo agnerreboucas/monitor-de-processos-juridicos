@@ -192,3 +192,5 @@ main,#app,.cartao,.acao-meio{min-width:0}select{max-width:100%}.filtros select,.
 .token-painel{border:2px solid var(--ambar);margin-top:12px}.token{display:block;padding:12px;background:var(--fundo);border:1px dashed var(--ambar);border-radius:8px;word-break:break-all;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}
 .token-painel pre{white-space:pre-wrap;word-break:break-all;background:var(--fundo);padding:10px;border-radius:8px;font-size:12.5px}
 textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--linha);border-radius:8px;background:var(--cartao);color:var(--texto)}
+
+.previa-login{position:sticky;top:0;z-index:20;background:var(--ambar);color:var(--ambar-texto);padding:8px 14px;text-align:center;font-size:13.5px}.previa-login button{margin-inline-start:8px}

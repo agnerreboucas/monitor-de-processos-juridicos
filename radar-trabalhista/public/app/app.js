@@ -89,6 +89,16 @@ const TITULOS = [
   [/^\/notificacoes/, 'Notificações', 'Movimentações capturadas'], [/^\/equipe/, 'Equipe', 'Pessoas do escritório'], [/^\/plano/, 'Plano', 'Assinatura e limites'],
   [/^\/conta/, 'Minha conta', 'Dados, senha e privacidade'], [/^\/admin/, 'Administração', 'Plataforma'],
 ];
+// A página de apresentação é a porta de entrada: ao sair do sistema, volta para ela.
+function irParaApresentacao() { if (window.irParaApresentacaoDemo) window.irParaApresentacaoDemo(); else location.href = '/'; }
+// Prévia da tela de login para quem já está logado como administrador (o login real fica em /entrar).
+const emPreviaLogin = () => window.__PREVIA_LOGIN === true || /[?&]previa=login\b/.test(location.search);
+function fecharPreviaLogin() { if (window.irParaPainelDemo) window.irParaPainelDemo(); else location.href = '/entrar'; }
+function mostrarPreviaLogin() {
+  document.getElementById('topo').hidden = true; document.getElementById('cabecalho').hidden = true; document.getElementById('faixa').hidden = true; document.body.classList.remove('logado');
+  telaEntrar();
+  app.prepend(h('div', { class: 'previa-login' }, 'Prévia da página de login (você está logado como administrador). ', h('button', { onclick: fecharPreviaLogin }, 'Fechar prévia e voltar ao painel')));
+}
 function desenharTopo() {
   const topo = document.getElementById('topo'), cab = document.getElementById('cabecalho');
   const logado = sessao && sessao.authenticated && (sessao.tenant || sessao.platform_admin);
@@ -100,14 +110,14 @@ function desenharTopo() {
     icone(ic), nome, extra && extra.selo ? h('span', { class: 'selo' }, extra.selo) : null);
   const grupo = (t) => h('div', { class: 'grupo' }, t);
   const partes = [];
-  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'));
+  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   else {
     partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/acoes', 'Ações e prazos', 'clock'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
     partes.push(grupo('Escritório'), item('#/equipe', 'Equipe', 'users'), item('#/plano', 'Plano', 'card'), item('#/conta', 'Minha conta', 'user'));
-    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'));
+    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   }
   document.getElementById('menu').replaceChildren(...partes);
   document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
@@ -124,7 +134,7 @@ async function atualizarSelos() {
   const novo = { alertas: r.data.oab_alerts_unseen || 0, notif: r.data.unread_notifications || 0 };
   if (novo.alertas !== selos.alertas || novo.notif !== selos.notif) { selos = novo; desenharTopo(); }
 }
-document.getElementById('sair').addEventListener('click', async () => { await api('POST', '/api/logout'); await carregarSessao(); location.hash = '#/entrar'; });
+document.getElementById('sair').addEventListener('click', async () => { await api('POST', '/api/logout'); await carregarSessao(); irParaApresentacao(); });
 
 // ── telas de entrada ─────────────────────────────────────────────────────────
 function campo(rotulo, nome, tipo, extra) { return h('label', {}, rotulo, h('input', { name: nome, type: tipo || 'text', required: true, ...(extra || {}) })); }
@@ -162,6 +172,7 @@ function telaEntrar() {
       const r = await api('POST', '/api/login', d);
       if (!r.ok) return r.error;
       await carregarSessao();
+      if (emPreviaLogin()) return fecharPreviaLogin();
       if (!sessao.tenant && sessao.tenants.length > 1) return telaEscolherEscritorio();
       location.hash = '#/'; rota();
     },
@@ -955,6 +966,7 @@ async function telaConta(recado) {
 async function rota() {
   const [caminho, qs] = (location.hash || '#/').slice(1).split('?');
   const consulta = Object.fromEntries(new URLSearchParams(qs || ''));
+  if (emPreviaLogin()) return mostrarPreviaLogin();
   desenharTopo();
   const publicas = ['/entrar', '/cadastro', '/esqueci', '/redefinir'];
   if (!sessao.authenticated) {

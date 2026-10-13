@@ -107,3 +107,6 @@ No menu **API e clientes** (só o administrador da plataforma) você cadastra os
 - Testes: `tests/ApiTest.php` (chaves, limites, cota, cache, cobrança e isolamento) e a rota completa em `tests/HttpApiTest.php`.
 
 **Antes de vender (pendências suas):** confirmar os termos de uso do DJEN e do Datajud para uso comercial; ter contrato/termos da API e política de privacidade próprios (os textos de publicações trazem dados pessoais: LGPD); definir preços (os três planos iniciais são exemplos); cobrança automática (hoje é manual). A análise de ações e prazos (menu Ações e prazos) ainda roda só no navegador e **não** está na API.
+
+## Porta de entrada
+O endereço principal (`/`) abre a **página de apresentação**; o sistema fica em `/entrar`. Ao **sair** do sistema, a pessoa volta para a página de apresentação. No menu do administrador (grupo Plataforma) há os links **Página de apresentação** e **Página de login**; este abre em nova aba uma prévia do login (`/entrar?previa=login`) mesmo com você logado, com o botão para fechar a prévia.
