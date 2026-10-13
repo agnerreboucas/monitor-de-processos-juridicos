@@ -18,6 +18,7 @@ use Radar\Repository\ProcessRepository;
 use Radar\Service\AccountService;
 use Radar\Service\DashboardService;
 use Radar\Service\DataTransferService;
+use Radar\Service\LookupService;
 use Radar\Service\MemberService;
 use Radar\Service\OabService;
 use Radar\Service\OabStats;
@@ -63,6 +64,7 @@ final class App
         private Clock $clock = new Clock(),
         int $maxFailures = 5,
         int $lockMinutes = 15,
+        private ?LookupService $lookup = null,
     ) {
         $this->auth = new AuthService($pdo, $clock, $maxFailures, $lockMinutes);
         $this->processes = new ProcessService($pdo, $clock);
@@ -195,6 +197,13 @@ final class App
                 'recent_news_days' => $r->intQuery('recent_news_days'), 'with_error' => $r->strQuery('with_error') === '1',
             ], max(1, $r->intQuery('page', 1)), $r->intQuery('per_page', 25), $this->clock->now());
             return Response::json(['ok' => true, 'data' => $result]);
+        }
+        if ($method === 'GET' && $path === '/api/lookup') {
+            if ($this->lookup === null) {
+                throw new ValidationError('A consulta avulsa não está configurada neste servidor.');
+            }
+            $this->throttleLookups();
+            return Response::json(['ok' => true, 'data' => $this->lookup->lookup($ctx, $r->strQuery('cnj'))]);
         }
         if ($method === 'POST' && $path === '/api/processes/import') {
             return Response::json(['ok' => true, 'data' => $this->transfer->importProcesses($ctx, $r->str('csv'), $r->ip)]);
@@ -443,6 +452,18 @@ final class App
     }
 
     /** O escritório ativo vem da sessão e é conferido no banco a cada pedido. */
+    /** Cada consulta avulsa fala com serviços públicos: no máximo 15 a cada 10 minutos por pessoa. */
+    private function throttleLookups(): void
+    {
+        $now = $this->clock->now()->getTimestamp();
+        $hits = array_values(array_filter((array) $this->session->get('lookup_hits', []), fn ($t) => is_int($t) && $t > $now - 600));
+        if (count($hits) >= 15) {
+            throw new LimitExceeded('Muitas consultas seguidas. Espere alguns minutos e tente de novo.');
+        }
+        $hits[] = $now;
+        $this->session->set('lookup_hits', $hits);
+    }
+
     private function context(int $userId): TenantContext
     {
         $tenantId = (int) $this->session->get('tenant_id', 0);

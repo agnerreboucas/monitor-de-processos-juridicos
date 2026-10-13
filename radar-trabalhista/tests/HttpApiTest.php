@@ -514,4 +514,37 @@ final class HttpApiTest extends DbTestCase
         $this->assertSame(0, (int) $this->scalar('SELECT COUNT(*) FROM tenants'));
         $this->assertSame(401, $this->call('GET', '/api/dashboard')['status']);
     }
+
+    // ── consulta avulsa por número ───────────────────────────────────────────
+
+    private function withLookup(): void
+    {
+        $this->app = new App($this->pdo, $this->session, $this->mailer, 'https://radar.exemplo.com.br', $this->clock,
+            lookup: new \Radar\Service\LookupService($this->pdo, null, null));
+    }
+
+    public function testLookupNeedsLoginAndValidatesTheNumber(): void
+    {
+        $this->withLookup();
+        $this->assertSame(401, $this->call('GET', '/api/lookup', [], ['cnj' => self::CNJ_TRT8])['status']);
+        $this->registerAndLogin();
+        $this->withLookup();
+        $this->call('POST', '/api/tenant/select', ['tenant_id' => (int) $this->scalar('SELECT id FROM tenants LIMIT 1')]);
+        $this->assertSame(422, $this->call('GET', '/api/lookup', [], ['cnj' => '123'])['status']);
+        $ok = $this->call('GET', '/api/lookup', [], ['cnj' => self::CNJ_TRT8]);
+        $this->assertSame(200, $ok['status'], json_encode($ok['json']));
+        $this->assertSame('0001457-85.2026.5.08.0106', $ok['json']['data']['cnj']);
+        $this->assertSame(['not_configured', 'not_configured'], array_column($ok['json']['data']['sources'], 'status'));
+    }
+
+    public function testLookupIsThrottledPerPerson(): void
+    {
+        $this->registerAndLogin();
+        $this->withLookup();
+        $this->call('POST', '/api/tenant/select', ['tenant_id' => (int) $this->scalar('SELECT id FROM tenants LIMIT 1')]);
+        for ($i = 0; $i < 15; $i++) {
+            $this->assertSame(200, $this->call('GET', '/api/lookup', [], ['cnj' => self::CNJ_TRT8])['status']);
+        }
+        $this->assertSame(409, $this->call('GET', '/api/lookup', [], ['cnj' => self::CNJ_TRT8])['status']);
+    }
 }

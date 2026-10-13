@@ -19,6 +19,15 @@ final class FakeHttp implements HttpClient
         return $this;
     }
 
+    /** @var list<array{url:string,json:array<string,mixed>,headers:array<string,string>}> */
+    public array $posts = [];
+
+    public function postJson(string $url, array $json, array $headers, int $timeoutSeconds): HttpResponse
+    {
+        $this->posts[] = ['url' => $url, 'json' => $json, 'headers' => $headers];
+        return array_shift($this->responses) ?? new HttpResponse(200, '{"hits":{"hits":[]}}');
+    }
+
     public function get(string $url, array $query, array $headers, int $timeoutSeconds): HttpResponse
     {
         $this->requests[] = ['url' => $url, 'query' => $query, 'headers' => $headers];

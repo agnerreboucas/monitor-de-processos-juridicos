@@ -170,3 +170,7 @@ body:not(.logado) footer{display:none}
 .auth-caixa button.principal{padding:10px 14px}
 .auth-rodape{margin-top:28px;font-size:12.5px}
 @media (max-width:820px){.auth{grid-template-columns:1fr}.auth-lado{padding:22px 24px;gap:16px}.auth-texto h2{font-size:22px}.auth-texto ul{display:none}.auth-lado .suave{display:none}}
+
+.capa{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:10px 0 0}.capa dt{color:var(--suave)}.capa dd{margin:0;min-width:0;overflow-wrap:anywhere}.mov details summary{cursor:pointer;color:var(--suave)}
+@media (max-width:560px){.capa{grid-template-columns:1fr}.capa dd{margin-bottom:6px}}
+form.empilhado label.linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}form.empilhado label.linha input[type=checkbox]{width:auto;margin:0}

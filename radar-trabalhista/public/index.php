@@ -12,6 +12,10 @@ use Radar\Config;
 use Radar\Database;
 use Radar\Http\App;
 use Radar\Http\NativeSession;
+use Radar\Monitoring\CurlHttpClient;
+use Radar\Monitoring\DatajudAdapter;
+use Radar\Monitoring\DjenAdapter;
+use Radar\Service\LookupService;
 use Radar\Http\Request;
 use Radar\Mail\MailerFactory;
 
@@ -41,12 +45,19 @@ if (!str_starts_with($request->path, '/api/')) {
     exit;
 }
 
+$pdo = Database::connect($config);
+$http = new CurlHttpClient($config->get('HTTP_PROXY_URL') ?: null);
+$djen = new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'), $config->int('DJEN_TIMEOUT', 15));
+$datajud = $config->get('DATAJUD_API_KEY') !== '' && $config->get('DATAJUD_API_KEY') !== null
+    ? new DatajudAdapter($http, (string) $config->get('DATAJUD_API_KEY'), $config->get('DATAJUD_URL', DatajudAdapter::BASE_URL), $config->int('DATAJUD_TIMEOUT', 20))
+    : null;
 $app = new App(
-    Database::connect($config),
+    $pdo,
     new NativeSession($config->get('SESSION_NAME', 'radar_sid'), $request->secure),
     MailerFactory::fromConfig($config, __DIR__ . '/../storage'),
     $config->get('APP_URL'),
     maxFailures: $config->int('LOGIN_MAX_FAILURES', 5),
     lockMinutes: $config->int('LOGIN_LOCK_MINUTES', 15),
+    lookup: new LookupService($pdo, $djen, $datajud),
 );
 $app->handle($request)->send();

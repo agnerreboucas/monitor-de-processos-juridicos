@@ -13,6 +13,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Radar\Config;
 use Radar\Database;
 use Radar\Monitoring\CurlHttpClient;
+use Radar\Monitoring\DatajudAdapter;
 use Radar\Monitoring\DjenAdapter;
 use Radar\Mail\MailerFactory;
 use Radar\Monitoring\OabMonitor;
@@ -29,9 +30,13 @@ $pauseMs = (int) ($options['pause-ms'] ?? 300);
 $config = Config::fromEnvironment(__DIR__ . '/../.env');
 $http = new CurlHttpClient($config->get('HTTP_PROXY_URL') ?: null);
 $pdo = Database::connect($config);
+$adapters = [new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'), $config->int('DJEN_TIMEOUT', 15))];
+if ((string) $config->get('DATAJUD_API_KEY') !== '') {    // andamento completo; sem a chave, só o diário
+    $adapters[] = new DatajudAdapter($http, (string) $config->get('DATAJUD_API_KEY'), $config->get('DATAJUD_URL', DatajudAdapter::BASE_URL), $config->int('DATAJUD_TIMEOUT', 20));
+}
 $worker = new Worker(
     $pdo,
-    [new DjenAdapter($http, $config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'), $config->int('DJEN_TIMEOUT', 15))],
+    $adapters,
     workerId: gethostname() . ':' . getmypid(),
     pauseBetweenJobsMicros: $pauseMs * 1000,
 );

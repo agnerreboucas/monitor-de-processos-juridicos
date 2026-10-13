@@ -15,6 +15,11 @@ DB_PASS=senha-do-banco
 # Fonte de dados (DJEN). Deixe assim.
 DJEN_URL=https://comunicaapi.pje.jus.br/api/v1/comunicacao
 DJEN_TIMEOUT=15
+
+# Datajud (CNJ): andamento completo do processo. A chave é pública: copie de
+# https://datajud-wiki.cnj.jus.br/api-publica/acesso (sem ela, o sistema usa só o Diário).
+DATAJUD_API_KEY=
+DATAJUD_TIMEOUT=20
 # Só preencha se o teste da fonte der "403" (proxy com IP brasileiro): http://usuario:senha@endereco:porta
 HTTP_PROXY_URL=
 

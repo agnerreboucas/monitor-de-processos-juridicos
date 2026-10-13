@@ -92,3 +92,12 @@ Em ordem, do mais simples ao mais trabalhoso:
 - [ ] **Cobrança**: ainda é manual. Você renova a assinatura de cada escritório na tela Administração.
 - [ ] **Backup fora do servidor** funcionando e restauração testada.
 - [ ] Atualizações do servidor: `apt-get update && apt-get upgrade` de vez em quando, e `git pull` + o comando `up -d --build` da parte 4 para atualizar o sistema.
+
+## Andamento completo (Datajud) e consulta por número
+O Diário (DJEN) só traz o que foi **publicado**. Para ver **todo o andamento** (distribuição, conclusão, juntadas, audiências, remessa…) o sistema usa também o **Datajud**, a API pública do CNJ:
+
+1. Copie a chave pública em https://datajud-wiki.cnj.jus.br/api-publica/acesso
+2. Cole no `.env`, na linha `DATAJUD_API_KEY=`.
+3. No sistema, menu **Consultar processo**: digite o número e veja a capa e o andamento completo. O botão **Acompanhar este processo** cadastra para monitorar.
+
+Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário é mais rápido para publicações.

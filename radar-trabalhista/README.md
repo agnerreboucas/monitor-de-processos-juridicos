@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-228 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+252 testes cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -75,6 +75,15 @@ composer install
 
 - **Nunca rodou contra o DJEN ao vivo.** Os testes usam respostas gravadas no formato real. O primeiro teste de verdade deve ser feito num servidor no Brasil, com um processo conhecido, comparando com o tribunal.
 - **Termos de uso comercial** do DJEN e do Datajud ainda precisam ser lidos e confirmados (PRD §7.3 e §12).
-- O adaptador do Datajud (movimentos internos que não saem no diário) ainda não foi portado: hoje a fonte é só o diário.
+- Datajud (andamento completo, inclusive o que não sai no diário): adaptador pronto e testado só com respostas simuladas; precisa da chave pública do CNJ em `DATAJUD_API_KEY` e nunca foi chamado ao vivo (o ambiente de desenvolvimento não alcança o CNJ).
 - Não calcula prazos jurídicos (PRD §10, item 10). Não é intimação nem garantia de captura de tudo.
 - Sem backup automático, sem política de retenção implementada, sem termos de uso e política de privacidade (RNF-007).
+
+## Andamento completo (Datajud) e consulta por número
+O Diário (DJEN) só traz o que foi **publicado**. Para ver **todo o andamento** (distribuição, conclusão, juntadas, audiências, remessa…) o sistema usa também o **Datajud**, a API pública do CNJ:
+
+1. Copie a chave pública em https://datajud-wiki.cnj.jus.br/api-publica/acesso
+2. Cole no `.env`, na linha `DATAJUD_API_KEY=`.
+3. No sistema, menu **Consultar processo**: digite o número e veja a capa e o andamento completo. O botão **Acompanhar este processo** cadastra para monitorar.
+
+Sem a chave, tudo continua funcionando só com o Diário, e a tela diz claramente que o quadro está incompleto. O Datajud demora alguns dias para refletir o que acabou de acontecer; o Diário é mais rápido para publicações.

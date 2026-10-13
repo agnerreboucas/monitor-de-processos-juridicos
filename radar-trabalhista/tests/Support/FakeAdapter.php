@@ -19,6 +19,10 @@ final class FakeAdapter implements SourceAdapter
     /** @var array<string,list<list<Movement>|Throwable>> respostas por número de processo */
     private array $byCnj = [];
 
+    public function __construct(private string $code = 'djen')
+    {
+    }
+
     /** @param list<Movement>|Throwable $next */
     public function then(array|Throwable $next): self
     {
@@ -35,7 +39,7 @@ final class FakeAdapter implements SourceAdapter
 
     public function code(): string
     {
-        return 'djen';
+        return $this->code;
     }
 
     public function fetch(Cnj $cnj, ?DateTimeImmutable $since): array
@@ -49,8 +53,8 @@ final class FakeAdapter implements SourceAdapter
         return $next;
     }
 
-    public static function movement(string $id, string $text = 'Despacho de teste', ?string $date = '2026-10-09'): Movement
+    public static function movement(string $id, string $text = 'Despacho de teste', ?string $date = '2026-10-09', string $prefix = 'djen'): Movement
     {
-        return new Movement('djen-' . $id, $date, 'Intimação', $text, '<p>' . $text . '</p>', 'https://tribunal.exemplo/' . $id, ['orgao' => 'Vara Teste']);
+        return new Movement($prefix . '-' . $id, $date, 'Intimação', $text, '<p>' . $text . '</p>', 'https://tribunal.exemplo/' . $id, ['orgao' => 'Vara Teste']);
     }
 }

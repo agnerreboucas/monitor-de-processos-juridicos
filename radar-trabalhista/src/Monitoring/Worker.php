@@ -177,6 +177,18 @@ final class Worker
                 ? (new DateTimeImmutable((string) $process['last_success_at'], new \DateTimeZone('UTC')))->sub(new DateInterval('P3D'))
                 : null;                                  // recua 3 dias: o diário às vezes publica com atraso
             $movements = $adapter->fetch($cnj, $since);
+            $batches = [[$sourceId, $movements]];
+            $warnings = [];
+            foreach ($this->adapters as $code => $extra) {   // fontes complementares (Datajud): se falharem, o diário vale e o aviso fica no registro
+                if ($code === 'djen') {
+                    continue;
+                }
+                try {
+                    $batches[] = [$this->sourceId($code), $extra->fetch($cnj, $since)];
+                } catch (Throwable $e) {
+                    $warnings[] = ($e instanceof SourceUnavailable || $e instanceof InvalidResponse ? $e->getMessage() : 'Erro inesperado na fonte ' . $code . '.');
+                }
+            }
         } catch (SourceUnavailable $e) {
             return $this->fail($job, $process, $plan, $started, 'source_error', $sourceId, $e->getMessage());
         } catch (InvalidResponse $e) {
@@ -187,7 +199,7 @@ final class Worker
         }
 
         try {
-            return $this->persist($job, $process, $plan, $started, $sourceId, $movements);
+            return $this->persist($job, $process, $plan, $started, $batches, $warnings);
         } catch (Throwable $e) {
             error_log('[radar] erro ao gravar resultado: ' . $e::class . ' ' . $e->getMessage());
             return $this->fail($job, $process, $plan, $started, 'invalid_response', $sourceId, 'Não foi possível gravar o resultado da consulta.');
@@ -198,10 +210,11 @@ final class Worker
      * @param array<string,mixed> $job
      * @param array<string,mixed> $process
      * @param array<string,mixed> $plan
-     * @param list<Movement> $movements
+     * @param list<array{0:int,1:list<Movement>}> $batches  [id da fonte, movimentações] de cada fonte que respondeu
+     * @param list<string> $warnings                         fontes complementares que não responderam
      * @return array{status:string,new:int}
      */
-    private function persist(array $job, array $process, array $plan, DateTimeImmutable $started, int $sourceId, array $movements): array
+    private function persist(array $job, array $process, array $plan, DateTimeImmutable $started, array $batches, array $warnings = []): array
     {
         $tenantId = (int) $process['tenant_id'];
         $processId = (int) $process['id'];
@@ -219,15 +232,17 @@ final class Worker
             );
             $newIds = [];
             $imported = 0;
-            foreach ($movements as $m) {
-                $insert->execute([$tenantId, $processId, $sourceId, $m->externalId, $m->occurredAt, $nowSql, $m->kind,
-                    $m->description, $m->descriptionRaw, $m->sourceUrl,
-                    $m->metadata === [] ? null : json_encode($m->metadata, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
-                    $isBaseline ? 1 : 0]);
-                if ($insert->rowCount() === 1) {          // 0 = já existia: não é novidade
-                    $imported++;
-                    if (!$isBaseline) {
-                        $newIds[] = (int) $this->pdo->lastInsertId();
+            foreach ($batches as [$batchSourceId, $movements]) {
+                foreach ($movements as $m) {
+                    $insert->execute([$tenantId, $processId, $batchSourceId, $m->externalId, $m->occurredAt, $nowSql, $m->kind,
+                        $m->description, $m->descriptionRaw, $m->sourceUrl,
+                        $m->metadata === [] ? null : json_encode($m->metadata, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                        $isBaseline ? 1 : 0]);
+                    if ($insert->rowCount() === 1) {          // 0 = já existia: não é novidade
+                        $imported++;
+                        if (!$isBaseline) {
+                            $newIds[] = (int) $this->pdo->lastInsertId();
+                        }
                     }
                 }
             }
@@ -242,8 +257,11 @@ final class Worker
             $message = $isBaseline
                 ? "Primeira consulta: $imported movimentação(ões) importada(s) para o histórico, sem alerta."
                 : ($newIds === [] ? 'Nenhuma movimentação nova.' : count($newIds) . ' movimentação(ões) nova(s).');
-            $this->event($tenantId, $processId, (int) $job['id'], $sourceId,
-                $newIds === [] ? 'no_news' : 'new_movements', count($newIds), $started, $message);
+            if ($warnings !== []) {
+                $message .= ' Atenção: ' . implode(' ', $warnings);
+            }
+            $this->event($tenantId, $processId, (int) $job['id'], $batches[0][0],
+                $newIds === [] ? 'no_news' : 'new_movements', count($newIds), $started, mb_substr($message, 0, 480));
             $this->finishJob((int) $job['id'], 'succeeded', null);
             $this->pdo->commit();
         } catch (Throwable $e) {

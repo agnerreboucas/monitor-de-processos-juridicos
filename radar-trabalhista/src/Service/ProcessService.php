@@ -87,7 +87,7 @@ final class ProcessService
      *
      * @return array{process:array<string,mixed>,movements:list<array<string,mixed>>,events:list<array<string,mixed>>}
      */
-    public function get(TenantContext $ctx, int $id, int $movementLimit = 100): array
+    public function get(TenantContext $ctx, int $id, int $movementLimit = 500): array
     {
         $ctx->require('process.view');
         $process = (new ProcessRepository($this->pdo, $ctx))->find($id);

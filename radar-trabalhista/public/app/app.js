@@ -63,6 +63,7 @@ const ICONES = {
   card: 'M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z M1 10h22',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 6v6l4 2',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16 M21 21l-4.3-4.3',
   radar: 'M19.1 4.9A10 10 0 1 0 21 12 M15.5 8.5A5 5 0 1 0 17 12 M12 12l7-7',
   pulse: 'M22 12h-4l-3 9L9 3l-3 9H2',
   menu: 'M3 6h18 M3 12h18 M3 18h18',
@@ -100,7 +101,7 @@ function desenharTopo() {
   const partes = [];
   if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'));
   else {
-    partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/processos', 'Processos', 'folder'),
+    partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
@@ -113,7 +114,7 @@ function desenharTopo() {
   const [, t, sub] = TITULOS.find(([re]) => re.test(caminho)) || [0, 'Radar <b>Trabalhista</b>', ''];
   document.getElementById('titulo-t').innerHTML = t;       // texto fixo do próprio sistema, nunca dado de usuário
   document.getElementById('titulo-s').textContent = sub;
-  document.getElementById('sino').replaceChildren(icone('bell'), selos.notif ? h('span', { class: 'selo' }, selos.notif) : null);
+  document.getElementById('sino').replaceChildren(...[icone('bell'), selos.notif ? h('span', { class: 'selo' }, selos.notif) : null].filter(Boolean));
 }
 async function atualizarSelos() {
   if (!sessao || !sessao.authenticated || !sessao.tenant || !pode('process.view')) return;
@@ -265,6 +266,74 @@ async function telaProcessos(consulta) {
   carregar();
 }
 
+
+// ── consulta avulsa: o número digitado, com a capa e TODO o andamento ────────
+const NOME_FONTE = { datajud: 'Datajud', djen: 'Diário (DJEN)' };
+const ESTADO_FONTE = { ok: ['verde', 'consultada'], error: ['verm', 'FALHOU'], not_configured: ['amar', 'não configurada'], not_found: ['amar', 'processo não encontrado'] };
+
+async function telaConsulta(consulta) {
+  const campo = h('input', { type: 'text', id: 'cnj-consulta', placeholder: '0000000-00.0000.0.00.0000', value: consulta.cnj || '', autocomplete: 'off', inputmode: 'numeric', style: 'min-width:min(100%,320px)' });
+  const resultado = h('div');
+  const buscar = async () => {
+    const numero = campo.value.trim();
+    if (!numero) return resultado.replaceChildren(aviso('Digite o número do processo.', 'erro'));
+    history.replaceState(null, '', '#/consulta?cnj=' + encodeURIComponent(numero));
+    resultado.replaceChildren(h('p', { class: 'suave' }, 'Consultando o Datajud e o Diário… pode levar alguns segundos.'));
+    const r = await api('GET', '/api/lookup', null, { cnj: numero });
+    if (!r.ok) return resultado.replaceChildren(aviso(r.error, 'erro'));
+    desenharConsulta(resultado, r.data);
+  };
+  campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') buscar(); });
+  app.replaceChildren(
+    h('h1', {}, 'Consultar processo'),
+    h('div', { class: 'cartao' },
+      h('p', { class: 'suave' }, 'Digite o número CNJ para ver a capa e todo o andamento. A consulta não grava nada; para acompanhar o processo e receber avisos, cadastre-o depois.'),
+      h('div', { class: 'linha' }, campo, h('button', { class: 'principal', onclick: buscar }, 'Consultar'))),
+    resultado);
+  if (consulta.cnj) buscar();
+}
+
+function desenharConsulta(alvo, d) {
+  const msg = h('div');
+  const caso = d.case;
+  const fontes = h('div', { class: 'cartao' }, h('h2', {}, 'De onde veio'),
+    ...d.sources.map((f) => { const [cor, rotulo] = ESTADO_FONTE[f.status] || ['', f.status];
+      return h('div', { class: 'linha', style: 'margin:4px 0' }, h('strong', {}, f.name), h('span', { class: 'etq ' + cor }, rotulo),
+        f.status === 'ok' ? h('span', { class: 'suave' }, f.count + ' registro(s)') : null, f.message ? h('span', { class: 'suave' }, f.message) : null); }),
+    d.sources.some((f) => f.status === 'error' || f.status === 'not_configured')
+      ? aviso('O quadro abaixo está INCOMPLETO: pelo menos uma fonte não respondeu. Isso não quer dizer que o processo não tenha andamento.', 'erro') : null);
+  const capa = h('div', { class: 'cartao' },
+    h('div', { class: 'linha entre' }, h('h1', {}, d.cnj),
+      d.monitored_id ? h('a', { href: '#/processos/' + d.monitored_id }, h('button', {}, 'Já acompanhado — abrir')) :
+        pode('process.create') ? h('button', { class: 'principal', onclick: async () => {
+          const x = await api('POST', '/api/processes', { cnj: d.cnj });
+          if (x.ok) location.hash = '#/processos/' + x.data.id; else msg.replaceChildren(aviso(x.error, 'erro'));
+        } }, 'Acompanhar este processo') : null),
+    h('p', { class: 'suave' }, d.tribunal + ' · ' + d.segment + (d.uf ? ' · ' + d.uf : '')),
+    caso ? h('dl', { class: 'capa' },
+      ...[['Classe', caso.classe], ['Assunto', (caso.assuntos || []).join('; ')], ['Órgão julgador', caso.orgao], ['Grau', caso.grau],
+        ['Distribuído em', caso.ajuizamento ? dataBR(caso.ajuizamento) : ''], ['Última atualização no Datajud', caso.atualizado ? dataBR(caso.atualizado) : ''],
+        ['Sigilo', caso.sigilo > 0 ? 'Nível ' + caso.sigilo + ' (dados limitados)' : '']].filter(([, v]) => v).flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])) : null,
+    msg);
+  const busca = h('input', { type: 'search', placeholder: 'Buscar no andamento…', 'aria-label': 'Buscar no andamento' });
+  const filtro = h('select', { 'aria-label': 'Fonte' }, h('option', { value: '' }, 'Todas as fontes'), h('option', { value: 'datajud' }, 'Só Datajud'), h('option', { value: 'djen' }, 'Só Diário (DJEN)'));
+  const lista = h('div'); const total = h('span', { class: 'suave' });
+  const desenhar = () => {
+    const q = busca.value.trim().toLowerCase();
+    const itens = d.timeline.filter((t) => (!filtro.value || t.source === filtro.value) && (!q || (t.text + ' ' + t.kind).toLowerCase().includes(q)));
+    total.textContent = itens.length + ' de ' + d.timeline.length + ' registro(s)';
+    lista.replaceChildren(...(itens.length ? itens.map((t) => {
+      const longo = t.text.length > 500;
+      return h('div', { class: 'mov' },
+        h('div', { class: 'linha' }, h('strong', {}, dataBR(t.date) + (t.time ? ' ' + t.time : '')), h('span', { class: 'etq azul' }, NOME_FONTE[t.source] || t.source), t.kind ? h('span', { class: 'etq' }, t.kind) : null,
+          link(t.url) ? h('a', { href: link(t.url), target: '_blank', rel: 'noopener noreferrer' }, 'Fonte oficial') : null),
+        longo ? h('details', {}, h('summary', {}, t.text.slice(0, 220).replace(/\s+/g, ' ') + '… (ver tudo)'), h('pre', {}, t.text)) : h('pre', {}, t.text));
+    }) : [h('p', { class: 'vazio' }, d.timeline.length ? 'Nada com esse filtro.' : 'Nenhum andamento retornado pelas fontes consultadas.')]));
+  };
+  busca.addEventListener('input', desenhar); filtro.addEventListener('change', desenhar); desenhar();
+  alvo.replaceChildren(capa, fontes, h('div', { class: 'cartao' }, h('h2', {}, 'Andamento completo'), h('div', { class: 'filtros' }, busca, filtro, total), lista));
+}
+
 async function telaProcesso(id) {
   const r = await api('GET', '/api/processes/' + id);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/processos' }, '← Voltar')));
@@ -292,7 +361,7 @@ async function telaProcesso(id) {
     h('div', { class: 'cartao' }, h('h2', {}, 'Histórico de movimentações'),
       movements.length ? movements.map((m) => h('div', { class: 'mov' },
         h('div', { class: 'linha' }, h('strong', {}, 'Movimentação de ' + dataBR(m.occurred_at)), h('span', { class: 'suave' }, 'capturada em ' + dataHoraBR(m.captured_at)),
-          m.kind ? h('span', { class: 'etq' }, m.kind) : null, m.is_baseline ? h('span', { class: 'etq' }, 'histórico inicial') : null,
+          h('span', { class: 'etq azul' }, NOME_FONTE[m.source] || m.source), m.kind ? h('span', { class: 'etq' }, m.kind) : null, m.is_baseline ? h('span', { class: 'etq' }, 'histórico inicial') : null,
           link(m.source_url) ? h('a', { href: link(m.source_url), target: '_blank', rel: 'noopener noreferrer' }, 'Fonte oficial') : null),
         h('pre', {}, m.description)))
         : h('p', { class: 'vazio' }, p.last_success_at ? 'A fonte não retornou movimentações para este processo.' : 'Ainda sem histórico: a primeira consulta não foi concluída.')),
@@ -624,6 +693,7 @@ async function rota() {
   desenharFaixa(); atualizarSelos();
   let m;
   if (caminho === '/' || caminho === '') return telaPainel();
+  if (caminho === '/consulta') return telaConsulta(consulta);
   if (caminho === '/processos') return telaProcessos(consulta);
   if ((m = caminho.match(/^\/processos\/(\d+)$/))) return telaProcesso(Number(m[1]));
   if (caminho === '/oabs' && pode('oab.view')) return telaOabs();

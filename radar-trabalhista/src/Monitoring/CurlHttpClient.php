@@ -11,7 +11,17 @@ final class CurlHttpClient implements HttpClient
 
     public function get(string $url, array $query, array $headers, int $timeoutSeconds): HttpResponse
     {
-        $ch = curl_init($url . ($query !== [] ? '?' . http_build_query($query) : ''));
+        return $this->send($url . ($query !== [] ? '?' . http_build_query($query) : ''), $headers, $timeoutSeconds, null);
+    }
+
+    public function postJson(string $url, array $json, array $headers, int $timeoutSeconds): HttpResponse
+    {
+        return $this->send($url, $headers + ['Content-Type' => 'application/json'], $timeoutSeconds, json_encode($json, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+    }
+
+    private function send(string $fullUrl, array $headers, int $timeoutSeconds, ?string $body): HttpResponse
+    {
+        $ch = curl_init($fullUrl);
         $lines = [];
         foreach ($headers as $name => $value) {
             $lines[] = $name . ': ' . $value;
@@ -27,15 +37,18 @@ final class CurlHttpClient implements HttpClient
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
         ]);
+        if ($body !== null) {
+            curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body]);
+        }
         if ($this->proxyUrl !== null && $this->proxyUrl !== '') {
             curl_setopt($ch, CURLOPT_PROXY, $this->proxyUrl);
         }
-        $body = curl_exec($ch);
+        $result = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        $error = $body === false ? curl_error($ch) : null;
+        $error = $result === false ? curl_error($ch) : null;
         curl_close($ch);
         // a mensagem do curl pode conter o endereço do proxy (com senha): só o tipo de erro sai daqui
-        return new HttpResponse($body === false ? 0 : $status, $body === false ? '' : (string) $body,
+        return new HttpResponse($result === false ? 0 : $status, $result === false ? '' : (string) $result,
             $error !== null ? preg_replace('~://[^@\s/]+@~', '://***@', $error) : null);
     }
 }
