@@ -39,6 +39,7 @@ final class DjenAdapter implements SourceAdapter, OabSource
     {
         $today = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
         $movements = [];
+        $seen = 0;
         for ($page = 1; $page <= self::MAX_PAGES; $page++) {
             $data = $this->page($cnj, $since, $today, $page);
             $items = $data['items'] ?? [];
@@ -51,7 +52,8 @@ final class DjenAdapter implements SourceAdapter, OabSource
                 }
             }
             $total = (int) ($data['count'] ?? 0);
-            if ($items === [] || $page * self::PAGE_SIZE >= $total) {
+            $seen += count($items);     // conta o que veio, não o que pedimos: o servidor pode limitar o tamanho da página
+            if ($items === [] || $seen >= $total) {
                 break;
             }
         }
@@ -69,6 +71,7 @@ final class DjenAdapter implements SourceAdapter, OabSource
         while ($from <= $until) {
             $to = min($until, $from->modify('+' . (self::OAB_WINDOW_DAYS - 1) . ' days'));
             $total = 0;
+            $seen = 0;
             for ($page = 1; $page <= self::OAB_MAX_PAGES; $page++) {
                 if ($page > 1 && $this->pageDelayMicros > 0) {
                     usleep($this->pageDelayMicros);
@@ -76,19 +79,20 @@ final class DjenAdapter implements SourceAdapter, OabSource
                 $data = $this->request([
                     'numeroOab' => $digits, 'ufOab' => strtoupper($oabUf),
                     'dataDisponibilizacaoInicio' => $from->format('Y-m-d'), 'dataDisponibilizacaoFim' => $to->format('Y-m-d'),
-                    'tamanhoPagina' => self::PAGE_SIZE, 'pagina' => $page,
+                    'itensPorPagina' => self::PAGE_SIZE, 'pagina' => $page,
                 ]);
                 $items = $data['items'] ?? [];
                 if (!is_array($items)) {
                     throw new InvalidResponse('A fonte devolveu um formato inesperado.');
                 }
                 $total = (int) ($data['count'] ?? 0);
+                $seen += count($items);
                 foreach ($items as $item) {
                     if (is_array($item) && ($publication = $this->oabPublication($item)) !== null) {
                         $out[] = $publication;
                     }
                 }
-                if ($items === [] || $page * self::PAGE_SIZE >= $total) {
+                if ($items === [] || $seen >= $total) {
                     $total = 0;
                     break;
                 }
@@ -127,7 +131,7 @@ final class DjenAdapter implements SourceAdapter, OabSource
             'numeroProcesso' => $cnj->digits,
             'dataDisponibilizacaoInicio' => ($since ?? new DateTimeImmutable('2015-01-01'))->format('Y-m-d'),
             'dataDisponibilizacaoFim' => $today->format('Y-m-d'),
-            'tamanhoPagina' => self::PAGE_SIZE,
+            'itensPorPagina' => self::PAGE_SIZE,
             'pagina' => $page,
         ]);
     }

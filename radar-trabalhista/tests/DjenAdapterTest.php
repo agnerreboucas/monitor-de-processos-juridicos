@@ -67,11 +67,20 @@ final class DjenAdapterTest extends TestCase
     public function testFollowsPagination(): void
     {
         $first = array_map(fn ($i) => $this->item($i), range(1, 100));
-        $http = (new FakeHttp())->push($this->ok($first, 130))->push($this->ok([$this->item(101), $this->item(102)], 130));
+        $http = (new FakeHttp())->push($this->ok($first, 130))->push($this->ok(array_map(fn ($i) => $this->item($i), range(101, 130)), 130));
         $movements = (new DjenAdapter($http))->fetch($this->cnj(), null);
-        $this->assertCount(102, $movements);
+        $this->assertCount(130, $movements);
         $this->assertCount(2, $http->requests);
         $this->assertSame(2, $http->requests[1]['query']['pagina']);
+        $this->assertSame(100, $http->requests[0]['query']['itensPorPagina']);   // nome do parâmetro como na API Comunica
+    }
+
+    public function testKeepsPagingWhenTheServerCapsThePageSizeBelowWhatWasAsked(): void
+    {
+        $page = fn (int $from) => $this->ok(array_map(fn ($i) => $this->item($i), range($from, $from + 49)), 150);
+        $http = (new FakeHttp())->push($page(1))->push($page(51))->push($page(101));
+        $this->assertCount(150, (new DjenAdapter($http))->fetch($this->cnj(), null));
+        $this->assertCount(3, $http->requests);
     }
 
     public function testNothingFoundIsAnEmptyListNotAnError(): void
