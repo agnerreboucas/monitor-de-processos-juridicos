@@ -58,7 +58,7 @@ $page = static function (string $body) use ($e): void {
         . '<style>body{font:16px/1.5 system-ui,sans-serif;max-width:860px;margin:24px auto;padding:0 16px;color:#14212b;background:#f4f6f8}h1{font-size:24px}h2{font-size:17px;margin:26px 0 8px}'
         . '.c{background:#fff;border:1px solid #e3e8ec;border-radius:12px;padding:16px;margin:10px 0}.ok{color:#0a7a5a}.no{color:#c4281c}.av{color:#a96d00}code,pre{background:#eef1f3;padding:2px 6px;border-radius:6px;word-break:break-all}pre{padding:10px;overflow:auto}'
         . 'input,button{font:inherit;padding:8px 10px;border:1px solid #cfd8dd;border-radius:8px}button{background:#e8a21a;border-color:#e8a21a;font-weight:700;cursor:pointer}table{border-collapse:collapse;width:100%}td{padding:6px 4px;border-top:1px solid #e3e8ec;vertical-align:top}</style>'
-        . '<h1>Instalação do Radar Trabalhista</h1>' . $body . '</html>';
+        . '<h1>Instalação do Radar Processual</h1>' . $body . '</html>';
 };
 if (!$logged) {
     $page('<div class="c"><form method="post"><p>Digite o código de instalação (o valor de <code>INSTALL_TOKEN</code> do arquivo <code>.env</code>).</p>'
@@ -105,7 +105,7 @@ if ($action === 'email') {
         if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
             throw new RuntimeException('E-mail inválido.');
         }
-        MailerFactory::fromConfig($config, $root . '/storage')->send($to, '', 'Radar Trabalhista: teste de e-mail', "Se você recebeu esta mensagem, o envio de e-mail está funcionando.\n");
+        MailerFactory::fromConfig($config, $root . '/storage')->send($to, '', 'Radar Processual: teste de e-mail', "Se você recebeu esta mensagem, o envio de e-mail está funcionando.\n");
         $msg = '<p class="ok">E-mail enviado para ' . $e($to) . '. Confira a caixa de entrada e o spam.</p>';
     } catch (MailerException | RuntimeException $ex) {
         $msg = '<p class="no">Não enviou: ' . $e($ex->getMessage()) . '</p>';
@@ -155,7 +155,7 @@ $djenResult = null;
 if ($action === 'djen') {
     $http = new CurlHttpClient($config->get('HTTP_PROXY_URL') ?: null);
     $r = $http->get($config->get('DJEN_URL', 'https://comunicaapi.pje.jus.br/api/v1/comunicacao'),
-        ['numeroProcesso' => '00014578520265080106', 'tamanhoPagina' => 1, 'pagina' => 1], ['Accept' => 'application/json', 'User-Agent' => 'RadarTrabalhista/1.0'], 20);
+        ['numeroProcesso' => '00014578520265080106', 'tamanhoPagina' => 1, 'pagina' => 1], ['Accept' => 'application/json', 'User-Agent' => 'RadarProcessual/1.0'], 20);
     if ($r->status === 200 && is_array(json_decode($r->body, true))) {
         $djenResult = ['ok', 'O DJEN respondeu normalmente (HTTP 200). Esta hospedagem consegue consultar a fonte.'];
     } elseif ($r->status === 403) {

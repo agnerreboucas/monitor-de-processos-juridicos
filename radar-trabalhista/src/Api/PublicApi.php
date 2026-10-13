@@ -93,7 +93,7 @@ final class PublicApi
         }
         $stmt = $this->pdo->prepare(
             'SELECT k.id AS key_id, k.client_id, k.revoked_at, k.expires_at, c.status AS client_status, c.name AS client_name,
-                    COALESCE(c.quota_override, p.monthly_quota) AS quota, p.rate_per_minute, p.name AS plan_name
+                    COALESCE(c.quota_override, p.monthly_quota) AS quota, p.rate_per_minute, p.name AS plan_name, p.billing_model, p.price_per_search_cents, c.spend_cap_cents
                FROM api_keys k JOIN api_clients c ON c.id = k.client_id JOIN api_plans p ON p.id = c.plan_id WHERE k.key_hash = ?'
         );
         $stmt->execute([ApiKeys::hash($token)]);
@@ -138,10 +138,17 @@ final class PublicApi
         $used->execute([$a['client_id'], $now->format('Y-m-01')]);
         $usedMonth = (int) $used->fetchColumn();
         $quota = (int) $a['quota'];
+        $perSearch = $a['billing_model'] === 'per_search';
+        $price = (int) $a['price_per_search_cents'];
+        $cap = $a['spend_cap_cents'] !== null ? (int) $a['spend_cap_cents'] : null;
+        if ($perSearch && $cap !== null && $price > 0) {
+            $quota = intdiv($cap, $price);          // o teto de gasto vira um número de buscas
+        }
         $reset = (new DateTimeImmutable($now->format('Y-m-01')))->modify('+1 month')->getTimestamp();
         if ($usedMonth >= $quota && !$skipQuota) {
             $this->meter($a, 'cota', 429, false, false);
-            return $this->fail(429, 'cota_mensal_esgotada', "A cota de $quota consultas do mês acabou. Ela volta no dia 1º; para ampliar, fale com o suporte.", [
+            $msg = $perSearch ? "O teto de gasto do mês ($quota buscas) foi atingido. Ele volta no dia 1º; para ampliar, fale com o suporte." : "A cota de $quota consultas do mês acabou. Ela volta no dia 1º; para ampliar, fale com o suporte.";
+            return $this->fail(429, $perSearch ? 'teto_de_gasto_atingido' : 'cota_mensal_esgotada', $msg, [
                 'Retry-After' => (string) max(1, $reset - $now->getTimestamp()), 'X-Quota-Limit' => (string) $quota, 'X-Quota-Remaining' => '0']);
         }
         return ['rate' => $rate, 'rate_left' => max(0, $rate - $n), 'quota' => $quota, 'used' => $usedMonth, 'reset' => $reset];
@@ -176,8 +183,15 @@ final class PublicApi
     private function route(Request $r, string $path, array $a, array $limits): array
     {
         if ($path === '/v1/uso') {
-            return [$this->ok(['cliente' => $a['client_name'], 'plano' => $a['plan_name'], 'cota_mensal' => $limits['quota'], 'usadas_no_mes' => $limits['used'],
-                'restantes' => max(0, $limits['quota'] - $limits['used']), 'limite_por_minuto' => $limits['rate'], 'cota_renova_em' => gmdate('c', $limits['reset'])]), 'uso', false, false];
+            $perSearch = $a['billing_model'] === 'per_search';
+            $uso = ['cliente' => $a['client_name'], 'plano' => $a['plan_name'], 'modelo' => $perSearch ? 'por_busca' : 'mensal', 'cota_mensal' => $limits['quota'], 'usadas_no_mes' => $limits['used'],
+                'restantes' => max(0, $limits['quota'] - $limits['used']), 'limite_por_minuto' => $limits['rate'], 'cota_renova_em' => gmdate('c', $limits['reset'])];
+            if ($perSearch) {
+                $price = (int) $a['price_per_search_cents'];
+                $uso += ['preco_por_busca' => $price / 100, 'gasto_no_mes' => round($limits['used'] * $price / 100, 2), 'teto_de_gasto_mensal' => $a['spend_cap_cents'] !== null ? (int) $a['spend_cap_cents'] / 100 : null,
+                    'cobranca' => 'Só buscas bem-sucedidas são cobradas; buscas que falham não contam.'];
+            }
+            return [$this->ok($uso), 'uso', false, false];
         }
         if (preg_match('~^/v1/processos/([0-9.\-]{15,30})$~', $path, $m) === 1) {
             $cnj = Cnj::parse(urldecode($m[1])) ?? throw new \Radar\Exception\ValidationError('Número fora do padrão CNJ. Confira os dígitos (0000000-00.0000.0.00.0000).');

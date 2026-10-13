@@ -1,4 +1,4 @@
-# Colocar o Radar Trabalhista no ar (passo a passo)
+# Colocar o Radar Processual no ar (passo a passo)
 
 Tempo: 1 a 2 horas na primeira vez. Você vai copiar e colar comandos num servidor. Se travar em qualquer passo, copie a mensagem de erro e me mande.
 

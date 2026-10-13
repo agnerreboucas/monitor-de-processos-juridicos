@@ -225,13 +225,16 @@ final class HttpApiTest extends DbTestCase
 
     public function testPlanLimitIs409(): void
     {
-        $this->pdo->exec("UPDATE plans SET max_processes = 1 WHERE code = 'essencial'");
-        $this->registerAndLogin();
-        $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG]);
-        $r = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJRO]);
-        $this->assertSame(409, $r['status']);
-        $this->assertSame('limit', $r['json']['code']);
-        $this->pdo->exec("UPDATE plans SET max_processes = 50 WHERE code = 'essencial'");
+        $this->pdo->exec("UPDATE plans SET max_processes = 1 WHERE code = 'por-busca'");      // plano dos cadastros novos
+        try {
+            $this->registerAndLogin();
+            $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJMG]);
+            $r = $this->call('POST', '/api/processes', ['cnj' => self::CNJ_TJRO]);
+            $this->assertSame(409, $r['status']);
+            $this->assertSame('limit', $r['json']['code']);
+        } finally {
+            $this->pdo->exec("UPDATE plans SET max_processes = 100000 WHERE code = 'por-busca'");
+        }
     }
 
     public function testListFiltersAndPagination(): void
@@ -608,5 +611,29 @@ final class HttpApiTest extends DbTestCase
         $csv = $this->raw('GET', '/api/admin/api/usage.csv');
         $this->assertStringContainsString('text/csv', $csv->headers['Content-Type']);
         $this->assertSame(401, $this->app->handle(new Request('GET', '/v1/uso', [], [], [], '1.1.1.1', true))->status);
+    }
+
+    public function testPlanScreenCarriesPaymentInfoAndRequestFlowReachesTheOwnerPanel(): void
+    {
+        $this->registerAndLogin();
+        $this->app = new App($this->pdo, $this->session, $this->mailer, 'https://radar.exemplo.com.br', $this->clock,
+            paymentInfo: 'Pix 000', supportContact: 'ajuda@x.com');
+        $tenant = (int) $this->scalar('SELECT id FROM tenants LIMIT 1');
+        $this->call('POST', '/api/tenant/select', ['tenant_id' => $tenant]);
+        $plan = $this->call('GET', '/api/plan');
+        $this->assertSame('Pix 000', $plan['json']['data']['payment_info']);
+        $this->assertSame('ajuda@x.com', $plan['json']['data']['support_contact']);
+        $this->assertCount(4, $plan['json']['data']['plans']);
+        $this->assertSame(422, $this->call('POST', '/api/plan-request', ['plan' => 'nada'])['status']);
+        $this->assertSame(201, $this->call('POST', '/api/plan-request', ['plan' => 'equipe', 'message' => 'Quero'])['status']);
+        $this->assertSame('equipe', $this->call('GET', '/api/plan')['json']['data']['open_request']['plan_code']);
+        $this->assertSame(403, $this->call('GET', '/api/admin/requests')['status']);
+        $this->pdo->exec('UPDATE users SET is_platform_admin = 1');
+        $list = $this->call('GET', '/api/admin/requests');
+        $this->assertCount(1, $list['json']['data']);
+        $id = $list['json']['data'][0]['id'];
+        $this->assertSame(200, $this->call('POST', "/api/admin/requests/$id/done")['status']);
+        $this->assertCount(0, $this->call('GET', '/api/admin/requests')['json']['data']);
+        $this->assertSame(200, $this->call('GET', '/api/admin/readiness')['status']);
     }
 }

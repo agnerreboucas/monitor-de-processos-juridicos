@@ -1,4 +1,4 @@
-# Radar Trabalhista em produção: banco + sistema + robô + backup + HTTPS.
+# Radar Processual em produção: banco + sistema + robô + backup + HTTPS.
 # Uso (na pasta deploy):   docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
 name: radar
 services:

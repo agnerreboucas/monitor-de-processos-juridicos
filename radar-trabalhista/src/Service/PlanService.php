@@ -20,8 +20,8 @@ final class PlanService
     public function forTenant(int $tenantId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT p.code, p.name, p.max_processes, p.max_users, p.max_oabs, p.min_interval_minutes, s.status, s.current_period_end
-               FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.tenant_id = ?'
+            'SELECT p.code, p.name, p.max_processes, p.max_users, p.max_oabs, p.min_interval_minutes, p.billing_model, p.price_per_search_cents, s.status, s.current_period_end, t.search_time
+               FROM subscriptions s JOIN plans p ON p.id = s.plan_id JOIN tenants t ON t.id = s.tenant_id WHERE s.tenant_id = ?'
         );
         $stmt->execute([$tenantId]);
         $row = $stmt->fetch();
@@ -32,6 +32,8 @@ final class PlanService
             'plan_code' => (string) $row['code'], 'plan_name' => (string) $row['name'],
             'max_processes' => (int) $row['max_processes'], 'max_users' => (int) $row['max_users'], 'max_oabs' => (int) $row['max_oabs'],
             'min_interval_minutes' => (int) $row['min_interval_minutes'],
+            'billing_model' => (string) $row['billing_model'], 'price_per_search_cents' => (int) $row['price_per_search_cents'],
+            'search_time' => $row['search_time'] !== null ? substr((string) $row['search_time'], 0, 8) : null,
             'status' => (string) $row['status'], 'current_period_end' => $row['current_period_end'],
         ];
     }

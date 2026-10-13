@@ -10,7 +10,9 @@ use PDO;
 use Radar\Service\OabStats;
 use Radar\Service\PlanService;
 use Radar\Support\Clock;
+use Radar\Service\BillingService;
 use Radar\Support\Cnj;
+use Radar\Support\Schedule;
 use Radar\Support\Tribunals;
 use Throwable;
 
@@ -40,6 +42,12 @@ final class OabMonitor
                 usleep($this->pauseBetweenMicros);
             }
             $result['claimed']++;
+            if ((new BillingService($this->pdo, $this->clock))->capReached((int) $reg['tenant_id'])) {       // teto de gasto: tenta de novo amanhã
+                $this->pdo->prepare('UPDATE oab_registrations SET next_check_at = ?, locked_until = NULL WHERE id = ? AND tenant_id = ?')
+                    ->execute([Clock::sql($this->clock->now()->add(new DateInterval('PT12H'))), $reg['id'], $reg['tenant_id']]);
+                $result['claimed']--;
+                continue;
+            }
             try {
                 $result['new_publications'] += $this->process($reg);
                 $result['succeeded']++;
@@ -135,7 +143,8 @@ final class OabMonitor
             (new OabStats($this->pdo, $this->clock))->refreshAlerts($tenantId, $oabId);
             $this->pdo->prepare('UPDATE oab_registrations SET last_attempt_at = ?, last_success_at = ?, last_error = NULL, fail_count = 0,
                     baseline_at = COALESCE(baseline_at, ?), next_check_at = ?, locked_until = NULL WHERE id = ? AND tenant_id = ?')
-                ->execute([$nowSql, $nowSql, $nowSql, Clock::sql($now->add(new DateInterval('PT' . $this->intervalHours . 'H'))), $oabId, $tenantId]);
+                ->execute([$nowSql, $nowSql, $nowSql, Clock::sql($this->nextCheck($tenantId, $now)), $oabId, $tenantId]);
+            (new BillingService($this->pdo, $this->clock))->record($tenantId, 'oab', true);
             $this->pdo->commit();
         } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -155,5 +164,15 @@ final class OabMonitor
         $this->pdo->prepare('UPDATE oab_registrations SET last_attempt_at = ?, last_error = ?, fail_count = ?, next_check_at = ?, locked_until = NULL
                               WHERE id = ? AND tenant_id = ?')
             ->execute([Clock::sql($now), mb_substr($message, 0, 500), $fails, Clock::sql($now->add(Worker::backoff($fails))), $reg['id'], $reg['tenant_id']]);
+        (new BillingService($this->pdo, $this->clock))->record((int) $reg['tenant_id'], 'oab', false);      // falha não é cobrada
+    }
+
+    /** Horário fixo do escritório, se escolheu um; senão o intervalo padrão. */
+    private function nextCheck(int $tenantId, DateTimeImmutable $now): DateTimeImmutable
+    {
+        $time = $this->pdo->prepare('SELECT search_time FROM tenants WHERE id = ?');
+        $time->execute([$tenantId]);
+        $t = $time->fetchColumn();
+        return $t !== false && $t !== null ? Schedule::nextRun($now, substr((string) $t, 0, 8)) : $now->add(new DateInterval('PT' . $this->intervalHours . 'H'));
     }
 }

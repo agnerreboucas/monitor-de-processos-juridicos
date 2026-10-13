@@ -1,6 +1,6 @@
 {
   "name": "radar/radar-trabalhista",
-  "description": "Radar Trabalhista — SaaS de monitoramento processual para escritórios de advocacia",
+  "description": "Radar Processual — SaaS de monitoramento processual para escritórios de advocacia",
   "type": "project",
   "license": "proprietary",
   "require": { "php": ">=8.2", "ext-pdo": "*", "ext-pdo_mysql": "*", "ext-curl": "*", "ext-mbstring": "*", "ext-json": "*",

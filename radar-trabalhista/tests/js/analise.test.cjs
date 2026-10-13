@@ -91,3 +91,11 @@ test('varredura nos itens reais: nunca quebra, sempre dá ao menos uma ação e 
     assert.ok(['alta', 'media', 'baixa'].includes(r.confianca));
   }
 });
+
+test('prazo-padrão de recurso depende do ramo (CLT 8 dias, CPC 15)', () => {
+  const base = { texto: 'Vistos. Julgo procedente o pedido. Sentença proferida.', data: '2026-10-13', tipo: 'Intimação' };
+  const dias = (cnj) => A.analisar({ ...base, cnj }, { hoje: HOJE }).acoes.find((a) => a.id === 'recorrer');
+  const trab = dias('0003320-79.2025.5.02.0041'), civ = dias('1000123-45.2025.8.26.0100');
+  assert.match(trab.prazoTexto, /^8 dias úteis/);
+  assert.match(civ.prazoTexto, /^15 dias úteis/);
+});

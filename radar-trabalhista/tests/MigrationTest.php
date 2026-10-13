@@ -24,7 +24,7 @@ final class MigrationTest extends DbTestCase
 
     public function testInitialPlansAndSources(): void
     {
-        $this->assertSame(['equipe', 'essencial', 'profissional'],
+        $this->assertSame(['equipe', 'essencial', 'por-busca', 'profissional'],
             $this->pdo->query('SELECT code FROM plans ORDER BY code')->fetchAll(\PDO::FETCH_COLUMN));
         $this->assertSame(['datajud', 'djen'],
             $this->pdo->query('SELECT code FROM integration_sources ORDER BY code')->fetchAll(\PDO::FETCH_COLUMN));

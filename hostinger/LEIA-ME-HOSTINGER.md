@@ -1,4 +1,4 @@
-# Radar Trabalhista na hospedagem compartilhada da Hostinger
+# Radar Processual na hospedagem compartilhada da Hostinger
 
 Para quem **não usa terminal**. Tudo é feito pelo painel (hPanel) e por uma página de instalação. Os nomes dos menus do hPanel mudam de vez em quando: se algum estiver diferente, procure o parecido ou me mande um print.
 

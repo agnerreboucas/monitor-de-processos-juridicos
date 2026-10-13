@@ -327,4 +327,33 @@ final class ApiTest extends DbTestCase
         $r = (new \Radar\Service\PrivacyService($this->pdo, $this->clock))->purgeExpired();
         $this->assertSame(1, $r['api_cache']);
     }
+
+    public function testPerSearchPlanChargesOnlySuccessfulSearchesAndHonoursTheSpendCap(): void
+    {
+        $c = $this->admin->createClient($this->adminId, ['name' => 'Pay Go', 'email' => 'pg@x.com', 'plan_id' => $this->planId('por-busca')]);
+        $cid = (int) $c['client']['id'];
+        $token = $this->admin->createKey($this->adminId, $cid, 'k', null)['token'];
+
+        $this->djenHttp->push($this->djenOk());
+        $this->datajudHttp->push($this->datajudOk());
+        $this->assertSame(200, $this->get('/v1/processos/' . self::CNJ_TRT8, $token)->status);              // cobrada
+        $this->djenHttp->push(new HttpResponse(403, ''));
+        $this->datajudHttp->push(new HttpResponse(503, ''));
+        $this->assertSame(502, $this->get('/v1/processos/0022929-16.2016.8.13.0297', $token)->status);       // falhou: não cobrada
+        $this->assertSame(422, $this->get('/v1/processos/1234567-00.2026.5.08.0106', $token)->status);            // inválida: não cobrada
+
+        $uso = $this->json($this->get('/v1/uso', $token));
+        $this->assertSame(['por_busca', 0.3, 0.3, 1], [$uso['modelo'], $uso['preco_por_busca'], $uso['gasto_no_mes'], $uso['usadas_no_mes']]);
+        $this->assertStringContainsString('falham não contam', $uso['cobranca']);
+
+        $this->assertStringContainsString('0,30', $this->admin->usageCsv($this->adminId, null));
+        $this->assertSame(30, $this->admin->client($this->adminId, $cid)['amount_cents']);
+        $this->assertSame(30, $this->admin->clients($this->adminId)['items'][0]['amount_cents']);
+
+        $this->admin->updateClient($this->adminId, $cid, ['spend_cap_cents' => 30]);                         // teto de R$ 0,30 = 1 busca
+        $r = $this->get('/v1/processos/' . self::CNJ_TRT8, $token);
+        $this->assertSame(429, $r->status);
+        $this->assertSame('teto_de_gasto_atingido', $this->json($r)['erro']['codigo']);
+        $this->assertSame(200, $this->get('/v1/uso', $token)->status);
+    }
 }

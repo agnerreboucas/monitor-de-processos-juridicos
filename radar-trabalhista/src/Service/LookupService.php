@@ -10,6 +10,7 @@ use Radar\Monitoring\DjenAdapter;
 use Radar\Monitoring\InvalidResponse;
 use Radar\Monitoring\SourceUnavailable;
 use Radar\Support\Cnj;
+
 use Radar\Support\Tribunals;
 use Radar\Tenancy\TenantContext;
 
@@ -31,6 +32,11 @@ final class LookupService
         $ctx->require('process.view');
         $cnj = Cnj::parse($input) ?? throw new ValidationError('Número fora do padrão CNJ. Confira os dígitos (0000000-00.0000.0.00.0000).');
         $data = $this->consolidate($cnj);
+        $anyOk = false;
+        foreach ($data['sources'] as $s) {
+            $anyOk = $anyOk || in_array($s['status'], ['ok', 'not_found'], true);
+        }
+        (new BillingService($this->pdo))->record($ctx->tenantId, 'lookup', $anyOk);      // busca avulsa também conta (se alguma fonte respondeu)
         $monitored = $this->pdo->prepare("SELECT id FROM processes WHERE tenant_id = ? AND cnj_digits = ? AND status <> 'archived' LIMIT 1");
         $monitored->execute([$ctx->tenantId, $cnj->digits]);
         $id = $monitored->fetchColumn();

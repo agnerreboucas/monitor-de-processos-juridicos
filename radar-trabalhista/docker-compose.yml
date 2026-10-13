@@ -1,4 +1,4 @@
-# Radar Trabalhista rodando no seu computador (precisa estar no Brasil para o DJEN responder).
+# Radar Processual rodando no seu computador (precisa estar no Brasil para o DJEN responder).
 #   docker compose up --build
 # Depois abra http://localhost:8080
 services:

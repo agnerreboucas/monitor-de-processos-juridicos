@@ -1,6 +1,6 @@
-# Radar Trabalhista
+# Radar Processual
 
-SaaS de monitoramento processual para escritórios de advocacia trabalhista. PHP 8.2+, MySQL 8 / MariaDB 10.6+, HTML/CSS/JS puro. Especificação: o PRD "Radar Trabalhista v1.0".
+SaaS de monitoramento processual para escritórios de advocacia. PHP 8.2+, MySQL 8 / MariaDB 10.6+, HTML/CSS/JS puro. Especificação: o PRD "Radar Processual v1.0".
 
 O robô em Python da pasta raiz deste repositório é a **referência**: dali foram portados a validação do número CNJ e o adaptador do DJEN, e os testes dele serviram de modelo.
 
@@ -63,7 +63,7 @@ composer install
 ./vendor/bin/phpunit
 ```
 
-281 testes (PHP) + 8 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
+302 testes (PHP) + 9 (JavaScript) cobrem CNJ, OAB (limite 5 × 6, UF indeterminada, isolamento, concorrência), migrações, login, processos, equipe, **isolamento entre escritórios**, worker (deduplicação, falha ≠ sem novidade, concorrência), e-mail a API HTTP (CSRF, sessão, rotas protegidas) e o **formato real do DJEN** (amostra de retorno verdadeiro em `tests/fixtures/djen-real-sample.json`; só prova o formato, não a consulta ao vivo).
 
 ## O que NÃO está garantido
 
@@ -110,3 +110,21 @@ No menu **API e clientes** (só o administrador da plataforma) você cadastra os
 
 ## Porta de entrada
 O endereço principal (`/`) abre a **página de apresentação**; o sistema fica em `/entrar`. Ao **sair** do sistema, a pessoa volta para a página de apresentação. No menu do administrador (grupo Plataforma) há os links **Página de apresentação** e **Página de login**; este abre em nova aba uma prévia do login (`/entrar?previa=login`) mesmo com você logado, com o botão para fechar a prévia.
+
+
+## Para qualquer área do Direito
+O produto não é só trabalhista. A leitura automática das publicações usa prazo-padrão de recurso por ramo (CLT 8 dias úteis na Justiça do Trabalho, CPC 15 nos demais, pelo número CNJ) e sempre avisa que é estimativa. Marca: **Radar Processual** (troca de nome é só substituir o texto).
+
+## Cobrança por busca
+- **R$ 0,30 por busca realizada com sucesso** (processo, OAB, consulta avulsa ou API). Busca que falhou fica registrada, **mas não é cobrada**.
+- Teste de 14 dias não cobra. Cada escritório pode definir um **teto de gasto mensal**; ao atingir, as buscas pausam.
+- Extrato por escritório e por cliente da API; o dono baixa o CSV de fechamento. Pagamento manual (Pix/instruções em `PAYMENT_INFO`); não há gateway.
+
+## Buscas automáticas em horário fixo
+O escritório escolhe um horário (ex.: 05:30, fuso de São Paulo) e todas as buscas rodam nele todo dia. Sem horário escolhido, vale o intervalo padrão. Precisa do cron do worker a cada 5 minutos.
+
+## Painel do dono: usuários e uso
+Telas de administração: prontidão para venda, pedidos de contratação, **usuários** (ver, bloquear/liberar — vale na hora) e **estatísticas de uso** do todo e por escritório (buscas, falhas, gasto, API). O painel mostra só cadastro e números, nunca o conteúdo dos processos.
+
+## Cadastro de clientes
+Qualquer escritório se cadastra sozinho, tem 14 dias grátis, cadastra seus processos reais e pode pedir a contratação dentro do sistema (o dono é avisado por e-mail).

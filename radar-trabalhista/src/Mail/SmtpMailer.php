@@ -14,7 +14,7 @@ final class SmtpMailer implements Mailer
 {
     private SymfonyMailer $mailer;
 
-    public function __construct(string $dsn, private string $from, private string $fromName = 'Radar Trabalhista')
+    public function __construct(string $dsn, private string $from, private string $fromName = 'Radar Processual')
     {
         $this->mailer = new SymfonyMailer(Transport::fromDsn($dsn));
     }

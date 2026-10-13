@@ -6,9 +6,11 @@ namespace Radar\Monitoring;
 use DateInterval;
 use DateTimeImmutable;
 use PDO;
+use Radar\Service\BillingService;
 use Radar\Service\PlanService;
 use Radar\Support\Clock;
 use Radar\Support\Cnj;
+use Radar\Support\Schedule;
 use Throwable;
 
 /**
@@ -26,6 +28,7 @@ final class Worker
     /** @var array<string,SourceAdapter> */
     private array $adapters = [];
     private PlanService $plans;
+    private BillingService $billing;
 
     /** @param list<SourceAdapter> $adapters */
     public function __construct(
@@ -40,6 +43,7 @@ final class Worker
             $this->adapters[$adapter->code()] = $adapter;
         }
         $this->plans = new PlanService($pdo);
+        $this->billing = new BillingService($pdo, $clock);
     }
 
     /**
@@ -161,6 +165,10 @@ final class Worker
             return ['status' => 'cancelled', 'new' => 0];
         }
 
+        if ($this->billing->capReached($tenantId)) {      // teto de gasto do mês: pausa as buscas até o dia 1º (ou até o escritório mudar o teto)
+            $this->finishJob($jobId, 'cancelled', 'Teto de gasto do mês atingido.');
+            return ['status' => 'cancelled', 'new' => 0];
+        }
         $cnj = Cnj::parse((string) $process['cnj_digits']);
         $adapter = $this->adapters['djen'] ?? null;
         if ($cnj === null || $adapter === null) {
@@ -252,8 +260,8 @@ final class Worker
             $this->pdo->prepare(
                 'UPDATE processes SET last_attempt_at = ?, last_success_at = ?, last_error = NULL, next_check_at = ?,
                         baseline_at = COALESCE(baseline_at, ?) WHERE id = ? AND tenant_id = ?'
-            )->execute([$nowSql, $nowSql, Clock::sql($now->add(new DateInterval('PT' . $plan['min_interval_minutes'] . 'M'))),
-                $nowSql, $processId, $tenantId]);
+            )->execute([$nowSql, $nowSql, Clock::sql($this->nextCheck($plan, $now)), $nowSql, $processId, $tenantId]);
+            $this->billing->record($tenantId, 'process', true);
             $message = $isBaseline
                 ? "Primeira consulta: $imported movimentação(ões) importada(s) para o histórico, sem alerta."
                 : ($newIds === [] ? 'Nenhuma movimentação nova.' : count($newIds) . ' movimentação(ões) nova(s).');
@@ -330,8 +338,9 @@ final class Worker
             // last_success_at NÃO muda: a tela continua mostrando a data da última consulta que deu certo
             $this->pdo->prepare('UPDATE processes SET last_attempt_at = ?, last_error = ?, next_check_at = ? WHERE id = ? AND tenant_id = ?')
                 ->execute([Clock::sql($now), $message,
-                    Clock::sql($giveUp ? $now->add(new DateInterval('PT' . $plan['min_interval_minutes'] . 'M')) : $now->add(self::backoff($attempts))),
+                    Clock::sql($giveUp ? $this->nextCheck($plan, $now) : $now->add(self::backoff($attempts))),
                     $processId, $tenantId]);
+            $this->billing->record($tenantId, 'process', false);        // falha não é cobrada
             $this->event($tenantId, $processId, (int) $job['id'], $sourceId, $outcome, 0, $started, $message);
             if ($giveUp) {
                 $this->finishJob((int) $job['id'], 'failed', $message);
@@ -347,6 +356,15 @@ final class Worker
             throw $e;
         }
         return ['status' => 'failed', 'new' => 0];     // reprogramada ou desistida: em ambos os casos esta tentativa falhou
+    }
+
+    /** Próxima busca: no horário fixo escolhido pelo escritório (se houver) ou pelo intervalo do plano. */
+    private function nextCheck(array $plan, DateTimeImmutable $now): DateTimeImmutable
+    {
+        if (($plan['search_time'] ?? null) !== null) {
+            return Schedule::nextRun($now, (string) $plan['search_time']);
+        }
+        return $now->add(new DateInterval('PT' . $plan['min_interval_minutes'] . 'M'));
     }
 
     /** 2, 4, 8, 16... minutos, no máximo 6 horas. */

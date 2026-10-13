@@ -90,3 +90,22 @@ footer.rodape a{color:#c4d4d4}
 .confianca .c{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-block:22px}
 .confianca div{font-size:14.5px;color:var(--suave)}.confianca strong{display:block;color:var(--texto);font-size:15.5px}
 @media (max-width:960px){.confianca .c{grid-template-columns:1fr 1fr}}@media (max-width:640px){.confianca .c{grid-template-columns:1fr}}
+
+/* ── reorganização da página (estrutura de página de venda) ── */
+.barra-topo{background:var(--ambar);color:var(--ambar-t);text-align:center;font-size:13.5px;font-weight:600;padding:7px 16px}
+.prova{background:var(--menu2);border-bottom:1px solid var(--linha)}
+.prova .c{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;padding-block:18px}
+.prova p{margin:0;color:#b6c9c9;font-size:15.5px;flex:1 1 420px}.prova strong{color:#fff}
+.selo-prova{font-size:12.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ambar-t);background:var(--ambar);border-radius:99px;padding:4px 12px;white-space:nowrap}
+.passo .n,.rec .n{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--link);line-height:1;margin-bottom:12px}
+.rec{border-top:3px solid var(--ambar)}
+.aviso-termos p{margin-top:8px}
+.faixa-cta{background:var(--menu);border-block:1px solid var(--menu2);padding:30px 0}
+.faixa-cta .c{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between}
+.faixa-cta p{margin:0;color:#fff;font-size:clamp(20px,2.6vw,26px);font-weight:700;letter-spacing:-.01em}
+#pratica .vitrine{border-bottom:1px solid #2b5558;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.api-faixa{margin-top:18px;display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between;border-style:dashed}
+.api-faixa p{max-width:46em}
+.obj{border-top:3px solid var(--verde)}
+.barra-fixa{display:none}
+@media (max-width:640px){.barra-fixa{display:block;position:fixed;inset-inline:0;bottom:0;z-index:20;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--menu) 94%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--menu2)}.barra-fixa .btn{display:block;text-align:center}footer.rodape{padding-bottom:84px}}

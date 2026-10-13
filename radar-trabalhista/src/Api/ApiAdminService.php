@@ -70,18 +70,23 @@ final class ApiAdminService
             throw new ValidationError('Confira preço (centavos), cota mensal (mínimo 1) e limite por minuto (mínimo 1).');
         }
         $active = array_key_exists('active', $in) ? (int) (bool) $in['active'] : 1;
+        $model = ($in['billing_model'] ?? 'monthly') === 'per_search' ? 'per_search' : 'monthly';
+        $perSearch = (int) ($in['price_per_search_cents'] ?? 0);
+        if ($perSearch < 0 || $perSearch > 1000000 || ($model === 'per_search' && $perSearch < 1)) {
+            throw new ValidationError('No plano por busca, informe o preço de cada busca (em centavos, mínimo 1).');
+        }
         if ($id === null) {
             try {
-                $this->pdo->prepare('INSERT INTO api_plans (code, name, price_cents, monthly_quota, rate_per_minute, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                    ->execute([$code, $name, $price, $quota, $rate, $active, Clock::sql($this->clock->now())]);
+                $this->pdo->prepare('INSERT INTO api_plans (code, name, price_cents, monthly_quota, rate_per_minute, active, created_at, billing_model, price_per_search_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    ->execute([$code, $name, $price, $quota, $rate, $active, Clock::sql($this->clock->now()), $model, $perSearch]);
             } catch (\PDOException $e) {
                 throw new ValidationError('Já existe um plano com esse código.');
             }
             $id = (int) $this->pdo->lastInsertId();
         } else {
             $this->mustPlan($id);
-            $this->pdo->prepare('UPDATE api_plans SET name = ?, price_cents = ?, monthly_quota = ?, rate_per_minute = ?, active = ? WHERE id = ?')
-                ->execute([$name, $price, $quota, $rate, $active, $id]);
+            $this->pdo->prepare('UPDATE api_plans SET name = ?, price_cents = ?, monthly_quota = ?, rate_per_minute = ?, active = ?, billing_model = ?, price_per_search_cents = ? WHERE id = ?')
+                ->execute([$name, $price, $quota, $rate, $active, $model, $perSearch, $id]);
         }
         $this->audit->log('api.plan.saved', null, $adminId, 'api_plan', $id, $ip, ['name' => $name]);
         return $this->mustPlan($id);
@@ -114,7 +119,7 @@ final class ApiAdminService
         }
         $month = $this->monthStart();
         $stmt = $this->pdo->prepare(
-            'SELECT c.id, c.name, c.email, c.company, c.status, c.created_at, c.plan_id, p.name AS plan_name, p.price_cents,
+            'SELECT c.id, c.name, c.email, c.company, c.status, c.created_at, c.plan_id, p.name AS plan_name, p.price_cents, p.billing_model, p.price_per_search_cents, c.spend_cap_cents,
                     COALESCE(c.quota_override, p.monthly_quota) AS quota, p.rate_per_minute,
                     (SELECT COALESCE(SUM(u.billable), 0) FROM api_usage_daily u WHERE u.client_id = c.id AND u.day >= ?) AS used_month,
                     (SELECT COUNT(*) FROM api_keys k WHERE k.client_id = c.id AND k.revoked_at IS NULL) AS keys_active,
@@ -122,7 +127,7 @@ final class ApiAdminService
                FROM api_clients c JOIN api_plans p ON p.id = c.plan_id WHERE ' . implode(' AND ', $where) . ' ORDER BY c.created_at DESC, c.id DESC LIMIT 500'
         );
         $stmt->execute([$month, ...$params]);
-        $items = $stmt->fetchAll();
+        $items = array_map(fn (array $r) => $r + ['amount_cents' => $this->amountDue($r, (int) $r['used_month'])], $stmt->fetchAll());
         return ['items' => $items, 'total' => count($items)];
     }
 
@@ -159,13 +164,17 @@ final class ApiAdminService
         }
         $planId = array_key_exists('plan_id', $in) ? (int) $in['plan_id'] : (int) $current['plan_id'];
         $this->mustPlan($planId);
+        $cap = array_key_exists('spend_cap_cents', $in) ? ($in['spend_cap_cents'] === null || $in['spend_cap_cents'] === '' ? null : (int) $in['spend_cap_cents']) : $current['spend_cap_cents'];
+        if ($cap !== null && ($cap < 1 || $cap > 100000000)) {
+            throw new ValidationError('Teto de gasto inválido (em centavos, mínimo 1) ou deixe em branco para não ter teto.');
+        }
         $override = array_key_exists('quota_override', $in) ? ($in['quota_override'] === null || $in['quota_override'] === '' ? null : (int) $in['quota_override']) : $current['quota_override'];
         if ($override !== null && ($override < 1 || $override > 1000000000)) {
             throw new ValidationError('Cota especial inválida (mínimo 1) ou deixe em branco para usar a do plano.');
         }
         try {
-            $this->pdo->prepare('UPDATE api_clients SET name = ?, email = ?, document = ?, company = ?, notes = ?, status = ?, plan_id = ?, quota_override = ?, updated_at = ? WHERE id = ?')
-                ->execute([$name, $email, $document, $company, $notes, $status, $planId, $override, Clock::sql($this->clock->now()), $id]);
+            $this->pdo->prepare('UPDATE api_clients SET name = ?, email = ?, document = ?, company = ?, notes = ?, status = ?, plan_id = ?, quota_override = ?, spend_cap_cents = ?, updated_at = ? WHERE id = ?')
+                ->execute([$name, $email, $document, $company, $notes, $status, $planId, $override, $cap, Clock::sql($this->clock->now()), $id]);
         } catch (\PDOException $e) {
             throw new ValidationError('Já existe um cliente da API com esse e-mail.');
         }
@@ -224,7 +233,18 @@ final class ApiAdminService
         $byEndpoint = $this->endpointsOf($id);
         $used = (int) array_sum(array_map(fn ($r) => (int) $r['billable'], $byEndpoint));
         $quota = (int) ($c['quota_override'] ?? $plan['monthly_quota']);
-        return ['client' => $c, 'plan' => $plan, 'keys' => $keys->fetchAll(), 'days' => $days, 'quota' => $quota, 'used_month' => $used, 'by_endpoint' => $byEndpoint];
+        $perSearch = $plan['billing_model'] === 'per_search';
+        if ($perSearch && $c['spend_cap_cents'] !== null && (int) $plan['price_per_search_cents'] > 0) {
+            $quota = intdiv((int) $c['spend_cap_cents'], (int) $plan['price_per_search_cents']);
+        }
+        return ['client' => $c, 'plan' => $plan, 'keys' => $keys->fetchAll(), 'days' => $days, 'quota' => $quota, 'used_month' => $used, 'by_endpoint' => $byEndpoint,
+            'amount_cents' => $this->amountDue(['billing_model' => $plan['billing_model'], 'price_cents' => $plan['price_cents'], 'price_per_search_cents' => $plan['price_per_search_cents']], $used)];
+    }
+
+    /** O que cobrar no mês: plano mensal = a mensalidade; plano por busca = buscas bem-sucedidas × preço (falhas não entram). */
+    private function amountDue(array $row, int $billable): int
+    {
+        return ($row['billing_model'] ?? 'monthly') === 'per_search' ? $billable * (int) $row['price_per_search_cents'] : (int) $row['price_cents'];
     }
 
     /** @return list<array<string,mixed>> */
@@ -301,7 +321,8 @@ final class ApiAdminService
             'requests_month' => $one('SELECT COALESCE(SUM(requests), 0) FROM api_usage_daily WHERE day >= ?', [$month]),
             'billable_month' => $one('SELECT COALESCE(SUM(billable), 0) FROM api_usage_daily WHERE day >= ?', [$month]),
             'errors_month' => $one('SELECT COALESCE(SUM(errors), 0) FROM api_usage_daily WHERE day >= ?', [$month]),
-            'mrr_cents' => $one('SELECT COALESCE(SUM(p.price_cents), 0) FROM api_clients c JOIN api_plans p ON p.id = c.plan_id WHERE c.status = "active"'),
+            'mrr_cents' => $one('SELECT COALESCE(SUM(p.price_cents), 0) FROM api_clients c JOIN api_plans p ON p.id = c.plan_id WHERE c.status = "active" AND p.billing_model = "monthly"'),
+            'usage_revenue_cents' => $one('SELECT COALESCE(SUM(u.billable * p.price_per_search_cents), 0) FROM api_usage_daily u JOIN api_clients c ON c.id = u.client_id JOIN api_plans p ON p.id = c.plan_id WHERE p.billing_model = "per_search" AND u.day >= ?', [$month]),
             'top_clients' => $top->fetchAll(),
         ];
     }
@@ -313,19 +334,21 @@ final class ApiAdminService
         $start = $this->monthStart($month);
         $end = (new \DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d');
         $stmt = $this->pdo->prepare(
-            'SELECT c.id, c.name, c.email, c.document, p.name AS plan, p.price_cents, COALESCE(c.quota_override, p.monthly_quota) AS quota,
+            'SELECT c.id, c.name, c.email, c.document, p.name AS plan, p.price_cents, p.billing_model, p.price_per_search_cents, COALESCE(c.quota_override, p.monthly_quota) AS quota,
                     COALESCE(SUM(u.requests), 0) AS requests, COALESCE(SUM(u.billable), 0) AS billable, COALESCE(SUM(u.errors), 0) AS errors
                FROM api_clients c JOIN api_plans p ON p.id = c.plan_id
           LEFT JOIN api_usage_daily u ON u.client_id = c.id AND u.day >= ? AND u.day < ?
-              GROUP BY c.id, c.name, c.email, c.document, p.name, p.price_cents, c.quota_override, p.monthly_quota ORDER BY c.name'
+              GROUP BY c.id, c.name, c.email, c.document, p.name, p.price_cents, p.billing_model, p.price_per_search_cents, c.quota_override, p.monthly_quota ORDER BY c.name'
         );
         $stmt->execute([$start, $end]);
         $out = fopen('php://temp', 'r+');
         fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, ['mes', 'cliente', 'email', 'documento', 'plano', 'preco_reais', 'cota', 'consultas_ok', 'chamadas_totais', 'erros', 'acima_da_cota'], ';');
+        fputcsv($out, ['mes', 'cliente', 'email', 'documento', 'plano', 'modelo', 'preco_mensal_reais', 'preco_por_busca_reais', 'buscas_cobradas', 'chamadas_totais', 'erros_nao_cobrados', 'valor_a_cobrar_reais'], ';');
         foreach ($stmt->fetchAll() as $r) {
-            fputcsv($out, [substr($start, 0, 7), $this->csvSafe((string) $r['name']), $r['email'], $r['document'], $r['plan'], number_format($r['price_cents'] / 100, 2, ',', ''), $r['quota'],
-                $r['billable'], $r['requests'], $r['errors'], max(0, (int) $r['billable'] - (int) $r['quota'])], ';');
+            $perSearch = $r['billing_model'] === 'per_search';
+            fputcsv($out, [substr($start, 0, 7), $this->csvSafe((string) $r['name']), $r['email'], $r['document'], $r['plan'], $perSearch ? 'por busca' : 'mensal',
+                $perSearch ? '' : number_format($r['price_cents'] / 100, 2, ',', ''), $perSearch ? number_format($r['price_per_search_cents'] / 100, 2, ',', '') : '',
+                $r['billable'], $r['requests'], $r['errors'], number_format($this->amountDue($r, (int) $r['billable']) / 100, 2, ',', '')], ';');
         }
         rewind($out);
         return (string) stream_get_contents($out);

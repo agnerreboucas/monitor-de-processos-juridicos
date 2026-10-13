@@ -245,8 +245,11 @@
       put({ id: 'sigilo', rotulo: 'Consultar os autos (processo sigiloso)', como: 'O Diário não traz o conteúdo: abra o processo no sistema do tribunal com seu certificado/login e veja o ato.', quem: ['advogados'], lado: 'AP', prazoTexto: null, vence: null, estimado: false, dias: null, tipoPrazo: 'nenhum' });
     }
     if (['sentenca', 'acordao'].includes(principal.id) && !ehEdital && sem('recorrer')) {
-      const vence = publicacao ? somaUteis(publicacao, principal.id === 'sentenca' ? 8 : 8) : null;      // recurso ordinário/apelação: 8 dias úteis na CLT; 15 no CPC (confira)
-      put({ id: 'recorrer', rotulo: 'Avaliar recurso / embargos', como: 'Decidir com o cliente. Prazo-padrão estimado em 8 dias úteis (CLT) — no CPC costuma ser 15; confira o ato e a legislação.', quem: ['ambas as partes'], lado: 'AP', prazoTexto: '8 dias úteis (padrão CLT, estimado)', vence, estimado: true, dias: vence ? diasEntre(hoje, vence) : null, tipoPrazo: 'padrao' });
+      const cnjTxt = String(pub.cnj || (original.match(/\d{7}-?\d{2}\.?\d{4}\.?\d\.?\d{2}\.?\d{4}/) || [''])[0]).replace(/\D/g, '');
+      const trabalhista = cnjTxt.length === 20 ? cnjTxt[13] === '5' : /justica do trabalho|\bclt\b|reclamante|reclamad/.test(n);
+      const dias = trabalhista ? 8 : 15;
+      const vence = publicacao ? somaUteis(publicacao, dias) : null;
+      put({ id: 'recorrer', rotulo: 'Avaliar recurso / embargos', como: 'Decidir com o cliente. Prazo-padrão estimado em ' + dias + ' dias úteis (' + (trabalhista ? 'CLT; no CPC costuma ser 15' : 'CPC; na Justiça do Trabalho costuma ser 8') + ') — confira o ato e a legislação.', quem: ['ambas as partes'], lado: 'AP', prazoTexto: dias + ' dias úteis (padrão ' + (trabalhista ? 'CLT' : 'CPC') + ', estimado)', vence, estimado: true, dias: vence ? diasEntre(hoje, vence) : null, tipoPrazo: 'padrao' });
     }
     if (!acoes.length) {
       const base = ACOES.find((x) => x.id === (principal.id === 'pericia' ? 'pericia' : principal.id === 'calculos' ? 'calculos' : principal.id === 'custas' ? 'pagar' : 'ciencia'));

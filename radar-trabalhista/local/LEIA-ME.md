@@ -1,4 +1,4 @@
-# Rodar o Radar Trabalhista com processos reais (no seu computador)
+# Rodar o Radar Processual com processos reais (no seu computador)
 
 Precisa: computador **no Brasil** (o DJEN recusa IP de fora) e o **Docker Desktop** instalado (https://www.docker.com/products/docker-desktop/).
 

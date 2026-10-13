@@ -12,7 +12,7 @@ final class OpenApi
         $erro = ['description' => 'Erro', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Erro']]]];
         return [
             'openapi' => '3.0.3',
-            'info' => ['title' => 'API de Processos e Publicações (Radar Trabalhista)', 'version' => '1.0.0',
+            'info' => ['title' => 'API de Processos e Publicações (Radar Processual)', 'version' => '1.0.0',
                 'description' => 'Consulta de andamento processual (Datajud/CNJ) e publicações do Diário (DJEN/Comunica). Dados públicos de fontes oficiais; confira sempre no tribunal antes de agir.'],
             'servers' => [['url' => '/v1']],
             'security' => [['bearer' => []]],

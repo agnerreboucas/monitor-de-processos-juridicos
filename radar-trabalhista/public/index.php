@@ -62,5 +62,8 @@ $app = new App(
     lockMinutes: $config->int('LOGIN_LOCK_MINUTES', 15),
     lookup: $lookup,
     publicApi: new PublicApi($pdo, $lookup, $djen),
+    readiness: new \Radar\Service\ReadinessService($pdo, $config, __DIR__, $config->get('BACKUP_DIR', __DIR__ . '/../storage/backups')),
+    paymentInfo: $config->get('PAYMENT_INFO'),
+    supportContact: $config->get('SUPPORT_CONTACT'),
 );
 $app->handle($request)->send();

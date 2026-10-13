@@ -62,8 +62,8 @@ final class NotificationDispatcher
                 $ids = array_map(static fn (array $r) => (int) $r['id'], $chunk);
                 try {
                     $this->mailer->send((string) $chunk[0]['email'], (string) $chunk[0]['user_name'],
-                        count($chunk) === 1 ? 'Radar Trabalhista: nova movimentação em processo monitorado'
-                            : 'Radar Trabalhista: ' . count($chunk) . ' novas movimentações em processos monitorados',
+                        count($chunk) === 1 ? 'Radar Processual: nova movimentação em processo monitorado'
+                            : 'Radar Processual: ' . count($chunk) . ' novas movimentações em processos monitorados',
                         $this->body($chunk));
                     $this->mark($ids, 'sent', null, null, $now);
                     $result['emails']++;

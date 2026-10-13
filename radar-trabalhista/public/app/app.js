@@ -77,14 +77,14 @@ function icone(nome) {
   for (const d of (ICONES[nome] || '').split(' M').map((x, i) => (i ? 'M' + x : x))) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); svg.append(p); }
   return svg;
 }
-document.getElementById('marca').replaceChildren(icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Trabalhista')));
+document.getElementById('marca').replaceChildren(icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Processual')));
 document.getElementById('abrir-menu').append(icone('menu'));
 document.getElementById('abrir-menu').addEventListener('click', () => document.body.classList.toggle('menu-aberto'));
 window.addEventListener('hashchange', () => document.body.classList.remove('menu-aberto'));
 
 let selos = { alertas: 0, notif: 0 };
 const TITULOS = [
-  [/^\/?$/, 'Radar <b>Trabalhista</b>', 'Visão Geral'], [/^\/processos/, 'Processos', 'Acompanhamento processual'], [/^\/publicacoes/, 'Publicações', 'Diário oficial por OAB'],
+  [/^\/?$/, 'Radar <b>Processual</b>', 'Visão Geral'], [/^\/processos/, 'Processos', 'Acompanhamento processual'], [/^\/publicacoes/, 'Publicações', 'Diário oficial por OAB'],
   [/^\/uf/, 'Ações por UF', 'Por advogado (OAB)'], [/^\/alertas/, 'Alertas OAB', 'Possível inscrição suplementar'], [/^\/oabs/, 'Advogados (OAB)', 'Cadastro de OABs monitoradas'],
   [/^\/notificacoes/, 'Notificações', 'Movimentações capturadas'], [/^\/equipe/, 'Equipe', 'Pessoas do escritório'], [/^\/plano/, 'Plano', 'Assinatura e limites'],
   [/^\/conta/, 'Minha conta', 'Dados, senha e privacidade'], [/^\/admin/, 'Administração', 'Plataforma'],
@@ -110,19 +110,19 @@ function desenharTopo() {
     icone(ic), nome, extra && extra.selo ? h('span', { class: 'selo' }, extra.selo) : null);
   const grupo = (t) => h('div', { class: 'grupo' }, t);
   const partes = [];
-  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
+  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   else {
     partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/acoes', 'Ações e prazos', 'clock'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
     partes.push(grupo('Escritório'), item('#/equipe', 'Equipe', 'users'), item('#/plano', 'Plano', 'card'), item('#/conta', 'Minha conta', 'user'));
-    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
+    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   }
   document.getElementById('menu').replaceChildren(...partes);
   document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
   const caminho = atual.slice(1).split('?')[0];
-  const [, t, sub] = TITULOS.find(([re]) => re.test(caminho)) || [0, 'Radar <b>Trabalhista</b>', ''];
+  const [, t, sub] = TITULOS.find(([re]) => re.test(caminho)) || [0, 'Radar <b>Processual</b>', ''];
   document.getElementById('titulo-t').innerHTML = t;       // texto fixo do próprio sistema, nunca dado de usuário
   document.getElementById('titulo-s').textContent = sub;
   document.getElementById('sino').replaceChildren(...[icone('bell'), selos.notif ? h('span', { class: 'selo' }, selos.notif) : null].filter(Boolean));
@@ -142,9 +142,9 @@ function campo(rotulo, nome, tipo, extra) { return h('label', {}, rotulo, h('inp
 function layoutAuth(titulo, subtitulo, ...conteudo) {
   return h('div', { class: 'auth' },
     h('section', { class: 'auth-lado' },
-      h('a', { class: 'marca', href: '/' }, icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Trabalhista'))),
+      h('a', { class: 'marca', href: '/' }, icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Processual'))),
       h('div', { class: 'auth-texto' },
-        h('h2', {}, 'Monitoramento processual para escritórios trabalhistas'),
+        h('h2', {}, 'Monitoramento processual para escritórios de advocacia'),
         h('ul', {}, h('li', {}, 'Consulta o Diário de Justiça Eletrônico Nacional todos os dias, por processo e por OAB.'),
           h('li', {}, 'Avisa a equipe no painel e por e-mail quando sai movimentação nova.'),
           h('li', {}, 'Se uma consulta falha, o sistema mostra a falha. Nunca finge que não houve novidade.'),
@@ -361,7 +361,7 @@ const hojeISO = () => { const d = new Date(); return d.getFullYear() + '-' + Str
 const COR_URG = { vencido: 'verm', hoje: 'verm', ate3: 'amar', ate7: 'amar', depois: 'azul', sem_prazo: '' };
 const ROT_IMPACTO = { favoravel: ['verde', 'Favorável ao seu cliente'], desfavoravel: ['verm', 'Desfavorável ao seu cliente'], atencao: ['amar', 'Atenção'], depende: ['azul', 'Depende de quem você representa'], neutro: ['', 'Neutro / informativo'] };
 const LADO_ROT = { A: 'autor/reclamante', P: 'réu/reclamado' };
-const analisarItem = (it) => window.Analise.analisar({ texto: it.description || '', data: it.occurred_at, tipo: it.kind, metadata: it.metadata || {} }, { hoje: hojeISO(), ladoCliente: it.client_side || null });
+const analisarItem = (it) => window.Analise.analisar({ texto: it.description || '', cnj: it.cnj, data: it.occurred_at, tipo: it.kind, metadata: it.metadata || {} }, { hoje: hojeISO(), ladoCliente: it.client_side || null });
 const prazoTexto = (a) => a.vence ? dataBR(a.vence) + (a.hora ? ' ' + a.hora : '') + (a.dias === 0 ? ' (hoje)' : a.dias > 0 ? ' (em ' + a.dias + ' dia' + (a.dias === 1 ? '' : 's') + ')' : ' (venceu há ' + (-a.dias) + ' dia' + (a.dias === -1 ? '' : 's') + ')') : (a.prazoTexto || 'sem prazo identificado');
 const pilulaUrgencia = (u, prox) => h('span', { class: 'etq ' + COR_URG[u] }, window.Analise.ROTULO_URGENCIA[u] + (prox && prox.vence && u !== 'sem_prazo' ? ' · ' + dataBR(prox.vence) : ''));
 
@@ -576,14 +576,40 @@ async function telaEquipe(recado) {
 }
 
 async function telaPlano() {
-  const r = await api('GET', '/api/plan');
+  const [r, bill] = await Promise.all([api('GET', '/api/plan'), api('GET', '/api/billing')]);
   if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'));
-  const p = r.data;
-  const uso = (rotulo, usado, max) => h('div', { class: 'cartao' }, h('h2', {}, rotulo), h('div', { class: 'numero' }, usado + ' / ' + max), h('div', { class: 'barra' }, h('i', { style: 'width:' + Math.min(100, Math.round(usado / max * 100)) + '%' })));
+  const p = r.data, e = bill.ok ? bill.data : null, msg = h('div'), admin = pode('members.manage');
+  const reaisC = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const uso = (rotulo, usado, max) => h('div', { class: 'cartao' }, h('h2', {}, rotulo), h('div', { class: 'numero' }, max >= 100000 ? usado + ' (sem limite)' : usado + ' / ' + max), max >= 100000 ? null : h('div', { class: 'barra' }, h('i', { style: 'width:' + Math.min(100, Math.round((usado / Math.max(1, max)) * 100)) + '%' })));
+  const porBusca = p.billing_model === 'per_search';
+  const horario = h('input', { type: 'time', id: 'horario-buscas', value: e && e.search_time ? e.search_time : '', disabled: !admin, 'aria-label': 'Horário das buscas automáticas' });
+  const teto = h('input', { type: 'text', id: 'teto-gasto', inputmode: 'decimal', placeholder: 'sem teto', value: e && e.spend_cap_cents ? String(e.spend_cap_cents / 100).replace('.', ',') : '', disabled: !admin, 'aria-label': 'Teto de gasto por mês (R$)', size: 10 });
+  const salvar = async (corpo, ok) => { const x = await api('PATCH', '/api/billing/settings', corpo); if (x.ok) { telaPlano(); } else msg.replaceChildren(aviso(x.error, 'erro')); };
+  const pedido = p.open_request;
+  const blocoContratar = h('div', { class: 'cartao' }, h('h2', {}, 'Como contratar e pagar'),
+    p.status === 'trialing' ? h('p', {}, 'Você está no período de teste: as buscas não são cobradas até ' + dataBR(p.current_period_end) + '.') : null,
+    p.payment_info ? h('pre', { style: 'white-space:pre-wrap;font:inherit' }, p.payment_info) : h('p', { class: 'suave' }, 'As instruções de pagamento serão informadas pelo suporte.'),
+    p.support_contact ? h('p', { class: 'suave' }, 'Dúvidas ou ajuda: ' + p.support_contact) : null,
+    pedido ? aviso('Pedido de contratação enviado em ' + dataBR(pedido.created_at) + '. Assim que o pagamento for confirmado, o acesso é liberado.', 'ok')
+      : admin ? h('div', { class: 'linha' }, h('button', { class: 'principal', onclick: async () => { const x = await api('POST', '/api/plan-request', { plan: p.plan_code }); if (x.ok) telaPlano(); else msg.replaceChildren(aviso(x.error, 'erro')); } }, 'Quero contratar / já paguei'), h('span', { class: 'suave' }, 'Avisa o responsável pelo sistema.')) : null);
   app.replaceChildren(h('h1', {}, 'Plano e assinatura'),
     h('div', { class: 'cartao' }, h('h2', {}, 'Plano contratado'), h('div', { class: 'numero' }, p.plan_name),
       h('p', { class: 'suave' }, 'Situação: ' + { trialing: 'período de teste', active: 'ativa', past_due: 'pagamento em atraso', suspended: 'suspensa', cancelled: 'cancelada' }[p.status] +
-        ' · cada processo é consultado no mínimo a cada ' + (p.min_interval_minutes / 60) + ' h')),
+        (porBusca ? ' · ' + reaisC(p.price_per_search_cents) + ' por busca bem-sucedida; buscas que falham não são cobradas' : ' · cada processo é consultado no mínimo a cada ' + (p.min_interval_minutes / 60) + ' h'))),
+    e ? h('div', { class: 'cartao' }, h('h2', {}, 'Extrato de ' + e.month.split('-').reverse().join('/')),
+      h('div', { class: 'kpis' }, h('div', { class: 'kpi-mini azul' }, h('span', { class: 'num' }, String(e.ok)), h('span', {}, 'buscas bem-sucedidas')), h('div', { class: 'kpi-mini' }, h('span', { class: 'num' }, String(e.failed)), h('span', {}, 'falharam (não cobradas)')),
+        h('div', { class: 'kpi-mini verde' }, h('span', { class: 'num' }, reaisC(e.amount_cents)), h('span', {}, e.trial ? 'a cobrar (teste grátis)' : 'a cobrar neste mês'))),
+      h('p', { class: 'suave' }, 'Processos: ' + e.by_kind.process.ok + ' · OABs: ' + e.by_kind.oab.ok + ' · Consultas avulsas: ' + e.by_kind.lookup.ok + (e.trial && e.would_be_cents ? ' · fora do teste seriam ' + reaisC(e.would_be_cents) : '')),
+      porBusca ? h('div', { class: 'linha' }, h('label', { for: 'teto-gasto' }, 'Teto de gasto por mês (R$):'), teto,
+        h('button', { disabled: !admin, onclick: () => salvar({ spend_cap_cents: teto.value.trim() === '' ? null : Math.round(Number(teto.value.replace(',', '.')) * 100) }) }, 'Salvar teto'),
+        h('span', { class: 'suave' }, 'Ao atingir o teto, as buscas pausam até o mês seguinte.')) : null) : null,
+    h('div', { class: 'cartao' }, h('h2', {}, 'Buscas automáticas'),
+      h('p', {}, 'Escolha o horário em que o sistema faz todas as buscas do escritório (processos e OABs), uma vez por dia. Horário de Brasília.'),
+      h('div', { class: 'linha' }, h('label', { for: 'horario-buscas' }, 'Todos os dias às'), horario,
+        h('button', { class: 'principal', disabled: !admin, onclick: () => { if (!horario.value) return msg.replaceChildren(aviso('Escolha um horário.', 'erro')); salvar({ search_time: horario.value }); } }, 'Salvar horário'),
+        e && e.search_time ? h('button', { disabled: !admin, onclick: () => salvar({ search_time: '' }) }, 'Voltar ao intervalo do plano') : null),
+      h('p', { class: 'suave' }, e && e.search_time ? 'Hoje: todas as buscas rodam às ' + e.search_time + '.' : 'Hoje: cada processo é buscado conforme o intervalo do plano.' + (porBusca ? ' Para controlar o gasto, prefira um horário fixo.' : '')), msg),
+    blocoContratar,
     h('div', { class: 'grade' }, uso('Processos', p.processes_used, p.max_processes), uso('Usuários', p.users_used, p.max_users), uso('OABs', p.oabs_used, p.max_oabs)));
 }
 
@@ -755,19 +781,21 @@ async function telaApiPainel() {
   const tabelaClientes = h('div'), tabelaPlanos = h('div'), formCliente = h('div', { hidden: true }), formPlano = h('div', { hidden: true });
   async function recarregar() { const [p, c] = await Promise.all([api('GET', '/api/admin/api/plans'), api('GET', '/api/admin/api/clients', null, Object.fromEntries(Object.entries(filtro).filter(([, v]) => v)))]); planos.data = p.data; clientes.data = c.data; desenhar(); }
   function desenharPlanos() {
-    tabelaPlanos.replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Plano', 'Preço/mês', 'Cota/mês', 'Limite/min', 'Clientes', ''].map((t) => h('th', {}, t)))),
-      h('tbody', {}, ...planos.data.map((pl) => h('tr', {}, h('td', {}, pl.name, Number(pl.active) ? null : h('span', { class: 'etq' }, 'desativado')), h('td', {}, reais(pl.price_cents)), h('td', {}, num(pl.monthly_quota)), h('td', {}, num(pl.rate_per_minute)), h('td', {}, num(pl.clients)),
+    tabelaPlanos.replaceChildren(h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Plano', 'Preço', 'Cota', 'Limite/min', 'Clientes', ''].map((t) => h('th', {}, t)))),
+      h('tbody', {}, ...planos.data.map((pl) => h('tr', {}, h('td', {}, pl.name, Number(pl.active) ? null : h('span', { class: 'etq' }, 'desativado')), h('td', {}, pl.billing_model === 'per_search' ? reais(pl.price_per_search_cents) + ' por busca' : reais(pl.price_cents) + '/mês'), h('td', {}, pl.billing_model === 'per_search' ? 'sem cota (teto de gasto)' : num(pl.monthly_quota) + '/mês'), h('td', {}, num(pl.rate_per_minute)), h('td', {}, num(pl.clients)),
         h('td', {}, h('button', { onclick: () => { planoEmEdicao = pl; desenharFormPlano(); } }, 'Editar'))))))));
   }
   function desenharFormPlano() {
     const pl = planoEmEdicao, msg = h('div');
     const f = h('form', { class: 'empilhado', onsubmit: async (e) => { e.preventDefault(); const d = Object.fromEntries(new FormData(f));
-      const corpo = { code: d.code, name: d.name, price_cents: Math.round(Number(String(d.preco).replace(',', '.')) * 100), monthly_quota: Number(d.monthly_quota), rate_per_minute: Number(d.rate_per_minute), active: d.active === 'on' };
+      const corpo = { code: d.code, name: d.name, billing_model: d.billing_model, price_cents: Math.round(Number(String(d.preco || '0').replace(',', '.')) * 100), price_per_search_cents: Math.round(Number(String(d.preco_busca || '0').replace(',', '.')) * 100), monthly_quota: Number(d.monthly_quota), rate_per_minute: Number(d.rate_per_minute), active: d.active === 'on' };
       const r = pl ? await api('PATCH', '/api/admin/api/plans/' + pl.id, corpo) : await api('POST', '/api/admin/api/plans', corpo);
       if (!r.ok) return msg.replaceChildren(aviso(r.error, 'erro')); formPlano.hidden = true; recarregar(); } },
       h('h3', {}, pl ? 'Editar plano ' + pl.name : 'Novo plano'),
       pl ? null : campo('Código (letras minúsculas, ex.: ouro)', 'code', 'text', { pattern: '[a-z0-9_-]{2,40}' }), campo('Nome', 'name', 'text', { value: pl ? pl.name : '' }),
-      campo('Preço por mês (R$)', 'preco', 'text', { value: pl ? String(pl.price_cents / 100).replace('.', ',') : '', inputmode: 'decimal' }),
+      h('label', {}, 'Como cobrar', h('select', { name: 'billing_model' }, h('option', { value: 'monthly', selected: !pl || pl.billing_model !== 'per_search' }, 'Mensalidade com cota'), h('option', { value: 'per_search', selected: !!pl && pl.billing_model === 'per_search' }, 'Por busca (só as bem-sucedidas)'))),
+      campo('Preço por mês (R$) — plano mensal', 'preco', 'text', { value: pl ? String(pl.price_cents / 100).replace('.', ',') : '0', inputmode: 'decimal', required: false }),
+      campo('Preço por busca (R$) — plano por busca', 'preco_busca', 'text', { value: pl ? String((pl.price_per_search_cents || 0) / 100).replace('.', ',') : '0,30', inputmode: 'decimal', required: false }),
       campo('Consultas por mês', 'monthly_quota', 'number', { min: 1, value: pl ? pl.monthly_quota : '' }), campo('Consultas por minuto (por chave)', 'rate_per_minute', 'number', { min: 1, value: pl ? pl.rate_per_minute : '' }),
       h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'active', checked: pl ? !!Number(pl.active) : true }), 'Plano ativo (pode ser vendido a novos clientes)'),
       h('div', { class: 'linha' }, h('button', { class: 'principal' }, 'Salvar plano'), h('button', { type: 'button', onclick: () => { formPlano.hidden = true; } }, 'Cancelar')), msg);
@@ -790,7 +818,7 @@ async function telaApiPainel() {
     tabelaClientes.replaceChildren(h('div', { class: 'filtros' }, busca, st, h('span', { class: 'suave' }, itens.length + ' cliente(s)')),
       h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Cliente', 'Plano', 'Uso no mês', 'Chaves', 'Último uso', 'Situação'].map((t) => h('th', {}, t)))),
         h('tbody', {}, ...(itens.length ? itens.map((c) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/apis/cliente/' + c.id; } },
-          h('td', {}, h('strong', {}, c.name), h('div', { class: 'suave' }, c.email)), h('td', {}, c.plan_name, h('div', { class: 'suave' }, reais(c.price_cents))), h('td', { style: 'min-width:190px' }, barraUso(Number(c.used_month), Number(c.quota))),
+          h('td', {}, h('strong', {}, c.name), h('div', { class: 'suave' }, c.email)), h('td', {}, c.plan_name, h('div', { class: 'suave' }, reais(c.price_cents))), h('td', { style: 'min-width:190px' }, barraUso(Number(c.used_month), Number(c.quota)), h('div', { class: 'suave' }, 'A cobrar: ' + reais(c.amount_cents) + (c.billing_model === 'per_search' ? ' (' + num(c.used_month) + ' buscas × ' + reais(c.price_per_search_cents) + ')' : ' (mensalidade)'))),
           h('td', {}, num(c.keys_active)), h('td', {}, c.last_used_at ? dataHoraBR(c.last_used_at) : 'nunca'), h('td', {}, h('span', { class: 'etq ' + ST_API[c.status][0] }, ST_API[c.status][1]))))
           : [h('tr', {}, h('td', { colspan: 6, class: 'vazio' }, 'Nenhum cliente ainda. Clique em “Novo cliente” para cadastrar o primeiro.'))])))));
   }
@@ -837,17 +865,19 @@ async function telaApiCliente(id) {
   }
   desenharChaves(keys);
   const f = h('form', { class: 'empilhado', onsubmit: async (e) => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.target));
-      const x = await api('PATCH', '/api/admin/api/clients/' + id, { name: d.name, email: d.email, document: d.document, company: d.company, notes: d.notes, plan_id: Number(d.plan_id), quota_override: d.quota_override === '' ? null : Number(d.quota_override) });
+      const x = await api('PATCH', '/api/admin/api/clients/' + id, { name: d.name, email: d.email, document: d.document, company: d.company, notes: d.notes, plan_id: Number(d.plan_id), quota_override: d.quota_override === '' ? null : Number(d.quota_override), spend_cap_cents: d.spend_cap.trim() === '' ? null : Math.round(Number(d.spend_cap.replace(',', '.')) * 100) });
       if (!x.ok) return msg.replaceChildren(aviso(x.error, 'erro')); telaApiCliente(id); } },
     campo('Nome', 'name', 'text', { value: c.name }), campo('E-mail', 'email', 'email', { value: c.email }), campo('CPF ou CNPJ', 'document', 'text', { value: c.document || '', required: false }), campo('Empresa', 'company', 'text', { value: c.company || '', required: false }),
     h('label', {}, 'Plano', h('select', { name: 'plan_id' }, ...planos.data.map((x) => h('option', { value: x.id, selected: Number(x.id) === Number(c.plan_id) }, x.name + ' — ' + reais(x.price_cents) + '/mês')))),
-    campo('Cota especial por mês (deixe em branco para usar a do plano)', 'quota_override', 'number', { value: c.quota_override || '', required: false, min: 1 }),
+    campo('Cota especial por mês (plano mensal; em branco = a do plano)', 'quota_override', 'number', { value: c.quota_override || '', required: false, min: 1 }),
+    campo('Teto de gasto por mês em R$ (plano por busca; em branco = sem teto)', 'spend_cap', 'text', { value: c.spend_cap_cents ? String(c.spend_cap_cents / 100).replace('.', ',') : '', required: false, inputmode: 'decimal' }),
     h('label', {}, 'Observações (só você vê)', h('textarea', { name: 'notes', rows: 3 }, c.notes || '')), h('button', { class: 'principal' }, 'Salvar alterações'));
   formEdit.replaceChildren(h('div', { class: 'cartao' }, f));
   app.replaceChildren(h('p', {}, h('a', { href: '#/apis' }, '← API e clientes')),
     h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h1', {}, c.name), h('span', { class: 'etq ' + ST_API[c.status][0] }, ST_API[c.status][1])),
       h('p', { class: 'suave' }, c.email + (c.company ? ' · ' + c.company : '') + (c.document ? ' · ' + c.document : '') + ' · cliente desde ' + dataBR(c.created_at)),
-      h('p', {}, h('strong', {}, plan.name), ' — ' + reais(plan.price_cents) + '/mês · ' + num(quota) + ' consultas/mês' + (c.quota_override ? ' (cota especial)' : '') + ' · ' + num(plan.rate_per_minute) + ' por minuto, por chave'),
+      h('p', {}, h('strong', {}, plan.name), plan.billing_model === 'per_search' ? ' — ' + reais(plan.price_per_search_cents) + ' por busca bem-sucedida (falhas não são cobradas)' + (c.spend_cap_cents ? ' · teto de ' + reais(c.spend_cap_cents) + '/mês' : ' · sem teto de gasto') : ' — ' + reais(plan.price_cents) + '/mês · ' + num(quota) + ' consultas/mês' + (c.quota_override ? ' (cota especial)' : ''), ' · ' + num(plan.rate_per_minute) + ' por minuto, por chave'),
+      h('p', {}, 'A cobrar neste mês: ', h('strong', {}, reais(r.data.amount_cents))),
       barraUso(usado, quota),
       h('div', { class: 'linha', style: 'margin-top:10px' }, h('button', { onclick: () => { formEdit.hidden = !formEdit.hidden; } }, 'Editar dados e plano'),
         c.status === 'active' ? acao('Suspender acesso', 'suspended', true) : acao('Reativar', 'active'), c.status !== 'cancelled' ? acao('Cancelar cliente', 'cancelled', true) : null), msg),
@@ -860,6 +890,112 @@ async function telaApiCliente(id) {
         h('select', { name: 'validade', 'aria-label': 'Validade' }, h('option', { value: '' }, 'Não expira'), h('option', { value: '30' }, 'Expira em 30 dias'), h('option', { value: '90' }, 'Expira em 90 dias'), h('option', { value: '365' }, 'Expira em 1 ano')),
         h('button', { class: 'principal' }, 'Gerar nova chave')) : aviso('Reative o cliente para gerar chaves.', 'aviso')),
     h('div', { class: 'cartao' }, h('h2', {}, 'O que enviar ao cliente'), h('p', {}, 'A chave e o link da documentação: ', h('a', { href: '/app/api-docs.html', target: '_blank', rel: 'noopener' }, location.origin + '/app/api-docs.html'), '. A descrição técnica (OpenAPI) está em ', h('a', { href: '/v1/openapi.json', target: '_blank', rel: 'noopener' }, location.origin + '/v1/openapi.json'), '.')));
+}
+
+
+// ── Usuários e estatísticas de uso (só o dono do SaaS) ───────────────────────
+const ST_USER = { active: ['verde', 'Ativo'], disabled: ['verm', 'Bloqueado'] };
+const graficoDias = (serie, rotulo, campoOk, campoRuim) => {
+  const max = Math.max(1, ...serie.map((d) => d[campoOk] + (campoRuim ? d[campoRuim] : 0)));
+  return h('div', { class: 'dias', role: 'img', 'aria-label': rotulo }, ...serie.map((d) => { const total = d[campoOk] + (campoRuim ? d[campoRuim] : 0);
+    return h('div', { class: 'dia', title: dataBR(d.day) + ': ' + d[campoOk] + (campoRuim ? ' ok, ' + d[campoRuim] + ' falha(s)' : '') },
+      h('div', { class: 'col', style: 'height:' + Math.max(total ? 3 : 0, Math.round((total / max) * 100)) + '%' }, campoRuim ? h('div', { class: 'col-erro', style: 'height:' + (total ? Math.round((d[campoRuim] / total) * 100) : 0) + '%' }) : null)); }));
+};
+
+async function telaUso() {
+  const estado = { dias: 30, q: '', status: '', inativos: '' };
+  const [ov, us] = await Promise.all([api('GET', '/api/admin/usage', null, { days: String(estado.dias) }), api('GET', '/api/admin/users')]);
+  if (!ov.ok) return app.replaceChildren(aviso(ov.error, 'erro'));
+  let o = ov.data, usuarios = us.data;
+  const topo = h('div'), listaUsuarios = h('div');
+  const kpi_ = (t, v, c, rod) => h('div', { class: 'kpi-mini ' + (c || '') }, h('span', { class: 'num' }, v), h('span', {}, t), rod ? h('span', { class: 'suave' }, rod) : null);
+  function desenharTopo_() {
+    const t = o.tenants, u = o.users;
+    topo.replaceChildren(
+      h('div', { class: 'kpis' }, kpi_('Escritórios', num(t.total), '', num(t.trialing || 0) + ' em teste · ' + num(t.active || 0) + ' ativos'),
+        kpi_('Usuários', num(u.total), '', num(u.active_7d) + ' entraram em 7 dias · ' + num(u.never_logged) + ' nunca entraram'),
+        kpi_('Buscas ok (' + o.days + ' dias)', num(o.searches.ok), 'azul', num(o.searches.failed) + ' falharam (não cobradas)'),
+        kpi_('A cobrar neste mês', reais(o.revenue_month_cents), 'verde', 'buscas bem-sucedidas × preço'),
+        kpi_('Chamadas da API no mês', num(o.api.requests_month), '')),
+      h('div', { class: 'grade2' },
+        h('div', { class: 'cartao' }, h('h2', {}, 'Buscas por dia'), graficoDias(o.series, 'Buscas por dia', 'ok', 'failed'), h('p', { class: 'suave' }, 'Azul = bem-sucedidas; vermelho = falhas. Altura = total do dia.')),
+        h('div', { class: 'cartao' }, h('h2', {}, 'Novos cadastros por dia'), graficoDias(o.series, 'Novos cadastros por dia', 'signups'), h('p', { class: 'suave' }, num(o.series.reduce((a, d) => a + d.signups, 0)) + ' novo(s) escritório(s) no período.'))),
+      h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h2', {}, 'Escritórios que mais usam'),
+        h('select', { 'aria-label': 'Período', onchange: async (e) => { estado.dias = Number(e.target.value); const r = await api('GET', '/api/admin/usage', null, { days: String(estado.dias) }); if (r.ok) { o = r.data; desenharTopo_(); } } },
+          ...[[7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(([v, n]) => h('option', { value: v, selected: v === estado.dias }, 'Últimos ' + n)))),
+        o.top_clients !== undefined ? null : null,
+        o.top_tenants.length ? h('table', {}, h('thead', {}, h('tr', {}, ...['Escritório', 'Buscas ok', 'Falhas'].map((x) => h('th', {}, x)))),
+          h('tbody', {}, ...o.top_tenants.map((x) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/admin/escritorio/' + x.id; } }, h('td', {}, x.name), h('td', {}, num(x.ok)), h('td', {}, num(x.failed))))))
+          : h('p', { class: 'vazio' }, 'Ainda sem buscas no período.')));
+  }
+  async function recarregarUsuarios() {
+    const q = Object.fromEntries(Object.entries(estado).filter(([k, v]) => v && k !== 'dias'));
+    const r = await api('GET', '/api/admin/users', null, { q: estado.q, status: estado.status, inactive: estado.inativos });
+    if (r.ok) { usuarios = r.data; desenharUsuarios(); }
+  }
+  function desenharUsuarios() {
+    const busca = h('input', { type: 'search', placeholder: 'Buscar nome, e-mail ou escritório…', 'aria-label': 'Buscar usuário', value: estado.q, oninput: (e) => { estado.q = e.target.value; clearTimeout(busca.t); busca.t = setTimeout(recarregarUsuarios, 300); } });
+    const st = h('select', { 'aria-label': 'Situação', onchange: (e) => { estado.status = e.target.value; recarregarUsuarios(); } }, h('option', { value: '' }, 'Todas as situações'), h('option', { value: 'active', selected: estado.status === 'active' }, 'Ativos'), h('option', { value: 'disabled', selected: estado.status === 'disabled' }, 'Bloqueados'));
+    const ina = h('select', { 'aria-label': 'Atividade', onchange: (e) => { estado.inativos = e.target.value; recarregarUsuarios(); } }, h('option', { value: '' }, 'Qualquer atividade'), h('option', { value: '30', selected: estado.inativos === '30' }, 'Sem entrar há 30 dias ou mais'));
+    listaUsuarios.replaceChildren(h('div', { class: 'filtros' }, busca, st, ina, h('span', { class: 'suave' }, usuarios.total + ' usuário(s)')),
+      h('div', { style: 'overflow-x:auto' }, h('table', {}, h('thead', {}, h('tr', {}, ...['Usuário', 'Escritório(s) e papel', 'Situação', 'Último acesso', 'Cadastro'].map((x) => h('th', {}, x)))),
+        h('tbody', {}, ...(usuarios.items.length ? usuarios.items.map((u) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/uso/usuario/' + u.id; } },
+          h('td', {}, h('strong', {}, u.name), Number(u.is_platform_admin) ? h('span', { class: 'etq azul' }, 'dono') : null, h('div', { class: 'suave' }, u.email)), h('td', {}, u.offices || '—'),
+          h('td', {}, h('span', { class: 'etq ' + ST_USER[u.status][0] }, ST_USER[u.status][1])), h('td', {}, u.last_login_at ? dataHoraBR(u.last_login_at) : 'nunca'), h('td', {}, dataBR(u.created_at))))
+          : [h('tr', {}, h('td', { colspan: 5, class: 'vazio' }, 'Nenhum usuário com esses filtros.'))])))));
+  }
+  app.replaceChildren(h('h1', {}, 'Usuários e uso'),
+    h('p', { class: 'suave' }, 'Visão do todo e de cada escritório e usuário: quem entra, quanto usa e quanto há a cobrar. Só números e cadastro: o conteúdo dos processos nunca aparece aqui.'),
+    topo, h('div', { class: 'cartao' }, h('h2', {}, 'Usuários'), listaUsuarios));
+  desenharTopo_(); desenharUsuarios();
+}
+
+async function telaUsoUsuario(id, recado) {
+  const r = await api('GET', '/api/admin/users/' + id);
+  if (!r.ok) return app.replaceChildren(aviso(r.error, 'erro'), h('p', {}, h('a', { href: '#/uso' }, '← Voltar')));
+  const { user: u, offices, actions_30d: acoes, recent } = r.data, msg = h('div', {}, recado || null);
+  const mudar = async (status) => { const x = await api('POST', '/api/admin/users/' + id + '/status', { status }); if (x.ok) telaUsoUsuario(id, aviso(status === 'disabled' ? 'Acesso bloqueado. Quem estiver logado perde o acesso no próximo clique.' : 'Acesso liberado.', 'ok')); else msg.replaceChildren(aviso(x.error, 'erro')); };
+  const NOME_ACAO = (a) => a.replace(/\./g, ' › ');
+  app.replaceChildren(h('p', {}, h('a', { href: '#/uso' }, '← Usuários e uso')),
+    h('div', { class: 'cartao' }, h('div', { class: 'linha entre' }, h('h1', {}, u.name), h('span', { class: 'etq ' + ST_USER[u.status][0] }, ST_USER[u.status][1])),
+      h('p', { class: 'suave' }, u.email + ' · cadastro em ' + dataBR(u.created_at) + ' · último acesso: ' + (u.last_login_at ? dataHoraBR(u.last_login_at) : 'nunca') + (u.terms_accepted_at ? ' · aceitou os termos em ' + dataBR(u.terms_accepted_at) : '')),
+      msg, Number(u.is_platform_admin) ? aviso('Administrador da plataforma: gerido pelo servidor.', 'aviso')
+        : h('div', { class: 'linha' }, u.status === 'active' ? h('button', { class: 'perigo', onclick: () => mudar('disabled') }, 'Bloquear acesso') : h('button', { class: 'principal', onclick: () => mudar('active') }, 'Liberar acesso'))),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Escritórios'), offices.length ? h('table', {}, h('thead', {}, h('tr', {}, ...['Escritório', 'Papel', 'Situação no escritório'].map((x) => h('th', {}, x)))),
+      h('tbody', {}, ...offices.map((o) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/admin/escritorio/' + o.id; } }, h('td', {}, o.name), h('td', {}, { office_admin: 'Administrador', lawyer: 'Advogado(a)', assistant: 'Assistente' }[o.role] || o.role), h('td', {}, o.status))))) : h('p', { class: 'vazio' }, 'Sem escritório.')),
+    h('div', { class: 'cartao' }, h('h2', {}, 'O que fez nos últimos 30 dias'), acoes.length ? h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Ação'), h('th', {}, 'Vezes'))), h('tbody', {}, ...acoes.map((a) => h('tr', {}, h('td', {}, NOME_ACAO(a.action)), h('td', {}, num(a.n)))))) : h('p', { class: 'vazio' }, 'Nenhuma ação registrada.')),
+    h('div', { class: 'cartao' }, h('h2', {}, 'Últimos eventos'), recent.length ? recent.map((a) => h('div', { class: 'mov suave' }, dataHoraBR(a.created_at) + ' · ' + NOME_ACAO(a.action) + (a.entity_type ? ' · ' + a.entity_type : ''))) : h('p', { class: 'vazio' }, 'Sem eventos.')));
+}
+
+// uso individual de um escritório, para a página do escritório na administração
+async function blocoUsoEscritorio(id, alvo) {
+  const r = await api('GET', '/api/admin/usage/tenant/' + id, null, { days: '30' });
+  if (!r.ok) return alvo.replaceChildren(aviso(r.error, 'erro'));
+  const { series, statement: e, counts, members, last_activity: ultima } = r.data;
+  alvo.replaceChildren(h('h2', {}, 'Uso do escritório (30 dias)'),
+    h('div', { class: 'kpis' }, h('div', { class: 'kpi-mini azul' }, h('span', { class: 'num' }, num(e.ok)), h('span', {}, 'buscas ok no mês')), h('div', { class: 'kpi-mini' }, h('span', { class: 'num' }, num(e.failed)), h('span', {}, 'falhas (não cobradas)')),
+      h('div', { class: 'kpi-mini verde' }, h('span', { class: 'num' }, reais(e.amount_cents)), h('span', {}, e.trial ? 'a cobrar (em teste)' : 'a cobrar no mês')), h('div', { class: 'kpi-mini' }, h('span', { class: 'num' }, num(counts.processes)), h('span', {}, 'processos ativos')), h('div', { class: 'kpi-mini' }, h('span', { class: 'num' }, num(counts.oabs)), h('span', {}, 'OABs'))),
+    graficoDias(series, 'Buscas por dia do escritório', 'ok', 'failed'),
+    h('p', { class: 'suave' }, 'Modelo: ' + (e.model === 'per_search' ? reais(e.price_per_search_cents) + ' por busca' : 'mensalidade') + ' · horário das buscas: ' + (e.search_time || 'pelo intervalo do plano') + (e.spend_cap_cents ? ' · teto de ' + reais(e.spend_cap_cents) : '') + ' · última atividade: ' + (ultima ? dataHoraBR(ultima) : '—')),
+    h('table', {}, h('thead', {}, h('tr', {}, ...['Pessoa', 'Papel', 'Último acesso', 'Ações em 30 dias'].map((x) => h('th', {}, x)))),
+      h('tbody', {}, ...members.map((m) => h('tr', { class: 'clicavel', onclick: () => { location.hash = '#/uso/usuario/' + m.id; } }, h('td', {}, m.name, h('div', { class: 'suave' }, m.email)), h('td', {}, m.role), h('td', {}, m.last_login_at ? dataHoraBR(m.last_login_at) : 'nunca'), h('td', {}, num(m.actions_30d)))))));
+}
+
+// administração: pedidos de contratação e "pronto para vender?" no topo
+async function telaAdminCompleta(consulta) {
+  await telaAdmin(consulta);
+  const [pedidos, prontidao] = await Promise.all([api('GET', '/api/admin/requests'), api('GET', '/api/admin/readiness')]);
+  const COR_PRONTO = { ok: 'verde', warn: 'amar', fail: 'verm' }, ROT_PRONTO = { ok: 'ok', warn: 'atenção', fail: 'falta' };
+  const cartaoPedidos = pedidos.ok && pedidos.data.length ? h('div', { class: 'cartao' }, h('h2', {}, 'Pedidos de contratação (' + pedidos.data.length + ')'),
+    h('p', { class: 'suave' }, 'Combine o pagamento com o cliente e, depois de receber, renove a assinatura e marque o pedido como atendido.'),
+    h('table', {}, h('thead', {}, h('tr', {}, ...['Escritório', 'Plano pedido', 'Quem pediu', 'Quando', ''].map((x) => h('th', {}, x)))),
+      h('tbody', {}, ...pedidos.data.map((q) => h('tr', {}, h('td', {}, h('a', { href: '#/admin/escritorio/' + q.tenant_id }, q.tenant_name)), h('td', {}, q.plan_name || q.plan_code, q.message ? h('div', { class: 'suave' }, q.message) : null), h('td', {}, (q.requester || '') + ' ' + (q.requester_email || '')), h('td', {}, dataHoraBR(q.created_at)),
+        h('td', { class: 'linha' }, h('button', { class: 'principal', onclick: async () => { const x = await api('POST', '/api/admin/requests/' + q.id + '/done'); if (x.ok) telaAdminCompleta(consulta); } }, 'Atendido'), h('button', { onclick: async () => { const x = await api('POST', '/api/admin/requests/' + q.id + '/dismissed'); if (x.ok) telaAdminCompleta(consulta); } }, 'Descartar'))))))) : null;
+  const falta = prontidao.ok ? prontidao.data.filter((c) => c.status === 'fail').length : 0;
+  const cartaoPronto = prontidao.ok ? h('details', { class: 'cartao', open: falta > 0 }, h('summary', {}, h('strong', {}, 'Pronto para vender? '), falta ? h('span', { class: 'etq verm' }, falta + ' pendência(s)') : h('span', { class: 'etq verde' }, 'tudo certo')),
+    h('div', {}, ...prontidao.data.map((c) => h('div', { class: 'linha', style: 'margin:8px 0;align-items:flex-start' }, h('span', { class: 'etq ' + COR_PRONTO[c.status] }, ROT_PRONTO[c.status]), h('div', {}, h('strong', {}, c.label), h('div', { class: 'suave' }, c.detail)))))) : null;
+  const barra = h('div', { class: 'linha' }, h('a', { href: '#/uso' }, h('button', {}, 'Usuários e uso')), h('button', { onclick: async () => { const e = await baixar('/api/admin/billing.csv', 'cobranca.csv', {}); if (e) alert(e); } }, 'Cobrança do mês (CSV)'));
+  app.prepend(...[barra, cartaoPedidos, cartaoPronto].filter(Boolean));
 }
 
 async function telaAdmin(consulta) {
@@ -920,6 +1056,7 @@ async function telaAdminEscritorio(id, recado) {
           : h('button', { onclick: () => chamar('/access', { status: 'active' }, 'Acesso liberado.') }, 'Liberar acesso'))),
     h('div', { class: 'cartao', style: 'overflow-x:auto' }, h('h2', {}, 'Pessoas'), h('table', { class: 'larga' }, h('thead', {}, h('tr', {}, ...['Nome', 'E-mail', 'Papel', 'Situação', 'Último acesso'].map((x) => h('th', {}, x)))),
       h('tbody', {}, ...members.map((m) => h('tr', {}, h('td', {}, m.name), h('td', {}, m.email), h('td', {}, { office_admin: 'Administrador', lawyer: 'Advogado(a)', assistant: 'Assistente' }[m.role] || m.role), h('td', {}, { active: 'Ativo', invited: 'Convite pendente', disabled: 'Desativado' }[m.status] || m.status), h('td', {}, dataHoraBR(m.last_login_at))))))),
+    (() => { const alvo = h('div', { class: 'cartao' }); blocoUsoEscritorio(id, alvo); return alvo; })(),
     h('div', { class: 'cartao' }, h('h2', {}, 'Últimos eventos do escritório'), audit.length ? audit.map((a) => h('div', { class: 'mov suave' }, dataHoraBR(a.created_at) + ' · ' + a.action)) : h('p', { class: 'vazio' }, 'Sem eventos.')));
 }
 
@@ -978,9 +1115,11 @@ async function rota() {
   if (publicas.includes(caminho) && caminho !== '/redefinir') { location.hash = '#/'; return; }
   if (caminho === '/conta') { document.getElementById('faixa').hidden = true; return telaConta(); }
   let a;
+  if (sessao.platform_admin && caminho === '/uso') { document.getElementById('faixa').hidden = true; return telaUso(); }
+  if (sessao.platform_admin && (a = caminho.match(/^\/uso\/usuario\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaUsoUsuario(Number(a[1])); }
   if (sessao.platform_admin && caminho === '/apis') { document.getElementById('faixa').hidden = true; return telaApiPainel(); }
   if (sessao.platform_admin && (a = caminho.match(/^\/apis\/cliente\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaApiCliente(Number(a[1])); }
-  if (sessao.platform_admin && caminho === '/admin') { document.getElementById('faixa').hidden = true; return telaAdmin(consulta); }
+  if (sessao.platform_admin && caminho === '/admin') { document.getElementById('faixa').hidden = true; return telaAdminCompleta(consulta); }
   if (sessao.platform_admin && (a = caminho.match(/^\/admin\/escritorio\/(\d+)$/))) { document.getElementById('faixa').hidden = true; return telaAdminEscritorio(Number(a[1])); }
   if (!sessao.tenant && sessao.platform_admin && sessao.tenants.length === 0) { location.hash = '#/admin'; return; }
   if (!sessao.tenant) return sessao.tenants.length > 1 ? telaEscolherEscritorio() : telaEntrar();

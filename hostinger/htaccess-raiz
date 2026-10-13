@@ -1,4 +1,4 @@
-# Radar Trabalhista na hospedagem compartilhada (Hostinger).
+# Radar Processual na hospedagem compartilhada (Hostinger).
 # Este arquivo fica na RAIZ da pasta do subdomínio. Só a pasta "public" é servida; o resto fica trancado.
 Options -Indexes
 DirectoryIndex disabled

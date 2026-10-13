@@ -19,10 +19,14 @@ use Radar\Repository\NotificationRepository;
 use Radar\Repository\OabPublicationRepository;
 use Radar\Repository\ProcessRepository;
 use Radar\Service\AccountService;
+use Radar\Service\BillingService;
 use Radar\Service\DashboardService;
 use Radar\Service\DataTransferService;
 use Radar\Service\LookupService;
 use Radar\Service\MemberService;
+use Radar\Service\ReadinessService;
+use Radar\Service\SalesService;
+use Radar\Service\UsageAdminService;
 use Radar\Service\OabService;
 use Radar\Service\OabStats;
 use Radar\Service\PlanService;
@@ -59,6 +63,9 @@ final class App
     private PrivacyService $privacy;
     private SubscriptionService $subscriptions;
     private ApiAdminService $apiAdmin;
+    private SalesService $sales;
+    private BillingService $billing;
+    private UsageAdminService $usageAdmin;
 
     public function __construct(
         private PDO $pdo,
@@ -70,6 +77,9 @@ final class App
         int $lockMinutes = 15,
         private ?LookupService $lookup = null,
         private ?PublicApi $publicApi = null,
+        private ?ReadinessService $readiness = null,
+        private string $paymentInfo = '',
+        private string $supportContact = '',
     ) {
         $this->auth = new AuthService($pdo, $clock, $maxFailures, $lockMinutes);
         $this->processes = new ProcessService($pdo, $clock);
@@ -84,6 +94,9 @@ final class App
         $this->privacy = new PrivacyService($pdo, $clock);
         $this->subscriptions = new SubscriptionService($pdo, $clock);
         $this->apiAdmin = new ApiAdminService($pdo, $clock);
+        $this->sales = new SalesService($pdo, $mailer, $clock);
+        $this->billing = new BillingService($pdo, $clock);
+        $this->usageAdmin = new UsageAdminService($pdo, $clock);
     }
 
     public function handle(Request $request): Response
@@ -363,7 +376,22 @@ final class App
             $plan['banner'] = $this->subscriptions->banner((string) $plan['status'], $plan['current_period_end']);
             $plan['oabs_used'] = (int) $this->pdo->query('SELECT COUNT(*) FROM oab_registrations WHERE status <> \'archived\' AND tenant_id = ' . (int) $ctx->tenantId)->fetchColumn();
             $plan['users_used'] = count(array_filter($this->members->list($ctx), static fn (array $m) => $m['status'] !== 'disabled'));
+            $plan['payment_info'] = $this->paymentInfo;
+            $plan['support_contact'] = $this->supportContact;
+            $plan['open_request'] = $this->sales->openFor($ctx);
+            $plan['plans'] = $this->pdo->query('SELECT code, name, price_cents, max_processes, max_users, max_oabs, min_interval_minutes FROM plans WHERE active = 1 ORDER BY price_cents')->fetchAll();
             return Response::json(['ok' => true, 'data' => $plan]);
+        }
+        if ($method === 'GET' && $path === '/api/billing') {
+            $ctx->require('plan.view');
+            $month = $r->strQuery('month');
+            return Response::json(['ok' => true, 'data' => $this->billing->statement($ctx->tenantId, $month !== '' ? $month : null)]);
+        }
+        if ($method === 'PATCH' && $path === '/api/billing/settings') {
+            return Response::json(['ok' => true, 'data' => $this->billing->saveSettings($ctx, $r->body, $r->ip)]);
+        }
+        if ($method === 'POST' && $path === '/api/plan-request') {
+            return Response::json(['ok' => true, 'data' => $this->sales->request($ctx, $r->str('plan'), $r->strOrNull('message'), $r->ip)], 201);
         }
         if ($method === 'GET' && $path === '/api/audit') {
             $ctx->require('audit.view');
@@ -423,6 +451,36 @@ final class App
                 'note' => $this->platform->setNote($userId, $id, $r->str('note')),
             };
             return Response::json(['ok' => true, 'data' => $this->platform->tenant($userId, $id)]);
+        }
+        if ($m === 'GET' && $p === '/api/admin/usage') {
+            return Response::json(['ok' => true, 'data' => $this->usageAdmin->overview($userId, $r->intQuery('days', 30))]);
+        }
+        if ($m === 'GET' && preg_match('~^/api/admin/usage/tenant/(\d+)$~', $p, $x) === 1) {
+            return Response::json(['ok' => true, 'data' => $this->usageAdmin->tenant($userId, (int) $x[1], $r->intQuery('days', 30))]);
+        }
+        if ($m === 'GET' && $p === '/api/admin/users') {
+            return Response::json(['ok' => true, 'data' => $this->usageAdmin->users($userId, $r->strQuery('q'), $r->strQuery('status'), $r->strQuery('inactive'))]);
+        }
+        if ($m === 'GET' && preg_match('~^/api/admin/users/(\d+)$~', $p, $x) === 1) {
+            return Response::json(['ok' => true, 'data' => $this->usageAdmin->user($userId, (int) $x[1])]);
+        }
+        if ($m === 'POST' && preg_match('~^/api/admin/users/(\d+)/status$~', $p, $x) === 1) {
+            $this->usageAdmin->setUserStatus($userId, (int) $x[1], $r->str('status'), $r->ip);
+            return Response::json(['ok' => true]);
+        }
+        if ($m === 'GET' && $p === '/api/admin/billing.csv') {
+            $month = $r->strQuery('month');
+            return $this->csv($this->billing->csvForOwner($userId, $month !== '' ? $month : null), 'cobranca-' . ($month !== '' ? $month : $this->clock->now()->format('Y-m')) . '.csv');
+        }
+        if ($m === 'GET' && $p === '/api/admin/readiness') {
+            return Response::json(['ok' => true, 'data' => $this->readiness?->checks($userId) ?? []]);
+        }
+        if ($m === 'GET' && $p === '/api/admin/requests') {
+            return Response::json(['ok' => true, 'data' => $this->sales->openRequests($userId)]);
+        }
+        if ($m === 'POST' && preg_match('~^/api/admin/requests/(\d+)/(done|dismissed)$~', $p, $x) === 1) {
+            $this->sales->resolve($userId, (int) $x[1], $x[2], $r->ip);
+            return Response::json(['ok' => true]);
         }
         if (str_starts_with($p, '/api/admin/api/')) {
             return $this->adminApi($r, $userId);
@@ -598,9 +656,17 @@ final class App
             throw new ValidationError('Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.');
         }
         $ids = $this->auth->registerTenant($r->str('office_name'), $r->str('name'), $r->str('email'), $r->str('password'),
-            'essencial', $r->strOrNull('phone'), $r->ip, PrivacyService::TERMS_VERSION);
+            $this->defaultPlan(), $r->strOrNull('phone'), $r->ip, PrivacyService::TERMS_VERSION);
         $this->startSession($this->auth->login($r->str('email'), $r->str('password'), $r->ip), $ids['tenant_id']);
         return Response::json(['ok' => true, 'data' => ['tenant_id' => $ids['tenant_id']]], 201);
+    }
+
+    /** Plano dos cadastros novos: "pague por busca" quando existe e está ativo; senão o Essencial. */
+    private function defaultPlan(): string
+    {
+        $stmt = $this->pdo->prepare("SELECT 1 FROM plans WHERE code = 'por-busca' AND active = 1");
+        $stmt->execute();
+        return $stmt->fetchColumn() !== false ? 'por-busca' : 'essencial';
     }
 
     private function login(Request $r): Response
@@ -641,7 +707,7 @@ final class App
         $token = $this->auth->requestPasswordReset($email, $r->ip);
         if ($token !== null) {
             try {
-                $this->mailer->send($email, '', 'Radar Trabalhista: redefinir sua senha',
+                $this->mailer->send($email, '', 'Radar Processual: redefinir sua senha',
                     "Recebemos um pedido para redefinir a sua senha.\n\n"
                     . rtrim($this->appUrl, '/') . '/#/redefinir?token=' . $token . "\n\n"
                     . "O link vale por 60 minutos e só pode ser usado uma vez. Se não foi você, ignore esta mensagem.\n");
@@ -661,8 +727,8 @@ final class App
             $link = $result['invite_token'] !== null
                 ? rtrim($this->appUrl, '/') . '/#/redefinir?token=' . $result['invite_token']
                 : rtrim($this->appUrl, '/') . '/#/convites';
-            $this->mailer->send($email, $r->str('name'), 'Radar Trabalhista: você foi convidado',
-                "Você foi convidado(a) para um escritório no Radar Trabalhista.\n\n"
+            $this->mailer->send($email, $r->str('name'), 'Radar Processual: você foi convidado',
+                "Você foi convidado(a) para um escritório no Radar Processual.\n\n"
                 . ($result['invite_token'] !== null ? "Defina a sua senha por este link (válido por 7 dias):\n" : "Entre na sua conta e aceite o convite:\n")
                 . $link . "\n");
         } catch (MailerException $e) {

@@ -51,14 +51,14 @@ abstract class DbTestCase extends TestCase
             self::$migrated = true;
         }
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach (['api_cache', 'api_rate', 'api_usage_daily', 'api_keys', 'api_clients', 'movement_actions', 'worker_runs', 'oab_alerts', 'oab_publications', 'oab_registrations', 'audit_logs', 'notifications', 'monitoring_events', 'monitoring_jobs', 'process_movements', 'processes',
+        foreach (['search_usage_daily', 'plan_requests', 'api_cache', 'api_rate', 'api_usage_daily', 'api_keys', 'api_clients', 'movement_actions', 'worker_runs', 'oab_alerts', 'oab_publications', 'oab_registrations', 'audit_logs', 'notifications', 'monitoring_events', 'monitoring_jobs', 'process_movements', 'processes',
                      'password_resets', 'subscriptions', 'tenant_members', 'users', 'tenants'] as $table) {
             $this->pdo->exec('TRUNCATE TABLE ' . $table);
         }
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
         // planos criados por testes específicos não vazam para os outros
-        $this->pdo->exec("DELETE FROM plans WHERE code NOT IN ('essencial', 'profissional', 'equipe')");
-        $this->pdo->exec("DELETE FROM api_plans WHERE code NOT IN ('starter', 'pro', 'business')");
+        $this->pdo->exec("DELETE FROM plans WHERE code NOT IN ('essencial', 'profissional', 'equipe', 'por-busca')");
+        $this->pdo->exec("DELETE FROM api_plans WHERE code NOT IN ('starter', 'pro', 'business', 'por-busca')");
         $this->pdo->exec("UPDATE api_plans SET active = 1, price_cents = CASE code WHEN 'starter' THEN 9900 WHEN 'pro' THEN 29900 ELSE 89900 END,
             monthly_quota = CASE code WHEN 'starter' THEN 2000 WHEN 'pro' THEN 15000 ELSE 100000 END, rate_per_minute = CASE code WHEN 'starter' THEN 30 WHEN 'pro' THEN 120 ELSE 600 END");
         $this->clock = new FixedClock();

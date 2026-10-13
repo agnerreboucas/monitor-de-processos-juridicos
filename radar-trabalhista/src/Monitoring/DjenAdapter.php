@@ -147,7 +147,7 @@ final class DjenAdapter implements SourceAdapter, OabSource
             'Accept-Language' => 'pt-BR,pt;q=0.9',
             'Origin' => 'https://comunica.pje.jus.br',
             'Referer' => 'https://comunica.pje.jus.br/',
-            'User-Agent' => 'Mozilla/5.0 (compatible; RadarTrabalhista/1.0)',
+            'User-Agent' => 'Mozilla/5.0 (compatible; RadarProcessual/1.0)',
         ], $this->timeoutSeconds);
 
         if ($response->status === 0) {
