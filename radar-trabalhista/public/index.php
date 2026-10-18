@@ -61,7 +61,7 @@ $app = new App(
     maxFailures: $config->int('LOGIN_MAX_FAILURES', 5),
     lockMinutes: $config->int('LOGIN_LOCK_MINUTES', 15),
     lookup: $lookup,
-    publicApi: new PublicApi($pdo, $lookup, $djen),
+    publicApi: new PublicApi($pdo, $lookup, $djen, baseUrl: (string) $config->get('APP_URL')),
     readiness: new \Radar\Service\ReadinessService($pdo, $config, __DIR__, $config->get('BACKUP_DIR', __DIR__ . '/../storage/backups')),
     paymentInfo: $config->get('PAYMENT_INFO'),
     supportContact: $config->get('SUPPORT_CONTACT'),

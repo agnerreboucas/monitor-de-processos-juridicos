@@ -30,6 +30,7 @@ final class PublicApi
         private LookupService $lookup,
         private ?DjenAdapter $djen,
         private Clock $clock = new Clock(),
+        private string $baseUrl = '',
     ) {
     }
 
@@ -49,7 +50,7 @@ final class PublicApi
                 return $this->ok(['status' => 'ok', 'hora' => $this->clock->now()->format('c')]);
             }
             if ($path === '/v1/openapi.json') {
-                return $this->ok(OpenApi::spec());
+                return $this->ok(OpenApi::spec($this->baseUrl));
             }
             $auth = $this->authenticate($r);
             if ($auth instanceof Response) {

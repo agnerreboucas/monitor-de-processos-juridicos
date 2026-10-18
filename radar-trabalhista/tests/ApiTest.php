@@ -318,6 +318,7 @@ final class ApiTest extends DbTestCase
         $this->assertSame(200, $this->get('/v1/saude', null)->status);
         $spec = $this->json($this->get('/v1/openapi.json', null));
         $this->assertSame('3.0.3', $spec['openapi']);
+        $this->assertSame('https://radar.exemplo.com.br/v1', \Radar\Api\OpenApi::spec('https://radar.exemplo.com.br/')['servers'][0]['url']);      // URL completa quando APP_URL existe
         $this->assertArrayHasKey('/processos/{numero}', $spec['paths']);
     }
 

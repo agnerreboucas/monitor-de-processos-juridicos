@@ -7,14 +7,14 @@ namespace Radar\Api;
 final class OpenApi
 {
     /** @return array<string,mixed> */
-    public static function spec(): array
+    public static function spec(string $baseUrl = ''): array
     {
         $erro = ['description' => 'Erro', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Erro']]]];
         return [
             'openapi' => '3.0.3',
             'info' => ['title' => 'API de Processos e Publicações (Radar Processual)', 'version' => '1.0.0',
                 'description' => 'Consulta de andamento processual (Datajud/CNJ) e publicações do Diário (DJEN/Comunica). Dados públicos de fontes oficiais; confira sempre no tribunal antes de agir.'],
-            'servers' => [['url' => '/v1']],
+            'servers' => [['url' => $baseUrl !== '' ? rtrim($baseUrl, '/') . '/v1' : '/v1']],      // com APP_URL a URL é completa (GPT Actions e outros sistemas exigem)
             'security' => [['bearer' => []]],
             'paths' => [
                 '/processos/{numero}' => ['get' => ['summary' => 'Capa e andamento completo de um processo', 'description' => 'Junta o Datajud (andamento interno) e o Diário (publicações, partes e advogados). Cada fonte vem com o seu status: se uma falhar, o quadro está incompleto.',
