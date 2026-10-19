@@ -9,13 +9,31 @@ function radar_link(string $path = ''): string
     return esc_url(home_url('/radar/' . ltrim($path, '/')));
 }
 
-// WhatsApp do atendimento comercial (consultor). Para trocar o número, mude as duas linhas abaixo.
+const RADAR_TEMA_VERSAO = '2';
+
+// WhatsApp do atendimento comercial (consultor). Valores padrão; mude em Aparência > Personalizar > WhatsApp.
 const RADAR_WHATSAPP = '5511958649509';
 const RADAR_WHATSAPP_EXIBIDO = '(11) 95864-9509';
+const RADAR_WHATSAPP_MENSAGEM = 'Olá! Quero falar com um consultor sobre o Radar Processual.';
 
-function radar_whatsapp(string $mensagem = 'Olá! Quero falar com um consultor sobre o Radar Processual.'): string
+function radar_whatsapp_numero(): string
 {
-    return 'https://wa.me/' . RADAR_WHATSAPP . '?text=' . rawurlencode($mensagem);
+    $n = preg_replace('/\D+/', '', (string) get_theme_mod('radar_whatsapp', RADAR_WHATSAPP)) ?? '';
+    return $n !== '' ? $n : RADAR_WHATSAPP;
+}
+
+function radar_whatsapp_exibido(): string
+{
+    $t = trim((string) get_theme_mod('radar_whatsapp_exibido', RADAR_WHATSAPP_EXIBIDO));
+    return $t !== '' ? $t : RADAR_WHATSAPP_EXIBIDO;
+}
+
+function radar_whatsapp(string $mensagem = ''): string
+{
+    if ($mensagem === '') {
+        $mensagem = trim((string) get_theme_mod('radar_whatsapp_mensagem', RADAR_WHATSAPP_MENSAGEM)) ?: RADAR_WHATSAPP_MENSAGEM;
+    }
+    return 'https://wa.me/' . radar_whatsapp_numero() . '?text=' . rawurlencode($mensagem);
 }
 
 function radar_icone_zap(): string
@@ -27,13 +45,22 @@ add_action('after_setup_theme', static function (): void {
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
     add_theme_support('html5', ['search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script']);
+    register_nav_menus(['principal' => 'Menu do topo', 'rodape' => 'Menu do rodapé']);
 });
 
 add_action('wp_enqueue_scripts', static function (): void {
     $dir = get_template_directory();
     wp_enqueue_style('radar-inicio', get_theme_file_uri('css/inicio.css'), [], (string) @filemtime($dir . '/css/inicio.css'));
-    wp_enqueue_style('radar-tema', get_stylesheet_uri(), ['radar-inicio'], (string) @filemtime($dir . '/style.css'));
+    wp_enqueue_style('radar-elementor', get_theme_file_uri('css/elementor.css'), ['radar-inicio'], (string) @filemtime($dir . '/css/elementor.css'));
+    wp_enqueue_style('radar-tema', get_stylesheet_uri(), ['radar-elementor'], (string) @filemtime($dir . '/style.css'));
 });
+
+require_once __DIR__ . '/inc/demo-shortcodes.php';
+require_once __DIR__ . '/inc/elementor-paginas.php';
+require_once __DIR__ . '/inc/personalizar.php';
+
+// O kit padrão do Elementor pede a fonte Roboto ao Google; o tema usa a fonte do sistema (mais rápido e sem enviar o IP do visitante).
+add_filter('elementor/frontend/print_google_fonts', '__return_false');
 
 add_action('wp_head', static function (): void {
     if (is_front_page()) {
@@ -48,18 +75,3 @@ add_action('admin_notices', static function (): void {
     }
 });
 
-// Cria a página "Demonstração" (escritório modelo, dados fictícios) ao ativar o tema, se ainda não existir.
-function radar_criar_pagina_demo(): void
-{
-    if (get_page_by_path('demonstracao')) {
-        return;
-    }
-    wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Demonstração', 'post_name' => 'demonstracao', 'post_content' => '']);
-}
-add_action('after_switch_theme', 'radar_criar_pagina_demo');
-add_action('init', static function (): void {
-    if (get_option('radar_tema_demo_criada') !== '1') {          // tema já ativo antes desta versão: cria uma vez
-        radar_criar_pagina_demo();
-        update_option('radar_tema_demo_criada', '1', false);
-    }
-});

@@ -57,5 +57,16 @@ Desativar o plugin só para o robô. **Excluir** o plugin mantém os dados dos c
 - Teste de integração com WordPress de verdade: `sh wordpress/teste/rodar.sh` (precisa de php, composer, zip e MariaDB local).
 - O plugin é só um invólucro: o núcleo (`src/`, `migrations/`, telas) é o mesmo do sistema independente, com `DB_PREFIX` ligado.
 
+## Páginas editáveis no Elementor (grátis)
+O tema usa o **Elementor** (versão gratuita) para as páginas **Início** e **Demonstração**. Instale e ative o plugin **Elementor** (Plugins > Adicionar novo) e depois o tema: as duas páginas são criadas sozinhas, já com todo o conteúdo, e ficam em **Páginas > Editar com o Elementor**. Sem o Elementor elas aparecem do mesmo jeito (texto simples), mas só dá para editar com ele.
+
+- Cada bloco é seção, coluna, título, texto, botão, imagem ou perguntas (acordeão): tudo do Elementor grátis. Textos, preços, links e imagens se trocam clicando.
+- O tema **nunca sobrescreve** uma página que já tem conteúdo do Elementor. Para voltar uma página ao original: **Aparência > Páginas do Radar** (apaga as suas edições nela).
+- Novas páginas (por exemplo "Sobre"): crie em **Páginas > Adicionar nova** e use "Editar com o Elementor"; elas ocupam a largura toda, no mesmo visual.
+- **Cabeçalho e rodapé não são editáveis no Elementor grátis** (ele só faz isso na versão paga). Ficam no WordPress: o menu em **Aparência > Menus** (locais "Menu do topo" e "Menu do rodapé"; sem menu, aparece o padrão) e a faixa do topo, o texto do rodapé e o WhatsApp do botão flutuante em **Aparência > Personalizar > Radar**.
+- Os botões de WhatsApp **dentro das páginas** têm o link no próprio botão (edite no Elementor).
+- As tabelas da demonstração são widgets "Shortcode": `[radar_demo_kpis]` e `[radar_demo_tabela tipo="carteira|acoes|publicacoes" limite="4"]`. Os dados (fictícios) estão em `inc/demo-data.php`, com datas sempre relativas a hoje.
+- O Elementor grátis também pede a fonte Roboto ao Google por padrão; o tema desliga isso.
+
 ## Página de demonstração
-O tema cria sozinho a página **Demonstração** (`/demonstracao/`): escritório modelo fictício (Prado & Associados), com 3 tabelas: carteira de processos, ações e prazos e publicações do dia. As datas são sempre relativas a hoje. Para trocar nomes, números ou linhas, edite `inc/demo-data.php` no tema. Os números de processo são inventados, mas com dígito verificador válido.
+É a página **Demonstração** (`/demonstracao/`): escritório modelo fictício (Prado & Associados), com 3 tabelas: carteira de processos, ações e prazos e publicações do dia. As datas são sempre relativas a hoje. Para trocar nomes, números ou linhas das tabelas, edite `inc/demo-data.php` no tema; os textos ao redor se editam no Elementor. Os números de processo são inventados, mas com dígito verificador válido.

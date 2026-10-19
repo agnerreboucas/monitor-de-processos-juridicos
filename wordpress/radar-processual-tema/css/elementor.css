@@ -1,0 +1,183 @@
+/* Estilo das páginas feitas no Elementor grátis (classes rd-*). Cores e medidas vêm de css/inicio.css.
+   Para mudar uma seção pelo Elementor, edite o conteúdo normalmente; para mudar o visual de todas, use "Personalizar > CSS adicional". */
+
+/* O kit padrão do Elementor traz Roboto e cores próprias: aqui o tema manda. */
+body[class*="elementor-kit-"]{--e-global-color-primary:var(--texto);--e-global-color-secondary:var(--suave);--e-global-color-text:var(--texto);--e-global-color-accent:var(--ambar);
+  --e-global-typography-primary-font-family:inherit;--e-global-typography-secondary-font-family:inherit;--e-global-typography-text-font-family:inherit;--e-global-typography-accent-font-family:inherit}
+.pagina-elementor{display:block}
+.pagina-elementor .elementor-widget:not(:last-child){margin-block-end:0}
+.pagina-elementor .elementor-widget-container{font-family:inherit}
+.pagina-elementor .elementor-heading-title{font-family:inherit;color:var(--texto);line-height:1.2;margin:0}
+.pagina-elementor .elementor-widget-text-editor{color:var(--suave);font-size:inherit;font-family:inherit}
+.pagina-elementor .elementor-widget-text-editor p{margin:0 0 12px;color:inherit}
+.pagina-elementor .elementor-widget-text-editor p:last-child{margin-bottom:0}
+.pagina-elementor .elementor-widget-text-editor strong{color:var(--texto)}
+.pagina-elementor .elementor-widget-text-editor a{color:var(--link)}
+.pagina-elementor .elementor-section.elementor-section-boxed>.elementor-container{max-width:1072px}
+.pagina-elementor .elementor-column-gap-no>.elementor-column>.elementor-element-populated{padding:0}
+.pagina-elementor .elementor-widget-wrap>.elementor-element{width:100%}
+
+/* ── Seções de texto ── */
+.pagina-elementor .rd-sec{padding-inline:24px}
+.pagina-elementor .rd-sec.rd-first{padding-top:72px}
+.pagina-elementor .rd-sec.rd-last{padding-bottom:72px}
+.pagina-elementor .rd-sec.rd-texto:not(.rd-first){padding-top:20px}
+.pagina-elementor .rd-sec.rd-grade{padding-block:0}
+.pagina-elementor .rd-sec.rd-grade.rd-last{padding-bottom:72px}
+.pagina-elementor .rd-sec.rd-grade>.elementor-container{padding-top:26px}
+.pagina-elementor .rd-alt{background:var(--cartao)}
+.pagina-elementor .rd-alt.rd-first{border-top:1px solid var(--linha)}
+.pagina-elementor .rd-alt.rd-last{border-bottom:1px solid var(--linha)}
+.pagina-elementor .rd-rot{margin:0 0 10px}
+.pagina-elementor .rd-rot .elementor-heading-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--link)}
+.pagina-elementor .rd-title .elementor-heading-title{font-size:clamp(26px,3.4vw,38px);line-height:1.15;letter-spacing:-.02em;text-wrap:balance;margin-bottom:12px}
+.pagina-elementor .rd-title.rd-centro,.pagina-elementor .rd-sub.rd-centro{text-align:center}
+.pagina-elementor .rd-sub{font-size:19px;max-width:44em;margin-bottom:10px}
+.pagina-elementor .rd-sub.rd-centro{margin-inline:auto}
+.pagina-elementor .rd-sub p{margin-bottom:18px}
+.pagina-elementor .rd-nota{font-size:14px;max-width:48em;margin-top:6px}
+.pagina-elementor .rd-lista ul{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:12px;color:var(--texto)}
+.pagina-elementor .rd-lista li{padding-left:28px;position:relative}
+.pagina-elementor .rd-lista li::before{content:"";position:absolute;left:3px;top:.55em;width:12px;height:7px;border-left:2.5px solid var(--verde);border-bottom:2.5px solid var(--verde);transform:rotate(-45deg)}
+.pagina-elementor .rd-lista .nao li::before,.pagina-elementor .rd-nao li::before{border:0;width:auto;height:auto;transform:none;content:"✕";color:var(--verm);font-weight:800;top:0;left:2px}
+
+/* ── Duas colunas ── */
+.pagina-elementor .rd-dois>.elementor-container{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.pagina-elementor .rd-dois>.elementor-container>.elementor-column{width:auto}
+
+/* ── Cartões e grades ── */
+.pagina-elementor .rd-grade>.elementor-container{display:grid;gap:18px;align-items:stretch}
+.pagina-elementor .rd-n2>.elementor-container{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pagina-elementor .rd-n3>.elementor-container{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pagina-elementor .rd-n4>.elementor-container{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pagina-elementor .rd-n6>.elementor-container{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pagina-elementor .rd-grade>.elementor-container>.elementor-column{width:auto}
+.pagina-elementor .elementor-section .rd-card.elementor-column>.elementor-element-populated{background:var(--cartao);border:1px solid var(--linha);border-radius:14px;padding:22px;height:100%;align-content:flex-start}
+.pagina-elementor .rd-alt .rd-card.elementor-column>.elementor-element-populated{background:var(--fundo)}
+.pagina-elementor .rd-h3 .elementor-heading-title{font-size:18px;line-height:1.3;margin:0 0 6px}
+.pagina-elementor .rd-card .elementor-widget-text-editor{font-size:15.5px}
+.pagina-elementor .rd-num .elementor-heading-title{font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--link);line-height:1;margin-bottom:12px}
+.pagina-elementor .rd-etq .elementor-heading-title{font-size:12px;font-weight:800;color:var(--ambar-t);background:var(--ambar);padding:2px 12px;border-radius:99px;display:inline-block;margin-bottom:10px}
+.pagina-elementor .rd-preco .preco{color:var(--texto);margin-bottom:6px}
+.pagina-elementor .rd-preco small{font-size:15px;font-weight:500;color:var(--suave)}
+.pagina-elementor .rd-plano.elementor-column>.elementor-element-populated{flex-direction:column;flex-wrap:nowrap}
+.pagina-elementor .rd-plano .elementor-widget-text-editor:has(ul){flex:1}
+.pagina-elementor .rd-plano.rd-dest.elementor-column>.elementor-element-populated{border:2px solid var(--ambar)}
+.pagina-elementor .rd-plano .elementor-widget-text-editor ul{margin:10px 0 14px;padding:0;list-style:none;display:grid;gap:8px;font-size:15.5px;color:var(--texto)}
+.pagina-elementor .rd-plano li{padding-left:24px;position:relative}
+.pagina-elementor .rd-plano li::before{content:"";position:absolute;left:2px;top:.5em;width:11px;height:6px;border-left:2.5px solid var(--verde);border-bottom:2.5px solid var(--verde);transform:rotate(-45deg)}
+.pagina-elementor .rd-chips .elementor-widget-container{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pagina-elementor .rd-chips span{font-size:12.5px;border:1px solid var(--linha);border-radius:99px;padding:1px 9px;color:var(--suave)}
+.pagina-elementor .rd-faixa-api.elementor-column>.elementor-element-populated{border-style:dashed}
+
+/* ── Botões (widget Botão do Elementor) ── */
+.pagina-elementor .elementor-widget-button{width:auto;display:inline-block;margin:0 12px 12px 0}
+.pagina-elementor .rd-btn .elementor-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:10px;font-family:inherit;font-weight:700;font-size:16px;line-height:1.3;text-decoration:none;border:1px solid transparent;background:transparent;color:var(--texto);box-shadow:none;fill:currentColor}
+.pagina-elementor .rd-btn-p .elementor-button{background:var(--ambar);color:var(--ambar-t)}
+.pagina-elementor .rd-btn-s .elementor-button{border-color:#3f6568;color:#e8f1f1}
+.pagina-elementor .rd-btn-s .elementor-button:hover{background:var(--menu2)}
+.pagina-elementor .rd-btn-o .elementor-button{border-color:var(--linha);color:var(--texto)}
+.pagina-elementor .rd-btn-o .elementor-button:hover{background:var(--fundo)}
+.pagina-elementor .rd-btn-zap .elementor-button{background:#1fbf63;color:#04210f;border-color:#1fbf63;padding:14px 24px;font-size:17px}
+.pagina-elementor .rd-btn .elementor-button:hover{filter:brightness(1.07)}
+.pagina-elementor .rd-btn-p .elementor-button:hover{color:var(--ambar-t)}
+.pagina-elementor .rd-btn-zap .elementor-button:hover{color:#04210f}
+.pagina-elementor .rd-link-sec .elementor-button{background:transparent;border-color:transparent;color:#e8f1f1;text-decoration:underline;text-underline-offset:4px;padding-inline:6px}
+.pagina-elementor .rd-plano .elementor-widget-button{display:block;margin:0}
+.pagina-elementor .rd-plano .rd-btn .elementor-button{width:100%}
+
+/* ── Hero ── */
+.pagina-elementor .rd-hero{background:radial-gradient(900px 380px at 50% 100%,rgba(240,180,58,.14),transparent 70%),var(--menu);color:#e8f1f1;padding:64px 24px 56px;overflow:hidden}
+.pagina-elementor .rd-hero>.elementor-container{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:48px;align-items:center}
+.pagina-elementor .rd-hero>.elementor-container>.elementor-column{width:auto}
+.pagina-elementor .rd-selo{margin-bottom:18px}
+.pagina-elementor .rd-selo .elementor-heading-title{display:inline-block;font-size:13px;font-weight:600;color:var(--ambar);border:1px solid #3f6568;border-radius:99px;padding:3px 12px}
+.pagina-elementor .rd-h1 .elementor-heading-title{font-size:clamp(34px,4.6vw,56px);line-height:1.08;letter-spacing:-.025em;color:#fff;text-wrap:balance;margin-bottom:18px}
+.pagina-elementor .rd-hl{color:var(--ambar)}
+.pagina-elementor .rd-lead{font-size:19px;max-width:34em;margin-bottom:28px}
+.pagina-elementor .rd-hero .elementor-widget-button{margin-bottom:14px}
+.pagina-elementor .rd-hero .rd-nota{margin-top:6px}
+.pagina-elementor .rd-lead p{color:#b6c9c9}
+.pagina-elementor .rd-hero .rd-nota,.pagina-elementor .rd-hero .rd-nota p{color:#8fa9a9}
+.pagina-elementor .rd-hero .rd-nota a{color:#35d27a;font-weight:700;text-decoration:none;white-space:nowrap}
+.pagina-elementor .rd-janela img{display:block;width:100%;height:auto;background:#fff;border:1px solid #2b5558;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.pagina-elementor .elementor-widget.rd-legenda{text-align:center;font-size:13px;margin-top:12px}
+.pagina-elementor .rd-legenda p{color:#8fa9a9}
+.pagina-elementor .rd-celular .elementor-widget-container{display:flex;justify-content:center}
+.pagina-elementor .rd-celular img{width:min(280px,100%);border:10px solid #0c1a1c;border-radius:34px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px #2b5558}
+
+/* ── Faixas ── */
+.pagina-elementor .rd-prova{background:var(--menu2);border-bottom:1px solid var(--linha);padding:18px 24px}
+.pagina-elementor .rd-prova>.elementor-container{align-items:center;gap:22px}
+.pagina-elementor .rd-selo-prova .elementor-heading-title{display:inline-block;font-size:12.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ambar-t);background:var(--ambar);border-radius:99px;padding:4px 12px}
+.pagina-elementor .rd-prova .elementor-widget-text-editor{font-size:15.5px;color:#b6c9c9}
+.pagina-elementor .rd-prova strong{color:#fff}
+.pagina-elementor .rd-faixa-cta{background:var(--menu);border-block:1px solid var(--menu2);padding:30px 24px}
+.pagina-elementor .rd-faixa-cta .rd-faixa-t .elementor-heading-title{color:#fff;font-size:clamp(20px,2.6vw,26px);font-weight:700;letter-spacing:-.01em}
+.pagina-elementor .rd-final{background:var(--menu);color:#e8f1f1;text-align:center;padding:72px 24px}
+.pagina-elementor .rd-final .elementor-heading-title{color:#fff;font-size:clamp(28px,4vw,42px);letter-spacing:-.02em;text-wrap:balance;margin-bottom:12px}
+.pagina-elementor .rd-final .elementor-widget-text-editor{font-size:19px;color:#b6c9c9}
+.pagina-elementor .rd-final .elementor-element-populated{justify-content:center}
+.pagina-elementor .rd-final .elementor-widget-text-editor,.pagina-elementor .rd-final .elementor-widget-heading{flex:0 0 100%}
+.pagina-elementor .rd-final .elementor-widget-text-editor{max-width:none;margin:0}
+.pagina-elementor .rd-final .elementor-widget-text-editor .elementor-widget-container{max-width:36em;margin:0 auto 26px}
+.pagina-elementor .rd-final .elementor-widget-button{width:auto;margin:0 6px 12px}
+
+/* ── Perguntas (acordeão) ── */
+.pagina-elementor .elementor-accordion .elementor-accordion-item{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;margin-bottom:10px;padding:0 20px;overflow:hidden}
+.pagina-elementor .elementor-accordion .elementor-tab-title{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 0;border:0;font-weight:700;font-size:17px;color:var(--texto);background:transparent}
+.pagina-elementor .elementor-accordion .elementor-tab-title a{color:var(--texto);text-decoration:none;flex:1}
+.pagina-elementor .elementor-accordion .elementor-accordion-icon{order:2;color:var(--link);width:auto}
+.pagina-elementor .elementor-accordion .elementor-tab-title.elementor-active,.pagina-elementor .elementor-accordion .elementor-tab-title.elementor-active a{color:var(--texto)}
+.pagina-elementor .elementor-accordion .elementor-tab-content{border:0;padding:0 0 16px;color:var(--suave);font-size:inherit}
+.pagina-elementor .elementor-accordion .elementor-tab-content p{margin:0 0 10px;color:var(--suave)}
+.pagina-elementor .rd-faq{max-width:820px;margin-inline:auto}
+
+/* ── Demonstração ── */
+.pagina-elementor .rd-demo-aviso{padding:22px 24px 0}
+.pagina-elementor .rd-demo-aviso .elementor-element-populated{border:1px dashed var(--ambar);background:color-mix(in srgb,var(--ambar) 10%,transparent);border-radius:12px;padding:12px 18px;font-size:15px;color:#f3e2b8}
+.pagina-elementor .rd-demo-aviso p{color:#f3e2b8}
+.pagina-elementor .rd-h1-demo .elementor-heading-title{font-size:clamp(30px,4.4vw,48px);line-height:1.1;letter-spacing:-.02em;margin-bottom:8px}
+.pagina-elementor .rd-demo-nav{padding-block:0 30px}
+.pagina-elementor .rd-demo-nav .elementor-widget-button{margin:0 10px 10px 0}
+.pagina-elementor .rd-demo-nav .elementor-button{border:1px solid var(--linha);border-radius:99px;padding:7px 16px;font-size:15px;font-weight:600;background:var(--cartao);color:var(--texto)}
+.pagina-elementor .rd-demo-nav .elementor-button:hover{border-color:var(--ambar)}
+.pagina-elementor .rd-demo-bloco{scroll-margin-top:90px;padding-block:0 46px}
+.pagina-elementor .rd-demo-fim>.elementor-container{text-align:center}
+.pagina-elementor .elementor-section .rd-caixa.elementor-column>.elementor-element-populated{border:1px solid var(--linha);background:var(--cartao);border-radius:18px;padding:40px 24px;justify-content:center;text-align:center}
+.pagina-elementor .rd-aviso{font-size:14px}
+.pagina-elementor .demo{padding:0}
+.pagina-elementor .demo table{margin:0}
+
+/* ── Cabeçalho, menus e rodapé (Personalizar / Aparência > Menus) ── */
+header.topo nav{align-self:center;flex:1}
+header.topo .acoes{flex:none;white-space:nowrap}
+header.topo .acoes .btn{white-space:nowrap}
+header.topo nav ul,footer.rodape nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 20px}
+header.topo nav ul{flex-wrap:nowrap;align-items:center}
+header.topo nav a{white-space:nowrap}
+header.topo nav li,footer.rodape nav li{margin:0;padding:0}
+header.topo nav ul a{color:#c4d4d4;text-decoration:none;font-size:15px}
+header.topo nav ul a:hover{color:#fff}
+footer.rodape nav ul{gap:6px 14px}
+footer.rodape nav li+li::before{content:"·";margin-right:14px}
+
+@media (max-width:960px){
+  .pagina-elementor .rd-dois>.elementor-container,.pagina-elementor .rd-hero>.elementor-container{grid-template-columns:1fr}
+  .pagina-elementor .rd-n3>.elementor-container,.pagina-elementor .rd-n4>.elementor-container,.pagina-elementor .rd-n6>.elementor-container{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  .pagina-elementor .rd-sec{padding-inline:16px}
+  .pagina-elementor .rd-sec.rd-first{padding-top:56px}
+  .pagina-elementor .rd-sec.rd-last,.pagina-elementor .rd-sec.rd-grade.rd-last{padding-bottom:56px}
+  .pagina-elementor .rd-n2>.elementor-container,.pagina-elementor .rd-n3>.elementor-container,.pagina-elementor .rd-n4>.elementor-container,.pagina-elementor .rd-n6>.elementor-container{grid-template-columns:1fr}
+  .pagina-elementor .rd-hero{padding:40px 16px}
+  .pagina-elementor .rd-prova,.pagina-elementor .rd-faixa-cta,.pagina-elementor .rd-final{padding-inline:16px}
+  .pagina-elementor .rd-sub{font-size:17px}
+  .pagina-elementor .elementor-widget.elementor-widget-button.elementor-widget-button{display:block;width:100%;max-width:none;margin-right:0}
+  .pagina-elementor .rd-btn .elementor-button{width:100%}
+  .pagina-elementor .rd-prova>.elementor-container,.pagina-elementor .rd-faixa-cta>.elementor-container{flex-direction:column;align-items:flex-start}
+  .pagina-elementor .rd-prova>.elementor-container>.elementor-column,.pagina-elementor .rd-faixa-cta>.elementor-container>.elementor-column{width:100%}
+}
+
+.pagina-elementor .demo-kpis{margin-top:14px}

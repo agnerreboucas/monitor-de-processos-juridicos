@@ -1,0 +1,2702 @@
+[
+ {
+  "id": "f21a53a",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-hero"
+  },
+  "elements": [
+   {
+    "id": "22b493e",
+    "elType": "column",
+    "settings": {
+     "_column_size": 52,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "45759b1",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Monitoramento de processos para escritórios de advocacia",
+       "header_size": "p",
+       "_css_classes": "rd-selo"
+      },
+      "elements": []
+     },
+     {
+      "id": "def9bbd",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Seus processos vigiados todos os dias, com <span class=\"rd-hl\">o que fazer e até quando.</span>",
+       "header_size": "h1",
+       "_css_classes": "rd-h1"
+      },
+      "elements": []
+     },
+     {
+      "id": "8226160",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Acompanhe o andamento completo de cada processo e as publicações em nome dos seus advogados, de qualquer área do Direito. O Radar atualiza no horário que você escolher (por exemplo, 5h30), avisa a equipe e mostra o prazo estimado.</p>",
+       "_css_classes": "rd-lead"
+      },
+      "elements": []
+     },
+     {
+      "id": "2a83b2b",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Falar com um consultor",
+       "link": {
+        "url": "{{whatsapp}}",
+        "is_external": "on",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-zap",
+       "selected_icon": {
+        "value": "fab fa-whatsapp",
+        "library": "fa-brands"
+       },
+       "icon_align": "left",
+       "_element_width": "auto"
+      },
+      "elements": []
+     },
+     {
+      "id": "2c91a91",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Ver os preços",
+       "link": {
+        "url": "#planos",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-link-sec",
+       "_element_width": "auto"
+      },
+      "elements": []
+     },
+     {
+      "id": "feb7513",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Testar grátis por 14 dias",
+       "link": {
+        "url": "{{radar:entrar#/cadastro}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-p",
+       "_element_width": "auto"
+      },
+      "elements": []
+     },
+     {
+      "id": "253a96a",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Ver uma demonstração",
+       "link": {
+        "url": "{{home:/demonstracao/}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-s",
+       "_element_width": "auto"
+      },
+      "elements": []
+     },
+     {
+      "id": "5d7d76f",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>14 dias grátis, sem cartão · Atendimento direto no WhatsApp <a class=\"zap-num\" href=\"{{whatsapp}}\" target=\"_blank\" rel=\"noopener\">{{whatsapp_exibido}}</a> · Falha de consulta nunca vira “sem novidade”</p>",
+       "_css_classes": "rd-nota"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "66c3810",
+    "elType": "column",
+    "settings": {
+     "_column_size": 48,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "0c48ba1",
+      "elType": "widget",
+      "widgetType": "image",
+      "settings": {
+       "image": {
+        "url": "{{theme:img/painel.png}}",
+        "id": "",
+        "alt": "Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores do escritório",
+        "source": "library"
+       },
+       "image_size": "full",
+       "_css_classes": "rd-janela"
+      },
+      "elements": []
+     },
+     {
+      "id": "86b3ef1",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Painel do Radar Processual (dados fictícios de exemplo)</p>",
+       "_css_classes": "rd-legenda"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "82cf32b",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-prova"
+  },
+  "elements": [
+   {
+    "id": "988b943",
+    "elType": "column",
+    "settings": {
+     "_column_size": 22,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "4a5f00c",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Construído sobre fontes oficiais",
+       "header_size": "p",
+       "_css_classes": "rd-selo-prova"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "4b42ac4",
+    "elType": "column",
+    "settings": {
+     "_column_size": 78,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "23eb88c",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p><strong>Diário de Justiça Eletrônico Nacional (DJEN/Comunica)</strong> e <strong>Datajud (CNJ)</strong>. O leitor das publicações foi conferido com retorno real do DJEN: partes, advogados, órgão, datas e o texto inteiro de dezenas de tribunais.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "3bd6eea",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "por-dentro"
+  },
+  "elements": [
+   {
+    "id": "803c802",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "1abd1d0",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Veja por dentro",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "f03e1d6",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O dia de um escritório, em uma tela",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "d0dfdea",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Escritório modelo com dados fictícios: o que foi atualizado, o que não deu para acessar e o que fazer primeiro.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "42754ea",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "6ec74ba",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "b6e5dd2",
+      "elType": "widget",
+      "widgetType": "shortcode",
+      "settings": {
+       "shortcode": "[radar_demo_kpis]",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "137b2b9",
+      "elType": "widget",
+      "widgetType": "shortcode",
+      "settings": {
+       "shortcode": "[radar_demo_tabela tipo=\"acoes\" limite=\"4\"]",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "2c29569",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Ver a demonstração completa",
+       "link": {
+        "url": "{{home:/demonstracao/}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-p"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "2e6a5aa",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-first",
+   "_element_id": "como"
+  },
+  "elements": [
+   {
+    "id": "ca77535",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "ab73149",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Como funciona",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "ebb8c8e",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Do cadastro ao primeiro aviso em poucos minutos",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "281ad37",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Nada para instalar: o sistema roda no navegador e a consulta é feita por nós, todos os dias.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "7d9fb31",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-grade rd-n4"
+  },
+  "elements": [
+   {
+    "id": "d4525ef",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "6bc1e9b",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "01",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "45dd71d",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Crie a conta do escritório",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "622bc6f",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Teste grátis de 14 dias, com contagem regressiva na tela. Convide advogados e assistentes e defina o que cada papel pode fazer.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "79b408c",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "a869aed",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "02",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "720a504",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Cadastre processos e OABs",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "dd88501",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Digite o número, importe uma planilha ou informe a OAB de cada advogado para ver as publicações em nome dele.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "17c308f",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "016a339",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "03",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "0fd79e4",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Atualização no horário que você escolher",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "09ee34e",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Escolha: uma vez por dia no horário que quiser (por exemplo, 5h30 da manhã, para o dia já começar em dia) ou de 6 em 6 horas. E, se precisar, clique em “Consultar agora”. A primeira consulta traz o histórico em silêncio; depois, só o que for novo gera aviso.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "1344be7",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "5333e51",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "04",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "1e759ab",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Veja o que fazer com cada processo",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "29c121c",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Em cada processo, o botão “Ver o que fazer” mostra um resumo com as ações, quem age, o prazo estimado e o impacto. Depois você lê o inteiro teor.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "7389327",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "28e6276",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "3f09530",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Você só precisa de um navegador. A conferência na fonte oficial e o controle de prazos continuam sendo do escritório.</p>",
+       "_css_classes": "rd-nota"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "62aae28",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-dois rd-first rd-last",
+   "_element_id": "compromissos"
+  },
+  "elements": [
+   {
+    "id": "7eb3d42",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "2fb37fb",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Sem surpresa",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "6cec47e",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Teste sem cartão. Os dados são do seu escritório.",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "8b25052",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Você experimenta com os seus processos antes de decidir, e continua dono do que cadastrou.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     },
+     {
+      "id": "085ec45",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul>\n<li>14 dias grátis, sem cartão. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias</li>\n<li>Todo dia, depois da atualização, um resumo: quantos processos foram atualizados e quais não deu para acessar, com o motivo (tribunal fora do ar, oscilação, sigilo)</li>\n<li>Cada escritório enxerga somente os próprios dados</li>\n<li>Baixe uma cópia completa dos dados (JSON) e exporte processos e publicações em planilha (CSV)</li>\n<li>O administrador pode excluir todos os dados do escritório, direto na tela</li>\n<li>Quando uma consulta falha, a tela mostra a falha e a última consulta que deu certo</li>\n</ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "80a6b8b",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "f9adb6f",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O que o Radar não faz",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "0118932",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul class=\"nao\" style=\"margin:12px 0 0\">\n<li>Não é intimação nem publicação oficial: confira sempre na fonte.</li>\n<li>Não substitui o controle de prazos: a data mostrada é uma estimativa em dias úteis, sem feriados locais.</li>\n<li>Não acessa processo em segredo de justiça.</li>\n<li>Não garante captar tudo: depende do que cada tribunal publica.</li>\n</ul>",
+       "_css_classes": "rd-lista rd-nao"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "59ad102",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-dois rd-first rd-last",
+   "_element_id": "fontes"
+  },
+  "elements": [
+   {
+    "id": "146e29e",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "09385af",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "De onde vêm os dados",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "79b1999",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Fontes públicas oficiais, sem raspagem de sites",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "81b1ef8",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Duas fontes oficiais se completam: uma é rápida e traz o texto, a outra é completa e demora alguns dias.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     },
+     {
+      "id": "b6b91a2",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul>\n<li><strong>Diário (DJEN/Comunica):</strong> publicações oficiais em tempo real, com texto, partes, advogados e órgão</li>\n<li><strong>Datajud (CNJ):</strong> andamento interno completo e dados da capa; atualiza com alguns dias de atraso</li>\n<li>Consulta por número do processo e por OAB</li>\n<li>Texto original preservado, com datas de publicação e de captura separadas</li>\n<li>Sem raspagem de sites de tribunal, sem quebrar captcha, sem acesso restrito</li>\n</ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "d7b28b9",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "5302940",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Uma conta honesta",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "c752fba",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Cada fonte pública tem termos de uso próprios. As publicações podem trazer dados pessoais, e processos em segredo de justiça não ficam disponíveis por nenhuma fonte pública. Quando uma fonte não responde, o sistema avisa que o quadro está incompleto.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "186222b",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "recursos"
+  },
+  "elements": [
+   {
+    "id": "79ea9b3",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "cb3fb9f",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O que está no sistema",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "1269411",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Da publicação à ação, sem planilha",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "21f0058",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Seis blocos que cobrem a rotina de quem atende a Justiça, em qualquer área do Direito.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1fb0a2e",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-grade rd-last rd-n6"
+  },
+  "elements": [
+   {
+    "id": "34547e8",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "76dc382",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "01",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "05608d7",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Monitoramento por processo",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "d039257",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Valida o número CNJ (inclusive o dígito verificador) e mostra a situação: monitorado, aguardando, pausado ou com falha.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "34fe69a",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "50bed7a",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "02",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "5761704",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Andamento completo",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "1c03085",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Consulte qualquer número e veja a capa e todo o andamento, juntando Datajud e Diário, com partes, advogados e o link do inteiro teor.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "bf9467d",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "73efdff",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "03",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "decafa7",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Ações e prazos",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "5a987e9",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Triagem por urgência: o que fazer, quem age, como, prazo estimado, impacto favorável ou não, riscos e atores. Marque o que já foi tratado.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "9f6f4c7",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "bcab45f",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "04",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "9232cbf",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Monitoramento por OAB",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "26103c4",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Tudo o que o diário publicou em nome de cada advogado e, com um clique, passe a monitorar o processo.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "8370bac",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "8def303",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "05",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "b485de1",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Ações por UF e inscrição suplementar",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "8f443f0",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Quantos processos cada advogado tem em cada estado, por ramo da Justiça, e alerta quando passa de cinco no ano onde não tem inscrição.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "36b404f",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "d274b64",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "06",
+       "header_size": "p",
+       "_css_classes": "rd-num"
+      },
+      "elements": []
+     },
+     {
+      "id": "315d700",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Equipe, avisos e LGPD",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "3fd4e62",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Responsável por processo, aviso no painel e por e-mail, importação por planilha, e cópia ou exclusão dos dados pelo administrador.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "d717187",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-faixa-cta"
+  },
+  "elements": [
+   {
+    "id": "e5c9157",
+    "elType": "column",
+    "settings": {
+     "_column_size": 70,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "80c287b",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Veja o Radar trabalhando com os seus processos.",
+       "header_size": "h3",
+       "_css_classes": "rd-faixa-t"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "4d61376",
+    "elType": "column",
+    "settings": {
+     "_column_size": 30,
+     "_inline_size": null,
+     "css_classes": "rd-plain rd-dir"
+    },
+    "elements": [
+     {
+      "id": "7ca0f5b",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Testar grátis por 14 dias",
+       "link": {
+        "url": "{{radar:entrar#/cadastro}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-p",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "e6d10a9",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-dois rd-first",
+   "_element_id": "pratica"
+  },
+  "elements": [
+   {
+    "id": "df9de80",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "7a2dab7",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Na prática",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "3d8757b",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Um painel feito para decidir o que fazer hoje",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "b90dffe",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Indicadores no topo e detalhe embaixo, para o advogado ver o que importa antes de abrir qualquer processo.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     },
+     {
+      "id": "c988d0a",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul>\n<li>Processos ativos, com falha de consulta e com movimentação nova</li>\n<li>Ações com prazo até 7 dias e publicações novas</li>\n<li>Ações por UF, Justiça Estadual × Federal × do Trabalho, por advogado</li>\n<li>Alertas de possível inscrição suplementar</li>\n<li>Visão por escritório e por advogado (OAB)</li>\n</ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "4e4f9c1",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-vitrine"
+    },
+    "elements": [
+     {
+      "id": "63c1107",
+      "elType": "widget",
+      "widgetType": "image",
+      "settings": {
+       "image": {
+        "url": "{{theme:img/painel.png}}",
+        "id": "",
+        "alt": "Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores",
+        "source": "library"
+       },
+       "image_size": "full",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1982df2",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "71368c1",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "43021d4",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Imagem do painel com dados fictícios de exemplo.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "026f567",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-dois rd-first rd-last",
+   "_element_id": "celular"
+  },
+  "elements": [
+   {
+    "id": "a49980a",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-celular"
+    },
+    "elements": [
+     {
+      "id": "bd4ff17",
+      "elType": "widget",
+      "widgetType": "image",
+      "settings": {
+       "image": {
+        "url": "{{theme:img/celular.png}}",
+        "id": "",
+        "alt": "Painel do Radar Processual no celular",
+        "source": "library"
+       },
+       "image_size": "full",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "47deb58",
+    "elType": "column",
+    "settings": {
+     "_column_size": 50.0,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "d9de4e4",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "No celular",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "a828358",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Abra pelo celular e veja o dia já atualizado",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "192a485",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Sem aplicativo para instalar: o painel se adapta à tela do celular.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     },
+     {
+      "id": "d4e7aeb",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul>\n<li>Atualização automática: uma vez por dia no horário escolhido (ex.: 5h30) ou de 6 em 6 horas</li>\n<li>Botão “Consultar tudo agora” para atualizar na hora</li>\n<li>Resumo do dia: quantos processos foram atualizados e quais não deu para acessar</li>\n<li>Botão “Ver o que fazer” em cada processo, com ações, prazo e impacto</li>\n<li>Aviso por e-mail quando sai movimentação nova</li>\n</ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "e1e6d54",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "publico"
+  },
+  "elements": [
+   {
+    "id": "d8d2834",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "d1212f7",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Para quem é",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "f9f676d",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Feito para quem vive de processo, em qualquer área do Direito",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "5e2e1c0",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-grade rd-n3"
+  },
+  "elements": [
+   {
+    "id": "152edf2",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "1227360",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Advogado autônomo",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "c55c59d",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Acompanhe suas OABs e seus processos sem depender de planilha ou de memória.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "8db91b0",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "161aa1a",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Escritório com equipe",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "052f2b5",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Defina o responsável por cada processo, convide a equipe e veja quem tem o quê, por UF e por advogado.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "adc801e",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "e4f2b17",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Atuação em vários estados",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "dfacd17",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Descubra cedo quando alguém passa do limite de causas numa Seccional e organize as inscrições suplementares.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "86f4307",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "6e96162",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-card rd-faixa-api"
+    },
+    "elements": [
+     {
+      "id": "615aad4",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Software house ou integrador?",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "4f11fd4",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Leve o andamento e as publicações para o seu sistema com a API por chave: consulta por processo e por OAB, cota mensal e documentação com exemplos.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "a9d1835",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Ver a documentação da API",
+       "link": {
+        "url": "{{radar:app/api-docs.html}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-o",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "6751396",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-first",
+   "_element_id": "objecoes"
+  },
+  "elements": [
+   {
+    "id": "18ec746",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "bb21046",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Antes que você pergunte",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "07c7aa8",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "As dúvidas que mais aparecem",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "e831fde",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-grade rd-last rd-n3"
+  },
+  "elements": [
+   {
+    "id": "aaca3f7",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "9d41d77",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O aviso vale como intimação?",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "40fdc18",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Não. Ele mostra que o sistema capturou uma publicação. Cada aviso traz o texto original e o link da fonte oficial para conferência.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "87e17a1",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "e57da61",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O prazo mostrado é garantido?",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "f9cd201",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Não. É uma estimativa em dias úteis, e a tela diz como foi contada. Feriados locais e suspensões do tribunal não entram: confira o ato.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "b1fa1b9",
+    "elType": "column",
+    "settings": {
+     "_column_size": 33.33,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "5422c88",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "E se a consulta falhar?",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "9877bda",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>A tela mostra a falha, o motivo e a última consulta que deu certo. O sistema tenta de novo. Falha nunca aparece como “sem novidades”.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "9372300",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "tribunais"
+  },
+  "elements": [
+   {
+    "id": "e7a937a",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "8fb4e5d",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Cobertura",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "f74a4dd",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Todos os ramos da Justiça que publicam no diário nacional",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "f0debad",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>A disponibilidade de cada processo depende do que o tribunal publica. Trabalhista, cível, previdenciário, tributário, família, criminal: o que o tribunal publica, o Radar acompanha.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "6eb95c8",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-grade rd-last rd-n4"
+  },
+  "elements": [
+   {
+    "id": "209697d",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "088133f",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Justiça do Trabalho <small>TRT1 a TRT24 e TST</small>",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "6770162",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"chips\"><span>TRT1</span><span>TRT2</span><span>TRT3</span><span>TRT4</span><span>TRT5</span><span>TRT8</span><span>TRT9</span><span>TRT15</span><span>TRT24</span><span>TST</span></div>",
+       "_css_classes": "rd-chips"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "bb5daca",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "3a34732",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Justiça Estadual <small>TJ de cada estado</small>",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "2e8e706",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"chips\"><span>TJSP</span><span>TJMG</span><span>TJRJ</span><span>TJRS</span><span>TJPR</span><span>TJBA</span><span>TJDFT</span><span>TJGO</span></div>",
+       "_css_classes": "rd-chips"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "639facf",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "5fae4af",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Justiça Federal <small>TRF1 a TRF6</small>",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "9820a9e",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"chips\"><span>TRF1</span><span>TRF2</span><span>TRF3</span><span>TRF4</span><span>TRF5</span><span>TRF6</span></div>",
+       "_css_classes": "rd-chips"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "6bdc6d4",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card"
+    },
+    "elements": [
+     {
+      "id": "f1c7aab",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Outros ramos <small>Eleitoral, Militar, superiores</small>",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "2bab73b",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"chips\"><span>TRE</span><span>TJM</span><span>STJ</span><span>TSE</span><span>STM</span></div>",
+       "_css_classes": "rd-chips"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "3e83adf",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-first",
+   "_element_id": "planos"
+  },
+  "elements": [
+   {
+    "id": "094be85",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "f136c64",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Preços",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "3e25ed6",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Assinatura mensal por escritório, com limite de processos",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "109eed1",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>14 dias grátis, sem cartão. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias (meio mês).</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "b01a05f",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-grade rd-n4"
+  },
+  "elements": [
+   {
+    "id": "c763f27",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card rd-plano"
+    },
+    "elements": [
+     {
+      "id": "38cb264",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Essencial",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "4df35b1",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Autônomo ou escritório enxuto.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "043807f",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"preco\">R$ 299<small> /mês</small></div>",
+       "_css_classes": "rd-preco"
+      },
+      "elements": []
+     },
+     {
+      "id": "4d1202a",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul><li>Até 50 processos monitorados</li><li>Atualização diária no horário que você escolher</li><li>Alertas, histórico e painel</li><li>1º mês: R$ 149,50 (15 dias)</li></ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     },
+     {
+      "id": "052a85f",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Começar 14 dias grátis",
+       "link": {
+        "url": "{{radar:entrar#/cadastro?plano=essencial}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-o",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "847d8ee",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card rd-plano rd-dest"
+    },
+    "elements": [
+     {
+      "id": "da9089a",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Mais escolhido",
+       "header_size": "p",
+       "_css_classes": "rd-etq"
+      },
+      "elements": []
+     },
+     {
+      "id": "5618042",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Profissional",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "fc5a8cc",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Escritório pequeno, com equipe.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "247a347",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"preco\">R$ 599<small> /mês</small></div>",
+       "_css_classes": "rd-preco"
+      },
+      "elements": []
+     },
+     {
+      "id": "a0f67f1",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul><li>Até 100 processos monitorados</li><li>Tudo do Essencial</li><li>Responsáveis por processo e alertas configuráveis</li><li>1º mês: R$ 299,50 (15 dias)</li></ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     },
+     {
+      "id": "0362b28",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Começar 14 dias grátis",
+       "link": {
+        "url": "{{radar:entrar#/cadastro?plano=profissional}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-p",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "e3c6eb3",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card rd-plano"
+    },
+    "elements": [
+     {
+      "id": "db20880",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Escritório",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "0b0dcba",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Vários advogados.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "caf9529",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"preco\">R$ 1.499<small> /mês</small></div>",
+       "_css_classes": "rd-preco"
+      },
+      "elements": []
+     },
+     {
+      "id": "a2c9614",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul><li>Até 250 processos monitorados</li><li>Tudo do Profissional</li><li>Distribuição por advogado e visão da carteira</li><li>1º mês: R$ 749,50 (15 dias)</li></ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     },
+     {
+      "id": "347b60a",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Começar 14 dias grátis",
+       "link": {
+        "url": "{{radar:entrar#/cadastro?plano=equipe}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-o",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   },
+   {
+    "id": "aa99fef",
+    "elType": "column",
+    "settings": {
+     "_column_size": 25.0,
+     "_inline_size": null,
+     "css_classes": "rd-card rd-plano"
+    },
+    "elements": [
+     {
+      "id": "6783866",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Pague por busca",
+       "header_size": "h3",
+       "_css_classes": "rd-h3"
+      },
+      "elements": []
+     },
+     {
+      "id": "ca0a199",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Uso irregular ou integração por API.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "9280be7",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<div class=\"preco\">R$ 0,30<small> /busca</small></div>",
+       "_css_classes": "rd-preco"
+      },
+      "elements": []
+     },
+     {
+      "id": "57b42ab",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<ul><li>Só busca realizada com sucesso é cobrada</li><li>Falha do tribunal não entra na conta</li><li>Teto de gasto mensal definido por você</li><li>Chave de API com extrato de uso</li></ul>",
+       "_css_classes": "rd-lista"
+      },
+      "elements": []
+     },
+     {
+      "id": "ed09b96",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Começar 14 dias grátis",
+       "link": {
+        "url": "{{radar:entrar#/cadastro?plano=por-busca}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-o",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "8cf1897",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "cb9b0ff",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "f88124d",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Como pagar: no 15º dia, abra a tela Plano e clique em “Quero contratar”; você recebe as instruções de pagamento (Pix) e, confirmado o pagamento, a assinatura segue sem interrupção. Valores iniciais, sujeitos a ajuste antes do lançamento.</p>",
+       "_css_classes": "rd-nota"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "e29ae0a",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 820,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "perguntas"
+  },
+  "elements": [
+   {
+    "id": "ade8200",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "885524a",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Perguntas frequentes",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "dff18e8",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Tire suas dúvidas",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "10f6d13",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 820,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-last"
+  },
+  "elements": [
+   {
+    "id": "0e85171",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "6fb744d",
+      "elType": "widget",
+      "widgetType": "accordion",
+      "settings": {
+       "tabs": [
+        {
+         "_id": "55b5962",
+         "tab_title": "O que o sistema mostra de cada processo?",
+         "tab_content": "<p>A capa (classe, assunto, órgão, distribuição), o andamento completo do Datajud e as publicações do Diário, com o texto inteiro, as partes, os advogados e o link da fonte oficial.</p>"
+        },
+        {
+         "_id": "93882f1",
+         "tab_title": "O aviso do Radar vale como intimação?",
+         "tab_content": "<p>Não. O aviso mostra que o sistema capturou uma publicação ou movimentação. A conferência na fonte oficial e o controle de prazos continuam sendo do escritório.</p>"
+        },
+        {
+         "_id": "ea5e462",
+         "tab_title": "Como funciona a tela “Ações e prazos”?",
+         "tab_content": "<p>O sistema lê o texto de cada publicação e sugere: que ato é, o que fazer, quem deve agir, o prazo estimado em dias úteis, o impacto (favorável ou não, conforme o lado que o escritório representa), os riscos e os atores. É uma triagem automática, feita por regras simples: pode errar ou deixar passar algo, e cada leitura mostra o grau de confiança.</p>"
+        },
+        {
+         "_id": "a0597e5",
+         "tab_title": "Vocês fazem raspagem de sites de tribunais?",
+         "tab_content": "<p>Não. As consultas usam fontes públicas oficiais por API, sem raspagem, sem quebrar captcha e sem acessar nada restrito. Processos em segredo de justiça não ficam disponíveis por nenhuma fonte pública.</p>"
+        },
+        {
+         "_id": "10a40e3",
+         "tab_title": "E se a consulta falhar?",
+         "tab_content": "<p>A tela mostra a falha, o motivo e a data da última consulta que deu certo. O sistema tenta de novo com espera crescente. Falha nunca é exibida como “sem novidades”.</p>"
+        },
+        {
+         "_id": "fcf2ac5",
+         "tab_title": "O que é o alerta de inscrição suplementar?",
+         "tab_content": "<p>O Estatuto da Advocacia (art. 10, §2º) considera habitual a atuação em mais de cinco causas por ano numa Seccional. O Radar conta os processos diferentes com publicação em nome do advogado, por UF, e avisa quando passa desse número onde ele não tem inscrição. É um indicativo: a conferência com a Seccional é do advogado.</p>"
+        },
+        {
+         "_id": "d15b51e",
+         "tab_title": "Meus dados e os dos meus clientes ficam seguros?",
+         "tab_content": "<p>Cada escritório só acessa os próprios dados, com a separação garantida no banco e conferida por testes automáticos. Senhas são guardadas de forma irreversível, e o administrador pode baixar uma cópia ou excluir todos os dados do escritório. Veja a Política de Privacidade.</p>"
+        },
+        {
+         "_id": "ff65f70",
+         "tab_title": "Preciso instalar alguma coisa?",
+         "tab_content": "<p>Não. Você acessa pelo navegador, no computador ou no celular.</p>"
+        },
+        {
+         "_id": "3e80639",
+         "tab_title": "Posso trazer meus processos de uma planilha?",
+         "tab_content": "<p>Sim. Importe um CSV com o número do processo e, se quiser, o cliente. O sistema mostra linha a linha o que foi importado e o que foi recusado, e respeita o limite do plano.</p>"
+        },
+        {
+         "_id": "3988ca5",
+         "tab_title": "Existe API para integrar ao meu sistema?",
+         "tab_content": "<p>Sim. A API por chave consulta processos e publicações por OAB, com cota mensal e limite por minuto. A documentação, com exemplos em curl, JavaScript, Python e PHP, está em <a href=\"{{radar:app/api-docs.html}}\">/app/api-docs.html</a>.</p>"
+        },
+        {
+         "_id": "33ef4a1",
+         "tab_title": "Como funciona o teste grátis e o pagamento?",
+         "tab_content": "<p>Você tem 14 dias grátis, sem cartão, com contagem regressiva na tela e avisos por e-mail. A cobrança começa no 15º dia e, no primeiro mês, você paga só 15 dias (meio mês). Para contratar, use o botão “Quero contratar” na tela Plano.</p>"
+        },
+        {
+         "_id": "df5cb83",
+         "tab_title": "Posso atualizar na hora?",
+         "tab_content": "<p>Sim. Além da atualização programada (uma vez por dia no horário que você escolher, ou de 6 em 6 horas), há o botão “Consultar tudo agora” e o “Consultar agora” de cada processo. O pedido entra na fila e sai em poucos minutos.</p>"
+        },
+        {
+         "_id": "11c03e7",
+         "tab_title": "E se o tribunal estiver fora do ar?",
+         "tab_content": "<p>O resumo do dia mostra quantos processos não foram acessados e o motivo (por exemplo, o sistema do tribunal fora do ar ou oscilando). O sistema tenta de novo sozinho, e esse processo nunca aparece como “sem novidade”.</p>"
+        }
+       ],
+       "_css_classes": "rd-faq",
+       "selected_icon": {
+        "value": "fas fa-plus",
+        "library": "fa-solid"
+       },
+       "selected_active_icon": {
+        "value": "fas fa-minus",
+        "library": "fa-solid"
+       }
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "ec20f61",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-final"
+  },
+  "elements": [
+   {
+    "id": "ddf5ef1",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "25e19bb",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O escritório vai acompanhar processos de qualquer jeito. Que seja sem planilha.",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "f774758",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Crie a conta do escritório, cadastre os primeiros processos e veja o Radar trabalhando.</p>",
+       "_css_classes": ""
+      },
+      "elements": []
+     },
+     {
+      "id": "890eb2b",
+      "elType": "widget",
+      "widgetType": "button",
+      "settings": {
+       "text": "Testar grátis por 14 dias",
+       "link": {
+        "url": "{{radar:entrar#/cadastro}}",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+       },
+       "_css_classes": "rd-btn rd-btn-p",
+       "_element_width": "auto"
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ }
+]

@@ -59,6 +59,13 @@ c,j,h=v1('/radar/v1/uso'); ok('/v1/uso sem chave dá 401',c==401)
 c,j,h=v1('/radar/v1/uso',key); ok('/v1/uso com chave',c==200,str(j)[:100]); ok('sem cookie na API',h.get('Set-Cookie') is None)
 c,j,h=v1('/radar/v1/openapi.json'); ok('openapi com URL completa',j['servers'][0]['url']=='http://127.0.0.1:9201/radar/v1',j['servers'][0]['url'])
 c,j,h=v1('/radar/v1/processos/0001457-85.2026.5.08.0106',key); ok('consulta de processo responde (fonte fora do ar aqui)',c in (200,502),f"{c} {str(j)[:120]}")
+# --- páginas do tema (criadas a partir do JSON do Elementor; sem o Elementor instalado, aparecem como texto simples) ---
+import re as _re
+def pagina(path):
+    try: r=op.open(urllib.request.Request(B+path),timeout=40); return r.status,r.read().decode()
+    except urllib.error.HTTPError as e: return e.code,''
+c,h=pagina('/'); ok('página inicial do tema (Início)',c==200 and 'Seus processos vigiados' in h and 'wa.me/5511958649509' in h and 'Pague por busca' in h)
+c,h=pagina('/demonstracao/'); ok('demonstração do tema, com as 3 tabelas e datas de hoje',c==200 and h.count('<table')==3 and 'Prado &amp; Associados' in h or 'Prado & Associados' in h)
 print('FALHAS:',ok.fail)
 
 sys.exit(1 if ok.fail else 0)
