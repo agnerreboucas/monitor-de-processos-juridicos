@@ -28,6 +28,37 @@ get_header();
   <p><strong>Diário de Justiça Eletrônico Nacional (DJEN/Comunica)</strong> e <strong>Datajud (CNJ)</strong>. O leitor das publicações foi conferido com retorno real do DJEN: partes, advogados, órgão, datas e o texto inteiro de dezenas de tribunais.</p>
 </div></div>
 
+<?php
+require_once get_template_directory() . '/inc/demo-data.php';
+$demo = radar_demo_data();
+$k = $demo['kpis'];
+$impactos = ['atencao' => ['amar', 'Atenção'], 'desfavoravel' => ['verm', 'Desfavorável'], 'favoravel' => ['verde', 'Favorável'], 'neutro' => ['cinza', 'Neutro']];
+$urg = static function (?int $d): array {
+    return $d === null ? ['cinza', 'Sem data certa'] : ($d <= 3 ? ['verm', 'Urgente · ' . $d . ' dias úteis'] : ($d <= 7 ? ['amar', 'Esta semana · ' . $d . ' dias'] : ['azul', 'Em ' . $d . ' dias']));
+};
+?>
+<section class="sec alt" id="por-dentro"><div class="c demo" style="padding-top:0;padding-bottom:0">
+  <p class="rot">Veja por dentro</p>
+  <h2 class="t">O dia de um escritório, em uma tela</h2>
+  <p class="sub">Escritório modelo com dados fictícios: o que foi atualizado, o que não deu para acessar e o que fazer primeiro.</p>
+  <div class="demo-kpis">
+    <div class="kpi"><span class="n"><?= (int) $k['monitorados']; ?></span><span>processos monitorados</span></div>
+    <div class="kpi"><span class="n"><?= (int) $k['atualizados']; ?></span><span>atualizados hoje às <?= esc_html($demo['horario']); ?></span></div>
+    <div class="kpi azul"><span class="n"><?= (int) $k['novidades']; ?></span><span>com novidade</span></div>
+    <div class="kpi amar"><span class="n"><?= (int) $k['urgentes']; ?></span><span>ações com prazo em até 7 dias</span></div>
+    <div class="kpi verm"><span class="n"><?= (int) $k['falhas']; ?></span><span>sem acesso (sistema do tribunal)</span></div>
+  </div>
+  <div class="tabela"><table>
+    <thead><tr><th>Urgência</th><th>O que fazer</th><th>Processo</th><th>Quem age</th><th>Prazo (estimado)</th><th>Impacto</th></tr></thead>
+    <tbody>
+<?php foreach (array_slice($demo['acoes'], 0, 4) as $a) : [$cu, $ru] = $urg($a['dias']); [$ci, $ri] = $impactos[$a['impacto']]; ?>
+      <tr><td><span class="pilula <?= esc_attr($cu); ?>"><?= esc_html($ru); ?></span></td><td><strong><?= esc_html($a['rotulo']); ?></strong></td><td class="mono"><?= esc_html($a['proc']); ?></td><td><?= esc_html($a['quem']); ?></td><td><?= esc_html($a['prazo']); ?></td><td><span class="pilula <?= esc_attr($ci); ?>"><?= esc_html($ri); ?></span></td></tr>
+<?php endforeach; ?>
+    </tbody>
+  </table></div>
+  <p style="margin-top:22px"><a class="btn p" href="<?= esc_url(home_url('/demonstracao/')); ?>">Ver a demonstração completa</a></p>
+</div></section>
+
 <section class="sec" id="como"><div class="c">
   <p class="rot">Como funciona</p>
   <h2 class="t">Do cadastro ao primeiro aviso em poucos minutos</h2>

@@ -56,7 +56,7 @@ function radar_demo_data(): array
         ['dias' => 2, 'rotulo' => 'Manifestar-se sobre o laudo pericial', 'proc' => $p(2), 'quem' => 'Advogado da autora', 'impacto' => 'atencao', 'prazo' => $d(radar_demo_uteis($hoje, 2))],
         ['dias' => 4, 'rotulo' => 'Apresentar defesa até a audiência', 'proc' => $p(0), 'quem' => 'Parte ré (reclamada)', 'impacto' => 'atencao', 'prazo' => $d(radar_demo_uteis($hoje, 4))],
         ['dias' => 8, 'rotulo' => 'Avaliar recurso contra a sentença', 'proc' => $p(4), 'quem' => 'Ambas as partes', 'impacto' => 'desfavoravel', 'prazo' => $d(radar_demo_uteis($hoje, 8))],
-        ['dias' => 9, 'rotulo' => 'Comparecer à audiência (10h35)', 'proc' => $p(6), 'quem' => 'Partes e advogados', 'impacto' => 'neutro', 'prazo' => $d($hoje + 9 * DAY_IN_SECONDS)],
+        ['dias' => 13, 'rotulo' => 'Comparecer à audiência (10h35)', 'proc' => $p(6), 'quem' => 'Partes e advogados', 'impacto' => 'neutro', 'prazo' => $d($hoje + 13 * DAY_IN_SECONDS)],
         ['dias' => 12, 'rotulo' => 'Recolher o preparo do recurso', 'proc' => $p(5), 'quem' => 'Parte recorrente', 'impacto' => 'atencao', 'prazo' => $d(radar_demo_uteis($hoje, 12))],
         ['dias' => null, 'rotulo' => 'Conferir intimação para cumprir obrigação', 'proc' => $p(3), 'quem' => 'Conforme o ato', 'impacto' => 'neutro', 'prazo' => 'sem data certa'],
     ];
