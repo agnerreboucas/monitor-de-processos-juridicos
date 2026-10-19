@@ -53,3 +53,36 @@ add_action('customize_register', static function (WP_Customize_Manager $wp): voi
         $wp->add_control($id, ['label' => $rotulo, 'section' => 'radar_whatsapp_sec', 'type' => 'text']);
     }
 });
+
+/**
+ * Modo "só WhatsApp" (padrão: ligado): o visual fica igual, mas os únicos links que funcionam são o do WhatsApp
+ * e a rolagem dentro da própria página (menu de âncoras). Entrar, Testar grátis, planos, API, demonstração etc. ficam
+ * parados. Desligue em Aparência > Personalizar > Radar.
+ */
+function radar_so_whatsapp(): bool
+{
+    return (bool) get_theme_mod('radar_so_whatsapp', true);
+}
+
+add_action('customize_register', static function (WP_Customize_Manager $wp): void {
+    $wp->add_setting('radar_so_whatsapp', ['default' => true, 'sanitize_callback' => 'rest_sanitize_boolean']);
+    $wp->add_control('radar_so_whatsapp', ['label' => 'Só o botão do WhatsApp funciona (os outros botões e links ficam parados)', 'section' => 'radar_whatsapp_sec', 'type' => 'checkbox']);
+});
+
+add_action('template_redirect', static function (): void {
+    if (is_admin() || !radar_so_whatsapp() || isset($_GET['elementor-preview']) || is_customize_preview()) {
+        return;
+    }
+    $host = (string) wp_parse_url(home_url('/'), PHP_URL_HOST);
+    ob_start(static function (string $html) use ($host): string {
+        return preg_replace_callback('/<a\b([^>]*?)\shref=(["\'])(.*?)\2([^>]*)>/is', static function (array $m) use ($host): string {
+            $url = html_entity_decode($m[3]);
+            $p = wp_parse_url($url);
+            $interno = $url !== '' && ($url[0] === '#' || (!empty($p['fragment']) && (($p['host'] ?? $host) === $host) && in_array($p['path'] ?? '/', ['', '/'], true)));
+            if ($interno || stripos($url, 'wa.me/') !== false || stripos($url, 'whatsapp.com') !== false) {
+                return $m[0];
+            }
+            return '<a' . $m[1] . ' href="#" aria-disabled="true" tabindex="-1" onclick="return false"' . $m[4] . '>';
+        }, $html) ?? $html;
+    });
+}, 0);

@@ -181,3 +181,6 @@ footer.rodape nav li+li::before{content:"·";margin-right:14px}
 }
 
 .pagina-elementor .demo-kpis{margin-top:14px}
+
+/* Modo "só WhatsApp": links parados não parecem clicáveis. */
+a[aria-disabled="true"]{cursor:default}

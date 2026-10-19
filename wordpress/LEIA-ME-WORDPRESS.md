@@ -64,6 +64,7 @@ O tema usa o **Elementor** (versão gratuita) para as páginas **Início** e **D
 - O tema **nunca sobrescreve** uma página que já tem conteúdo do Elementor. Para voltar uma página ao original: **Aparência > Páginas do Radar** (apaga as suas edições nela).
 - Novas páginas (por exemplo "Sobre"): crie em **Páginas > Adicionar nova** e use "Editar com o Elementor"; elas ocupam a largura toda, no mesmo visual.
 - **Cabeçalho e rodapé não são editáveis no Elementor grátis** (ele só faz isso na versão paga). Ficam no WordPress: o menu em **Aparência > Menus** (locais "Menu do topo" e "Menu do rodapé"; sem menu, aparece o padrão) e a faixa do topo, o texto do rodapé e o WhatsApp do botão flutuante em **Aparência > Personalizar > Radar**.
+- **Modo só WhatsApp (ligado por padrão):** o visual é o mesmo, mas só o botão do WhatsApp e o menu que rola dentro da página funcionam; Entrar, Testar grátis, planos, API e Demonstração ficam parados. Para liberar tudo, desmarque em Aparência > Personalizar > Radar. (As telas em `/radar/...` continuam existindo, só não há link para elas.)
 - Os botões de WhatsApp **dentro das páginas** têm o link no próprio botão (edite no Elementor).
 - As tabelas da demonstração são widgets "Shortcode": `[radar_demo_kpis]` e `[radar_demo_tabela tipo="carteira|acoes|publicacoes" limite="4"]`. Os dados (fictícios) estão em `inc/demo-data.php`, com datas sempre relativas a hoje.
 - O Elementor grátis também pede a fonte Roboto ao Google por padrão; o tema desliga isso.
