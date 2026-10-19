@@ -1,6 +1,6 @@
 [
  {
-  "id": "f21a53a",
+  "id": "996a991",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -14,7 +14,7 @@
   },
   "elements": [
    {
-    "id": "22b493e",
+    "id": "e7eed9a",
     "elType": "column",
     "settings": {
      "_column_size": 52,
@@ -94,41 +94,7 @@
       "elements": []
      },
      {
-      "id": "feb7513",
-      "elType": "widget",
-      "widgetType": "button",
-      "settings": {
-       "text": "Testar grátis por 14 dias",
-       "link": {
-        "url": "{{radar:entrar#/cadastro}}",
-        "is_external": "",
-        "nofollow": "",
-        "custom_attributes": ""
-       },
-       "_css_classes": "rd-btn rd-btn-p",
-       "_element_width": "auto"
-      },
-      "elements": []
-     },
-     {
-      "id": "253a96a",
-      "elType": "widget",
-      "widgetType": "button",
-      "settings": {
-       "text": "Ver uma demonstração",
-       "link": {
-        "url": "{{home:/demonstracao/}}",
-        "is_external": "",
-        "nofollow": "",
-        "custom_attributes": ""
-       },
-       "_css_classes": "rd-btn rd-btn-s",
-       "_element_width": "auto"
-      },
-      "elements": []
-     },
-     {
-      "id": "5d7d76f",
+      "id": "c9d846f",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -140,7 +106,7 @@
     ]
    },
    {
-    "id": "66c3810",
+    "id": "0991d3b",
     "elType": "column",
     "settings": {
      "_column_size": 48,
@@ -149,14 +115,14 @@
     },
     "elements": [
      {
-      "id": "0c48ba1",
+      "id": "8b7626b",
       "elType": "widget",
       "widgetType": "image",
       "settings": {
        "image": {
-        "url": "{{theme:img/painel.png}}",
+        "url": "{{theme:img/acoes-uf.png}}",
         "id": "",
-        "alt": "Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores do escritório",
+        "alt": "Tela Ações por UF do Radar Processual: ações por estado, Justiça Estadual, Federal e do Trabalho, por advogado",
         "source": "library"
        },
        "image_size": "full",
@@ -165,11 +131,11 @@
       "elements": []
      },
      {
-      "id": "86b3ef1",
+      "id": "5d7d76f",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
-       "editor": "<p>Painel do Radar Processual (dados fictícios de exemplo)</p>",
+       "editor": "<p>Sistema Radar Processual · tela Ações por UF (dados fictícios de exemplo)</p>",
        "_css_classes": "rd-legenda"
       },
       "elements": []
@@ -179,7 +145,7 @@
   ]
  },
  {
-  "id": "82cf32b",
+  "id": "1aaf397",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -193,7 +159,7 @@
   },
   "elements": [
    {
-    "id": "988b943",
+    "id": "bd57796",
     "elType": "column",
     "settings": {
      "_column_size": 22,
@@ -202,7 +168,7 @@
     },
     "elements": [
      {
-      "id": "4a5f00c",
+      "id": "19070e0",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -215,7 +181,7 @@
     ]
    },
    {
-    "id": "4b42ac4",
+    "id": "988b943",
     "elType": "column",
     "settings": {
      "_column_size": 78,
@@ -224,12 +190,72 @@
     },
     "elements": [
      {
-      "id": "23eb88c",
+      "id": "880a6ea",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
        "editor": "<p><strong>Diário de Justiça Eletrônico Nacional (DJEN/Comunica)</strong> e <strong>Datajud (CNJ)</strong>. O leitor das publicações foi conferido com retorno real do DJEN: partes, advogados, órgão, datas e o texto inteiro de dezenas de tribunais.</p>",
        "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "a5d675b",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-alt rd-texto rd-first",
+   "_element_id": "por-dentro"
+  },
+  "elements": [
+   {
+    "id": "cd63bf7",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "68ae6f9",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "Veja por dentro",
+       "header_size": "p",
+       "_css_classes": "rd-rot"
+      },
+      "elements": []
+     },
+     {
+      "id": "e7b6ea6",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "O dia de um escritório, em uma tela",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "00a2c59",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>Escritório modelo com dados fictícios: o que foi atualizado, o que não deu para acessar e o que fazer primeiro.</p>",
+       "_css_classes": "rd-sub"
       },
       "elements": []
      }
@@ -248,8 +274,7 @@
     "sizes": []
    },
    "gap": "no",
-   "css_classes": "rd-sec rd-alt rd-texto rd-first",
-   "_element_id": "por-dentro"
+   "css_classes": "rd-sec rd-alt rd-texto rd-last"
   },
   "elements": [
    {
@@ -262,66 +287,7 @@
     },
     "elements": [
      {
-      "id": "1abd1d0",
-      "elType": "widget",
-      "widgetType": "heading",
-      "settings": {
-       "title": "Veja por dentro",
-       "header_size": "p",
-       "_css_classes": "rd-rot"
-      },
-      "elements": []
-     },
-     {
-      "id": "f03e1d6",
-      "elType": "widget",
-      "widgetType": "heading",
-      "settings": {
-       "title": "O dia de um escritório, em uma tela",
-       "header_size": "h2",
-       "_css_classes": "rd-title"
-      },
-      "elements": []
-     },
-     {
-      "id": "d0dfdea",
-      "elType": "widget",
-      "widgetType": "text-editor",
-      "settings": {
-       "editor": "<p>Escritório modelo com dados fictícios: o que foi atualizado, o que não deu para acessar e o que fazer primeiro.</p>",
-       "_css_classes": "rd-sub"
-      },
-      "elements": []
-     }
-    ]
-   }
-  ]
- },
- {
-  "id": "42754ea",
-  "elType": "section",
-  "settings": {
-   "layout": "boxed",
-   "content_width": {
-    "unit": "px",
-    "size": 1120,
-    "sizes": []
-   },
-   "gap": "no",
-   "css_classes": "rd-sec rd-alt rd-texto rd-last"
-  },
-  "elements": [
-   {
-    "id": "6ec74ba",
-    "elType": "column",
-    "settings": {
-     "_column_size": 100,
-     "_inline_size": null,
-     "css_classes": "rd-plain"
-    },
-    "elements": [
-     {
-      "id": "b6e5dd2",
+      "id": "1106743",
       "elType": "widget",
       "widgetType": "shortcode",
       "settings": {
@@ -331,7 +297,7 @@
       "elements": []
      },
      {
-      "id": "137b2b9",
+      "id": "3ffb154",
       "elType": "widget",
       "widgetType": "shortcode",
       "settings": {
@@ -341,7 +307,7 @@
       "elements": []
      },
      {
-      "id": "2c29569",
+      "id": "ff3335c",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -1332,9 +1298,9 @@
       "widgetType": "image",
       "settings": {
        "image": {
-        "url": "{{theme:img/painel.png}}",
+        "url": "{{theme:img/acoes-prazos.png}}",
         "id": "",
-        "alt": "Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores",
+        "alt": "Tela Ações e prazos do Radar Processual: vencidos, prazos por urgência e o que fazer em cada publicação",
         "source": "library"
        },
        "image_size": "full",
@@ -1374,7 +1340,7 @@
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
-       "editor": "<p>Imagem do painel com dados fictícios de exemplo.</p>",
+       "editor": "<p>Tela Ações e prazos, com dados fictícios de exemplo.</p>",
        "_css_classes": ""
       },
       "elements": []

@@ -184,3 +184,8 @@ footer.rodape nav li+li::before{content:"·";margin-right:14px}
 
 /* Modo "só WhatsApp": links parados não parecem clicáveis. */
 a[aria-disabled="true"]{cursor:default}
+
+/* Moldura de janela (três pontos) em volta da imagem do sistema no topo, como na página de referência. */
+.pagina-elementor .rd-janela .elementor-widget-container{border:1px solid #2b5558;border-radius:14px;overflow:hidden;background:#0b1a1d;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.pagina-elementor .rd-janela .elementor-widget-container::before{content:"";display:block;height:34px;background:radial-gradient(circle 5.5px at 20px 17px,#3b5256 98%,transparent) ,radial-gradient(circle 5.5px at 40px 17px,#3b5256 98%,transparent),radial-gradient(circle 5.5px at 60px 17px,#3b5256 98%,transparent),#0f2224;border-bottom:1px solid #1e3a3d}
+.pagina-elementor .rd-janela img{border:0;border-radius:0;box-shadow:none}

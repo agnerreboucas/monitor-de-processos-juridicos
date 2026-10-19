@@ -1,6 +1,6 @@
 [
  {
-  "id": "f441f66",
+  "id": "913832f",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -14,7 +14,7 @@
   },
   "elements": [
    {
-    "id": "574cca7",
+    "id": "6abc3ad",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -23,7 +23,7 @@
     },
     "elements": [
      {
-      "id": "fd21bdc",
+      "id": "9f58864",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -37,7 +37,7 @@
   ]
  },
  {
-  "id": "be226ad",
+  "id": "f441f66",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -51,7 +51,7 @@
   },
   "elements": [
    {
-    "id": "7590a12",
+    "id": "574cca7",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -60,7 +60,7 @@
     },
     "elements": [
      {
-      "id": "53b19aa",
+      "id": "7ab0255",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -71,7 +71,7 @@
       "elements": []
      },
      {
-      "id": "ba2e9df",
+      "id": "e55ef97",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -82,7 +82,7 @@
       "elements": []
      },
      {
-      "id": "9f2a700",
+      "id": "46853e7",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -92,7 +92,7 @@
       "elements": []
      },
      {
-      "id": "201198a",
+      "id": "f18278f",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -109,7 +109,7 @@
       "elements": []
      },
      {
-      "id": "020761d",
+      "id": "5543434",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -135,7 +135,7 @@
   ]
  },
  {
-  "id": "b5abd50",
+  "id": "c37dc2c",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -149,7 +149,7 @@
   },
   "elements": [
    {
-    "id": "2d2af5e",
+    "id": "6329fde",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -158,7 +158,7 @@
     },
     "elements": [
      {
-      "id": "74ce438",
+      "id": "13e8dfc",
       "elType": "widget",
       "widgetType": "shortcode",
       "settings": {
@@ -172,7 +172,7 @@
   ]
  },
  {
-  "id": "59e9a8b",
+  "id": "b5abd50",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -186,7 +186,7 @@
   },
   "elements": [
    {
-    "id": "299d2ce",
+    "id": "2d2af5e",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -195,7 +195,7 @@
     },
     "elements": [
      {
-      "id": "f5d1133",
+      "id": "201198a",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -212,7 +212,7 @@
       "elements": []
      },
      {
-      "id": "d657c23",
+      "id": "020761d",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -229,7 +229,7 @@
       "elements": []
      },
      {
-      "id": "9ada9b0",
+      "id": "f5d1133",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -250,7 +250,7 @@
   ]
  },
  {
-  "id": "44e8ee6",
+  "id": "71def59",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -265,7 +265,7 @@
   },
   "elements": [
    {
-    "id": "57ea3a3",
+    "id": "0a1e6a7",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -274,7 +274,7 @@
     },
     "elements": [
      {
-      "id": "88edf60",
+      "id": "c128407",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -285,7 +285,7 @@
       "elements": []
      },
      {
-      "id": "8c868d0",
+      "id": "3a6dbed",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -295,7 +295,7 @@
       "elements": []
      },
      {
-      "id": "efd3245",
+      "id": "9751d63",
       "elType": "widget",
       "widgetType": "shortcode",
       "settings": {
@@ -309,7 +309,7 @@
   ]
  },
  {
-  "id": "08cd858",
+  "id": "0638091",
   "elType": "section",
   "settings": {
    "layout": "boxed",
@@ -324,7 +324,7 @@
   },
   "elements": [
    {
-    "id": "560880d",
+    "id": "69dcc02",
     "elType": "column",
     "settings": {
      "_column_size": 100,
@@ -333,7 +333,7 @@
     },
     "elements": [
      {
-      "id": "ab12650",
+      "id": "0554ebb",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -344,7 +344,7 @@
       "elements": []
      },
      {
-      "id": "f88e266",
+      "id": "d03deb8",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -354,11 +354,70 @@
       "elements": []
      },
      {
-      "id": "548c9f5",
+      "id": "c6b7fcb",
       "elType": "widget",
       "widgetType": "shortcode",
       "settings": {
        "shortcode": "[radar_demo_tabela tipo=\"acoes\"]",
+       "_css_classes": ""
+      },
+      "elements": []
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "22539d9",
+  "elType": "section",
+  "settings": {
+   "layout": "boxed",
+   "content_width": {
+    "unit": "px",
+    "size": 1120,
+    "sizes": []
+   },
+   "gap": "no",
+   "css_classes": "rd-sec rd-demo-bloco rd-texto",
+   "_element_id": "publicacoes"
+  },
+  "elements": [
+   {
+    "id": "a2ffeed",
+    "elType": "column",
+    "settings": {
+     "_column_size": 100,
+     "_inline_size": null,
+     "css_classes": "rd-plain"
+    },
+    "elements": [
+     {
+      "id": "bce436d",
+      "elType": "widget",
+      "widgetType": "heading",
+      "settings": {
+       "title": "3. Publicações e movimentações do dia",
+       "header_size": "h2",
+       "_css_classes": "rd-title"
+      },
+      "elements": []
+     },
+     {
+      "id": "380c8ef",
+      "elType": "widget",
+      "widgetType": "text-editor",
+      "settings": {
+       "editor": "<p>O que chegou do Diário de Justiça Eletrônico Nacional e do Datajud (CNJ) nas últimas 24 horas, já ligado ao processo certo.</p>",
+       "_css_classes": "rd-sub"
+      },
+      "elements": []
+     },
+     {
+      "id": "39fe4fe",
+      "elType": "widget",
+      "widgetType": "shortcode",
+      "settings": {
+       "shortcode": "[radar_demo_tabela tipo=\"publicacoes\"]",
        "_css_classes": ""
       },
       "elements": []
@@ -378,8 +437,7 @@
     "sizes": []
    },
    "gap": "no",
-   "css_classes": "rd-sec rd-demo-bloco rd-texto",
-   "_element_id": "publicacoes"
+   "css_classes": "rd-sec rd-texto rd-demo-fim"
   },
   "elements": [
    {
@@ -388,69 +446,11 @@
     "settings": {
      "_column_size": 100,
      "_inline_size": null,
-     "css_classes": "rd-plain"
-    },
-    "elements": [
-     {
-      "id": "f862ff1",
-      "elType": "widget",
-      "widgetType": "heading",
-      "settings": {
-       "title": "3. Publicações e movimentações do dia",
-       "header_size": "h2",
-       "_css_classes": "rd-title"
-      },
-      "elements": []
-     },
-     {
-      "id": "3f92e26",
-      "elType": "widget",
-      "widgetType": "text-editor",
-      "settings": {
-       "editor": "<p>O que chegou do Diário de Justiça Eletrônico Nacional e do Datajud (CNJ) nas últimas 24 horas, já ligado ao processo certo.</p>",
-       "_css_classes": "rd-sub"
-      },
-      "elements": []
-     },
-     {
-      "id": "1627cfc",
-      "elType": "widget",
-      "widgetType": "shortcode",
-      "settings": {
-       "shortcode": "[radar_demo_tabela tipo=\"publicacoes\"]",
-       "_css_classes": ""
-      },
-      "elements": []
-     }
-    ]
-   }
-  ]
- },
- {
-  "id": "2a3d1a7",
-  "elType": "section",
-  "settings": {
-   "layout": "boxed",
-   "content_width": {
-    "unit": "px",
-    "size": 1120,
-    "sizes": []
-   },
-   "gap": "no",
-   "css_classes": "rd-sec rd-texto rd-demo-fim"
-  },
-  "elements": [
-   {
-    "id": "fdd4af3",
-    "elType": "column",
-    "settings": {
-     "_column_size": 100,
-     "_inline_size": null,
      "css_classes": "rd-plain rd-caixa"
     },
     "elements": [
      {
-      "id": "60cc530",
+      "id": "4dfa141",
       "elType": "widget",
       "widgetType": "heading",
       "settings": {
@@ -461,7 +461,7 @@
       "elements": []
      },
      {
-      "id": "25147a3",
+      "id": "7ad7189",
       "elType": "widget",
       "widgetType": "text-editor",
       "settings": {
@@ -471,7 +471,7 @@
       "elements": []
      },
      {
-      "id": "f77c7da",
+      "id": "1491dc8",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -488,7 +488,7 @@
       "elements": []
      },
      {
-      "id": "a75a8c0",
+      "id": "4bc6418",
       "elType": "widget",
       "widgetType": "button",
       "settings": {
@@ -510,7 +510,7 @@
       "elements": []
      },
      {
-      "id": "a6b1bf3",
+      "id": "f77c7da",
       "elType": "widget",
       "widgetType": "button",
       "settings": {

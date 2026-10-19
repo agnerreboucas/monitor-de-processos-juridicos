@@ -209,12 +209,10 @@ def hero():
         texto('<p>Acompanhe o andamento completo de cada processo e as publicações em nome dos seus advogados, de qualquer área do Direito. O Radar atualiza no horário que você escolher (por exemplo, 5h30), avisa a equipe e mostra o prazo estimado.</p>', 'rd-lead'),
         botao('Falar com um consultor', '{{whatsapp}}', 'rd-btn rd-btn-zap', icone='fab fa-whatsapp', inline=True, link={'url': '{{whatsapp}}', 'is_external': 'on', 'nofollow': '', 'custom_attributes': ''}),
         botao('Ver os preços', '#planos', 'rd-btn rd-link-sec', inline=True),
-        botao('Testar grátis por 14 dias', '{{radar:entrar#/cadastro}}', 'rd-btn rd-btn-p', inline=True),
-        botao('Ver uma demonstração', '{{home:/demonstracao/}}', 'rd-btn rd-btn-s', inline=True),
         texto('<p>14 dias grátis, sem cartão · Atendimento direto no WhatsApp <a class="zap-num" href="{{whatsapp}}" target="_blank" rel="noopener">{{whatsapp_exibido}}</a> · Falha de consulta nunca vira “sem novidade”</p>', 'rd-nota'),
     ]
-    dir_ = [imagem('{{theme:img/painel.png}}', 'Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores do escritório', 'rd-janela'),
-            texto('<p>Painel do Radar Processual (dados fictícios de exemplo)</p>', 'rd-legenda')]
+    dir_ = [imagem('{{theme:img/acoes-uf.png}}', 'Tela Ações por UF do Radar Processual: ações por estado, Justiça Estadual, Federal e do Trabalho, por advogado', 'rd-janela'),
+            texto('<p>Sistema Radar Processual · tela Ações por UF (dados fictícios de exemplo)</p>', 'rd-legenda')]
     return secao([coluna(esq, 52, 'rd-plain'), coluna(dir_, 48, 'rd-plain')], 'rd-hero')
 
 
