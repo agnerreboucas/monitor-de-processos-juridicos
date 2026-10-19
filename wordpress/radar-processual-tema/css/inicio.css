@@ -13,7 +13,7 @@ a{color:var(--link)}
 header.topo{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--menu) 94%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--menu2)}
 header.topo .c{display:flex;align-items:center;gap:22px;height:64px}
 .marca{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;font-weight:700;font-size:19px;white-space:nowrap}
-.marca b{color:var(--ambar)}.marca svg{width:26px;height:26px;stroke:var(--ambar);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.marca b{color:var(--ambar)}.marca svg{width:28px;height:28px;stroke:var(--ambar);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 header.topo nav{display:flex;gap:20px;margin-left:12px;flex:1}
 header.topo nav a{color:#c4d4d4;text-decoration:none;font-size:15px}
 header.topo nav a:hover{color:#fff}

@@ -62,6 +62,14 @@ require_once __DIR__ . '/inc/personalizar.php';
 // O kit padrão do Elementor pede a fonte Roboto ao Google; o tema usa a fonte do sistema (mais rápido e sem enviar o IP do visitante).
 add_filter('elementor/frontend/print_google_fonts', '__return_false');
 
+// Ícone da aba do navegador: os dois círculos (mesma marca da apresentação).
+add_action('wp_head', static function (): void {
+    if (!has_site_icon()) {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#071214"/><g fill="none" stroke="#f0b43a" stroke-width="2.6"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/></g></svg>';
+        echo '<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,' . rawurlencode($svg) . '">' . "\n";
+    }
+});
+
 add_action('wp_head', static function (): void {
     if (is_front_page()) {
         echo '<meta name="description" content="Monitore processos de qualquer área do Direito e as publicações em nome dos seus advogados. Andamento completo, ações e prazos por urgência, avisos por painel e e-mail. 14 dias grátis.">' . "\n";
