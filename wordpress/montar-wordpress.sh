@@ -4,7 +4,7 @@
 set -e
 AQUI=$(cd "$(dirname "$0")" && pwd)
 RAIZ=$(dirname "$AQUI")
-SAIDA="${1:-$RAIZ}"
+SAIDA=$(cd "${1:-$RAIZ}" && pwd)
 TMP=$(mktemp -d)
 NUCLEO="$RAIZ/radar-trabalhista"
 
