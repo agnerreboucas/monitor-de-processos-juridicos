@@ -7,19 +7,17 @@ get_header();
 <section class="hero"><div class="c">
   <div class="topo-hero">
     <div>
-      <span class="selo-hero">Para escritórios de advocacia</span>
-      <h1>Seus processos vigiados todos os dias, com o que fazer e até quando.</h1>
-      <p class="l">Acompanhe o andamento completo de cada processo e as publicações em nome dos seus advogados. O Radar avisa a equipe, mostra o prazo estimado e deixa claro o que exige ação.</p>
-      <div class="cta"><a class="btn p" href="<?= radar_link('entrar#/cadastro'); ?>">Testar grátis por 14 dias</a><a class="btn s" href="#planos">Ver o preço</a><a class="btn s" href="<?= esc_url(home_url('/demonstracao/')); ?>">Ver uma demonstração</a></div>
-      <small>Sem cartão de crédito no teste · Dados de fontes públicas oficiais · Falha de consulta nunca vira “sem novidade”</small>
+      <span class="selo-hero">Monitoramento de processos para escritórios de advocacia</span>
+      <h1>Seus processos vigiados todos os dias, com <em>o que fazer e até quando.</em></h1>
+      <p class="l">Acompanhe o andamento completo de cada processo e as publicações em nome dos seus advogados, de qualquer área do Direito. O Radar atualiza no horário que você escolher (por exemplo, 5h30), avisa a equipe e mostra o prazo estimado.</p>
+      <div class="cta"><a class="btn zap" href="<?= esc_url(radar_whatsapp()); ?>" target="_blank" rel="noopener"><?= radar_icone_zap(); ?> Falar com um consultor <span aria-hidden="true">→</span></a><a class="link-sec" href="#planos">Ver os preços</a></div>
+      <div class="cta2"><a class="btn p" href="<?= radar_link('entrar#/cadastro'); ?>">Testar grátis por 14 dias</a><a class="btn s" href="<?= esc_url(home_url('/demonstracao/')); ?>">Ver uma demonstração</a></div>
+      <small>14 dias grátis, sem cartão · Atendimento direto no WhatsApp <a class="zap-num" href="<?= esc_url(radar_whatsapp()); ?>" target="_blank" rel="noopener"><?= esc_html(RADAR_WHATSAPP_EXIBIDO); ?></a> · Falha de consulta nunca vira “sem novidade”</small>
     </div>
-    <ul class="lista">
-      <li>Andamento completo do processo (Datajud) e publicações em tempo real (Diário)</li>
-      <li>Ações e prazos por urgência, com quem deve agir e o impacto</li>
-      <li>Monitoramento por número CNJ e por OAB, com aviso por e-mail</li>
-      <li>Painel de ações por UF e alerta de inscrição suplementar</li>
-      <li>API por chave para integrar ao seu sistema</li>
-    </ul>
+    <figure class="janela-fig">
+      <div class="janela"><div class="janela-topo"><i></i><i></i><i></i></div><img src="<?= esc_url(get_theme_file_uri('img/painel.png')); ?>" width="1400" height="920" alt="Painel do Radar Processual com a contagem do teste grátis, o resumo de hoje e os indicadores do escritório"></div>
+      <figcaption>Painel do Radar Processual (dados fictícios de exemplo)</figcaption>
+    </figure>
   </div>
 </div></section>
 

@@ -82,7 +82,7 @@ get_header();
       <h2>Quer ver com os seus processos?</h2>
       <p>Crie a conta do escritório, cadastre os primeiros processos e veja o Radar trabalhando. 14 dias grátis, sem cartão.</p>
       <a class="btn p" href="<?= radar_link('entrar#/cadastro'); ?>">Testar grátis por 14 dias</a>
-      <a class="btn s" href="<?= esc_url(home_url('/#planos')); ?>">Ver os preços</a>
+      <a class="btn zap" href="<?= esc_url(radar_whatsapp()); ?>" target="_blank" rel="noopener"><?= radar_icone_zap(); ?> Falar com um consultor</a><a class="btn s" href="<?= esc_url(home_url('/#planos')); ?>">Ver os preços</a>
     </div>
   </div>
 </main>
