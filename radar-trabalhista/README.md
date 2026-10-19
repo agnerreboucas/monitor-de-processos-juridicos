@@ -141,3 +141,6 @@ Na tela Plano: **uma vez por dia** (horário à escolha, ex.: 05:30) **ou de 6 e
 
 ## Painel do processo
 Botão **"Ver o que fazer com este processo"**: resumo com ações, quem, prazo e impacto; depois o inteiro teor.
+
+## No WordPress (plugin + tema)
+A pasta `../wordpress` traz o **plugin** (o sistema inteiro dentro do WordPress, em `/radar`) e o **tema** (site de venda). Mesmas funções, mesmo núcleo: o plugin só liga o Radar ao WordPress (rotas, tabelas com prefixo `wp_radar_`, robô pelo WP-Cron, e-mails por `wp_mail`, tela de configuração). Guia: `../wordpress/LEIA-ME-WORDPRESS.md`. Integração testada em um WordPress 6.9 real (`wordpress/teste/rodar.sh`); a suíte também roda com `RADAR_TEST_PREFIX=wp_radar_`.

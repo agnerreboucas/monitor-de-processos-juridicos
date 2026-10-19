@@ -91,7 +91,7 @@ final class NotificationDispatcher
                 $lines[] = '  Resumo: ' . (mb_strlen($excerpt) > self::EXCERPT ? mb_substr($excerpt, 0, self::EXCERPT - 1) . '…' : $excerpt);
             }
             if ($this->appUrl !== '') {
-                $lines[] = '  Detalhes: ' . rtrim($this->appUrl, '/') . '/#/processos/' . $r['process_id'];
+                $lines[] = '  Detalhes: ' . rtrim($this->appUrl, '/') . '/entrar#/processos/' . $r['process_id'];
             }
             if (is_string($r['source_url']) && str_starts_with($r['source_url'], 'https://')) {
                 $lines[] = '  Fonte oficial: ' . $r['source_url'];

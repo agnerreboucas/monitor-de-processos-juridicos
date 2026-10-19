@@ -44,3 +44,5 @@ jobs:
         run: node --test tests/js/analise.test.cjs
       - name: Testes
         run: ./vendor/bin/phpunit
+      - name: Testes com prefixo de tabelas (como o plugin do WordPress roda)
+        run: RADAR_TEST_PREFIX=wp_radar_ ./vendor/bin/phpunit

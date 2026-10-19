@@ -10,7 +10,8 @@ final class MigrationTest extends DbTestCase
 {
     public function testAllTablesFromThePrdExist(): void
     {
-        $tables = $this->pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN);
+        $prefix = (string) getenv('RADAR_TEST_PREFIX');
+        $tables = array_map(static fn ($t) => $prefix !== '' && str_starts_with($t, $prefix) ? substr($t, strlen($prefix)) : $t, $this->pdo->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN));
         foreach (['tenants', 'users', 'tenant_members', 'processes', 'process_movements', 'monitoring_jobs',
                      'monitoring_events', 'notifications', 'plans', 'subscriptions', 'audit_logs', 'integration_sources'] as $t) {
             $this->assertContains($t, $tables);

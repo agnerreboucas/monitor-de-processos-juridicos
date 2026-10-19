@@ -56,7 +56,7 @@ final class NotificationDispatcherTest extends DbTestCase
         $this->assertStringContainsString('Audiência designada', $mail['body']);
         $this->assertStringContainsString('Data da movimentação: 09/10/2026', $mail['body']);
         $this->assertStringContainsString('Data da captura pelo sistema: 11/10/2026', $mail['body']);
-        $this->assertStringContainsString('https://radar.exemplo.com.br/#/processos/', $mail['body']);
+        $this->assertStringContainsString('https://radar.exemplo.com.br/entrar#/processos/', $mail['body']);
         $this->assertStringContainsString('não significa que o escritório foi intimado', $mail['body']);
         $this->assertSame(2, (int) $this->scalar("SELECT COUNT(*) FROM notifications WHERE channel = 'email' AND status = 'sent' AND sent_at IS NOT NULL"));
     }
@@ -150,7 +150,7 @@ final class NotificationDispatcherTest extends DbTestCase
         $r = $this->dispatcher->sendPending();
         $this->assertSame(['emails' => 2, 'notifications' => 25, 'failed' => 0], $r);     // 20 + 5
         $this->assertStringContainsString('…', $this->mailer->sent[0]['body']);
-        $this->assertLessThan(6000, strlen($this->mailer->sent[0]['body']));
+        $this->assertLessThan(6500, strlen($this->mailer->sent[0]['body']));
     }
 
     public function testLogMailerWritesToAFile(): void

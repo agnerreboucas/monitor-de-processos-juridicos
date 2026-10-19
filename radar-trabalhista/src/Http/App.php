@@ -81,6 +81,7 @@ final class App
         private ?ReadinessService $readiness = null,
         private string $paymentInfo = '',
         private string $supportContact = '',
+        private string $originUrl = '',          // origem aceita nos pedidos de escrita (padrão: appUrl); no WordPress, o site sem o caminho /radar
     ) {
         $this->auth = new AuthService($pdo, $clock, $maxFailures, $lockMinutes);
         $this->processes = new ProcessService($pdo, $clock);
@@ -578,8 +579,9 @@ final class App
             throw new Forbidden('Pedido não permitido.');
         }
         $origin = $r->header('origin');
-        if ($origin !== '' && $this->appUrl !== '') {
-            $allowed = rtrim($this->appUrl, '/');
+        $expected = $this->originUrl !== '' ? $this->originUrl : $this->appUrl;
+        if ($origin !== '' && $expected !== '') {
+            $allowed = rtrim($expected, '/');
             if (strcasecmp(rtrim($origin, '/'), $allowed) !== 0) {
                 throw new Forbidden('Pedido não permitido.');
             }
@@ -732,7 +734,7 @@ final class App
             try {
                 $this->mailer->send($email, '', 'Radar Processual: redefinir sua senha',
                     "Recebemos um pedido para redefinir a sua senha.\n\n"
-                    . rtrim($this->appUrl, '/') . '/#/redefinir?token=' . $token . "\n\n"
+                    . rtrim($this->appUrl, '/') . '/entrar#/redefinir?token=' . $token . "\n\n"
                     . "O link vale por 60 minutos e só pode ser usado uma vez. Se não foi você, ignore esta mensagem.\n");
             } catch (MailerException $e) {
                 error_log('[radar] e-mail de redefinição não enviado: ' . $e->getMessage());
@@ -748,8 +750,8 @@ final class App
         $email = AuthService::normalizeEmail($r->str('email'));
         try {
             $link = $result['invite_token'] !== null
-                ? rtrim($this->appUrl, '/') . '/#/redefinir?token=' . $result['invite_token']
-                : rtrim($this->appUrl, '/') . '/#/convites';
+                ? rtrim($this->appUrl, '/') . '/entrar#/redefinir?token=' . $result['invite_token']
+                : rtrim($this->appUrl, '/') . '/entrar#/convites';
             $this->mailer->send($email, $r->str('name'), 'Radar Processual: você foi convidado',
                 "Você foi convidado(a) para um escritório no Radar Processual.\n\n"
                 . ($result['invite_token'] !== null ? "Defina a sua senha por este link (válido por 7 dias):\n" : "Entre na sua conta e aceite o convite:\n")

@@ -1,6 +1,8 @@
 'use strict';
 // Tudo que vem do servidor (e do tribunal) entra na página como TEXTO, nunca como HTML.
 const app = document.getElementById('app');
+// Endereços do painel. Fora do WordPress valem os padrões; o plugin define window.RADAR_CONFIG (ex.: api: '/radar', entrar: '/radar/entrar').
+const CFG = Object.assign({ api: '', home: '/', entrar: '/entrar', termos: '/app/termos.html', privacidade: '/app/privacidade.html', apiDocs: '/app/api-docs.html', v1: '/v1' }, window.RADAR_CONFIG || {});
 let sessao = null;
 let csrf = '';
 
@@ -18,7 +20,7 @@ async function api(metodo, caminho, corpo, consulta) {
   const url = caminho + (consulta ? '?' + new URLSearchParams(consulta) : '');
   const opcoes = { method: metodo, headers: {}, credentials: 'same-origin' };
   if (metodo !== 'GET') { opcoes.headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }; opcoes.body = JSON.stringify(corpo || {}); }
-  const r = await fetch(url, opcoes);
+  const r = await fetch(CFG.api + url, opcoes);
   const json = await r.json().catch(() => ({ ok: false, error: 'Resposta inesperada do servidor.' }));
   if (r.status === 401 && sessao && sessao.authenticated && json.code === 'auth' && caminho !== '/api/login') { await carregarSessao(); location.hash = '#/entrar'; }
   return { status: r.status, ...json };
@@ -43,7 +45,7 @@ function estadoMonitoramento(p) {
 }
 
 async function baixar(caminho, nome, consulta) {
-  const r = await fetch(caminho + (consulta ? '?' + new URLSearchParams(consulta) : ''), { credentials: 'same-origin' });
+  const r = await fetch(CFG.api + caminho + (consulta ? '?' + new URLSearchParams(consulta) : ''), { credentials: 'same-origin' });
   if (!r.ok) { const j = await r.json().catch(() => ({})); return j.error || 'Não foi possível gerar o arquivo.'; }
   const url = URL.createObjectURL(await r.blob());
   const a = h('a', { href: url, download: nome }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -93,7 +95,7 @@ const TITULOS = [
 function irParaApresentacao() { if (window.irParaApresentacaoDemo) window.irParaApresentacaoDemo(); else location.href = '/'; }
 // Prévia da tela de login para quem já está logado como administrador (o login real fica em /entrar).
 const emPreviaLogin = () => window.__PREVIA_LOGIN === true || /[?&]previa=login\b/.test(location.search);
-function fecharPreviaLogin() { if (window.irParaPainelDemo) window.irParaPainelDemo(); else location.href = '/entrar'; }
+function fecharPreviaLogin() { if (window.irParaPainelDemo) window.irParaPainelDemo(); else location.href = CFG.entrar; }
 function mostrarPreviaLogin() {
   document.getElementById('topo').hidden = true; document.getElementById('cabecalho').hidden = true; document.getElementById('faixa').hidden = true; document.body.classList.remove('logado');
   telaEntrar();
@@ -110,14 +112,14 @@ function desenharTopo() {
     icone(ic), nome, extra && extra.selo ? h('span', { class: 'selo' }, extra.selo) : null);
   const grupo = (t) => h('div', { class: 'grupo' }, t);
   const partes = [];
-  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
+  if (!sessao.tenant) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: CFG.home, target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: CFG.entrar + '?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   else {
     partes.push(item('#/', 'Dashboard', 'home'), grupo('Processual'), item('#/acoes', 'Ações e prazos', 'clock'), item('#/consulta', 'Consultar processo', 'search'), item('#/processos', 'Processos', 'folder'),
       ...(pode('oab.view') ? [item('#/publicacoes', 'Publicações', 'file')] : []), item('#/notificacoes', 'Notificações', 'bell', { selo: selos.notif || null }));
     if (pode('oab.view')) partes.push(grupo('Advogados'), item('#/uf', 'Ações por UF', 'map'),
       item('#/alertas', 'Alertas OAB', 'alert', { alerta: selos.alertas > 0, selo: selos.alertas || null }), item('#/oabs', 'Advogados (OAB)', 'users'));
     partes.push(grupo('Escritório'), item('#/equipe', 'Equipe', 'users'), item('#/plano', 'Plano', 'card'), item('#/conta', 'Minha conta', 'user'));
-    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: '/', target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: '/entrar?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
+    if (sessao.platform_admin) partes.push(grupo('Plataforma'), item('#/admin', 'Administração', 'shield'), item('#/uso', 'Usuários e uso', 'users'), item('#/apis', 'API e clientes', 'key'), h('a', { href: CFG.home, target: '_blank', rel: 'noopener' }, icone('home'), 'Página de apresentação'), h('a', { href: CFG.entrar + '?previa=login', target: '_blank', rel: 'noopener' }, icone('user'), 'Página de login'));
   }
   document.getElementById('menu').replaceChildren(...partes);
   document.getElementById('quem').replaceChildren(h('a', { href: '#/conta', title: 'Minha conta' }, sessao.user.name));
@@ -142,7 +144,7 @@ function campo(rotulo, nome, tipo, extra) { return h('label', {}, rotulo, h('inp
 function layoutAuth(titulo, subtitulo, ...conteudo) {
   return h('div', { class: 'auth' },
     h('section', { class: 'auth-lado' },
-      h('a', { class: 'marca', href: '/' }, icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Processual'))),
+      h('a', { class: 'marca', href: CFG.home }, icone('radar'), h('span', {}, 'Radar ', h('b', {}, 'Processual'))),
       h('div', { class: 'auth-texto' },
         h('h2', {}, 'Monitoramento processual para escritórios de advocacia'),
         h('ul', {}, h('li', {}, 'Consulta o Diário de Justiça Eletrônico Nacional todos os dias, por processo e por OAB.'),
@@ -152,7 +154,7 @@ function layoutAuth(titulo, subtitulo, ...conteudo) {
       h('p', { class: 'suave' }, 'Apoio operacional de acompanhamento. Não substitui a conferência nas fontes oficiais.')),
     h('section', { class: 'auth-form' }, h('div', { class: 'auth-caixa' },
       h('h1', {}, titulo), subtitulo ? h('p', { class: 'suave' }, subtitulo) : null, ...conteudo,
-      h('p', { class: 'suave auth-rodape' }, h('a', { href: '/' }, '← Voltar para o site'), ' · ', h('a', { href: '/app/termos.html' }, 'Termos'), ' · ', h('a', { href: '/app/privacidade.html' }, 'Privacidade')))));
+      h('p', { class: 'suave auth-rodape' }, h('a', { href: CFG.home }, '← Voltar para o site'), ' · ', h('a', { href: CFG.termos }, 'Termos'), ' · ', h('a', { href: CFG.privacidade }, 'Privacidade')))));
 }
 function formulario(titulo, campos, botao, aoEnviar, rodape, subtitulo) {
   const msg = h('div');
@@ -185,7 +187,7 @@ function telaEscolherEscritorio() {
 function telaCadastro(consulta) {
   const plano = (consulta && /^[a-z0-9-]{2,40}$/.test(consulta.plano || '')) ? consulta.plano : '';
   app.replaceChildren(formulario('Criar conta do escritório', [campo('Nome do escritório', 'office_name'), campo('Seu nome', 'name'), campo('E-mail', 'email', 'email'), campo('Senha (mínimo 10 caracteres)', 'password', 'password', { minlength: 10, autocomplete: 'new-password' }),
-    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: '/app/termos.html', target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: '/app/privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
+    h('label', { class: 'linha' }, h('input', { type: 'checkbox', name: 'accept_terms', required: true }), 'Li e aceito os ', h('a', { href: CFG.termos, target: '_blank', rel: 'noopener' }, 'Termos de Uso'), ' e a ', h('a', { href: CFG.privacidade, target: '_blank', rel: 'noopener' }, 'Política de Privacidade'))], 'Criar conta',
     async (d) => { const r = await api('POST', '/api/register', { ...d, plan: plano || undefined, accept_terms: d.accept_terms === 'on' }); if (!r.ok) return r.error; await carregarSessao(); location.hash = '#/'; rota(); },
     h('p', { class: 'suave' }, h('a', { href: '#/entrar' }, 'Já tenho conta')), 'Teste grátis por 14 dias. Não pede cartão de crédito. A cobrança começa só no 15º dia.'));
 }
@@ -899,7 +901,7 @@ async function telaApiPainel() {
   }
   function desenhar() { desenharPlanos(); desenharClientes(); }
   const topo = h('div', { class: 'linha entre' }, h('h1', {}, 'API e clientes'), h('div', { class: 'linha' },
-    h('a', { href: '/app/api-docs.html', target: '_blank', rel: 'noopener' }, h('button', {}, 'Documentação da API')),
+    h('a', { href: CFG.apiDocs, target: '_blank', rel: 'noopener' }, h('button', {}, 'Documentação da API')),
     h('button', { onclick: async () => { const e = await baixar('/api/admin/api/usage.csv', 'api-uso.csv', {}); if (e) alert(e); } }, 'Baixar uso do mês (CSV)'),
     h('button', { class: 'principal', onclick: desenharFormCliente }, 'Novo cliente')));
   app.replaceChildren(topo, h('p', { class: 'suave' }, 'Cadastre seus clientes, escolha o plano, gere a chave (token) e acompanhe o consumo. A cobrança é feita por você: use o CSV de uso no fechamento do mês.'), kpis, formCliente,
@@ -964,7 +966,7 @@ async function telaApiCliente(id) {
       c.status === 'active' ? h('form', { class: 'linha', style: 'margin-top:12px', onsubmit: novaChave }, h('input', { name: 'label', required: true, maxlength: 80, placeholder: 'Nome da chave (ex.: Produção)', 'aria-label': 'Nome da chave' }),
         h('select', { name: 'validade', 'aria-label': 'Validade' }, h('option', { value: '' }, 'Não expira'), h('option', { value: '30' }, 'Expira em 30 dias'), h('option', { value: '90' }, 'Expira em 90 dias'), h('option', { value: '365' }, 'Expira em 1 ano')),
         h('button', { class: 'principal' }, 'Gerar nova chave')) : aviso('Reative o cliente para gerar chaves.', 'aviso')),
-    h('div', { class: 'cartao' }, h('h2', {}, 'O que enviar ao cliente'), h('p', {}, 'A chave e o link da documentação: ', h('a', { href: '/app/api-docs.html', target: '_blank', rel: 'noopener' }, location.origin + '/app/api-docs.html'), '. A descrição técnica (OpenAPI) está em ', h('a', { href: '/v1/openapi.json', target: '_blank', rel: 'noopener' }, location.origin + '/v1/openapi.json'), '.')));
+    h('div', { class: 'cartao' }, h('h2', {}, 'O que enviar ao cliente'), h('p', {}, 'A chave e o link da documentação: ', h('a', { href: CFG.apiDocs, target: '_blank', rel: 'noopener' }, location.origin + '/app/api-docs.html'), '. A descrição técnica (OpenAPI) está em ', h('a', { href: '/v1/openapi.json', target: '_blank', rel: 'noopener' }, location.origin + '/v1/openapi.json'), '.')));
 }
 
 
@@ -1160,7 +1162,7 @@ async function telaConta(recado) {
     h('div', { class: 'cartao' }, h('h2', {}, 'Dados e avisos'), perfil),
     h('div', { class: 'cartao' }, h('h2', {}, 'Senha'), senha),
     pode('privacy.manage') ? h('div', { class: 'cartao' }, h('h2', {}, 'Dados do escritório (LGPD)'),
-      h('p', { class: 'suave' }, 'Baixe uma cópia completa dos dados ou exclua o escritório de forma definitiva. Veja a ', h('a', { href: '/app/privacidade.html', target: '_blank', rel: 'noopener' }, 'Política de Privacidade'), '.'),
+      h('p', { class: 'suave' }, 'Baixe uma cópia completa dos dados ou exclua o escritório de forma definitiva. Veja a ', h('a', { href: CFG.privacidade, target: '_blank', rel: 'noopener' }, 'Política de Privacidade'), '.'),
       h('div', { class: 'linha' }, h('button', { onclick: async () => { const e = await baixar('/api/privacy/export', 'meus-dados.json'); if (e) msgPriv.replaceChildren(aviso(e, 'erro')); } }, 'Baixar cópia dos dados (JSON)')),
       h('details', { style: 'margin-top:12px' }, h('summary', {}, 'Excluir o escritório definitivamente'),
         h('form', { class: 'empilhado', style: 'margin-top:8px', onsubmit: async (e) => {

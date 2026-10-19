@@ -23,14 +23,14 @@ abstract class DbTestCase extends TestCase
 
     public static function connect(): PDO
     {
-        return new PDO(
-            getenv('RADAR_TEST_DSN') ?: 'mysql:host=localhost;dbname=radar_teste;charset=utf8mb4',
-            getenv('RADAR_TEST_USER') ?: 'radar',
-            getenv('RADAR_TEST_PASS') ?: 'radar_teste_local',
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+00:00', sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'"],
-        );
+        $dsn = getenv('RADAR_TEST_DSN') ?: 'mysql:host=localhost;dbname=radar_teste;charset=utf8mb4';
+        $user = getenv('RADAR_TEST_USER') ?: 'radar';
+        $pass = getenv('RADAR_TEST_PASS') ?: 'radar_teste_local';
+        $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+00:00', sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'"];
+        $prefix = getenv('RADAR_TEST_PREFIX');      // com prefixo, a suíte inteira roda como o plugin do WordPress roda
+        return $prefix ? new \Radar\Support\PrefixedPdo($dsn, $user, $pass, $options, $prefix, \Radar\Support\PrefixedPdo::tablesFrom(__DIR__ . '/../migrations')) : new PDO($dsn, $user, $pass, $options);
     }
 
     protected function setUp(): void

@@ -1,0 +1,23 @@
+/*
+Theme Name: Radar Processual
+Theme URI: https://example.com/radar-processual
+Description: Tema do site de venda do Radar Processual (monitoramento processual para escritórios de advocacia). Use junto do plugin "Radar Processual", que traz o painel, as buscas e a API.
+Author: Radar Processual
+Version: 1.0.0
+Requires at least: 6.0
+Requires PHP: 8.2
+License: Proprietary
+Text Domain: radar-processual-tema
+*/
+
+/* Páginas comuns do WordPress (a página inicial usa css/inicio.css) */
+.conteudo-pagina{max-width:820px;margin:0 auto;padding:56px 24px 96px}
+.conteudo-pagina h1{font-size:clamp(30px,4vw,44px);line-height:1.15;letter-spacing:-.02em;margin:0 0 24px}
+.conteudo-pagina h2,.conteudo-pagina h3{margin:32px 0 10px}
+.conteudo-pagina p,.conteudo-pagina li{color:var(--suave);font-size:18px}
+.conteudo-pagina img{max-width:100%;height:auto}
+.conteudo-pagina .item-post{border-bottom:1px solid var(--linha);padding:22px 0}
+.conteudo-pagina .item-post h2{margin:0 0 6px}
+body.admin-bar header.topo{top:32px}
+@media (max-width:782px){body.admin-bar header.topo{top:46px}}
+.screen-reader-text{position:absolute;left:-9999px}

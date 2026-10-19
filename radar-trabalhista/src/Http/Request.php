@@ -25,9 +25,13 @@ final class Request
      * @param list<string> $trustedProxies IPs ou faixas (CIDR) dos proxies reversos (ex.: Caddy/Nginx). Só deles se aceita
      *                                     X-Forwarded-For e X-Forwarded-Proto; de qualquer outro, o cabeçalho é ignorado.
      */
-    public static function fromGlobals(array $trustedProxies = []): self
+    public static function fromGlobals(array $trustedProxies = [], string $basePath = ''): self
     {
         $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+        $basePath = rtrim($basePath, '/');
+        if ($basePath !== '' && ($path === $basePath || str_starts_with($path, $basePath . '/'))) {      // montado sob um prefixo (ex.: /radar dentro do WordPress)
+            $path = substr($path, strlen($basePath)) ?: '/';
+        }
         $headers = [];
         foreach ($_SERVER as $key => $value) {
             if (str_starts_with((string) $key, 'HTTP_') && is_string($value)) {
