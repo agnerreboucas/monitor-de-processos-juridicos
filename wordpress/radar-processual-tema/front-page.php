@@ -10,7 +10,7 @@ get_header();
       <span class="selo-hero">Para escritórios de advocacia</span>
       <h1>Seus processos vigiados todos os dias, com o que fazer e até quando.</h1>
       <p class="l">Acompanhe o andamento completo de cada processo e as publicações em nome dos seus advogados. O Radar avisa a equipe, mostra o prazo estimado e deixa claro o que exige ação.</p>
-      <div class="cta"><a class="btn p" href="<?= radar_link('entrar#/cadastro'); ?>">Testar grátis por 14 dias</a><a class="btn s" href="#planos">Ver o preço</a></div>
+      <div class="cta"><a class="btn p" href="<?= radar_link('entrar#/cadastro'); ?>">Testar grátis por 14 dias</a><a class="btn s" href="#planos">Ver o preço</a><a class="btn s" href="<?= esc_url(home_url('/demonstracao/')); ?>">Ver uma demonstração</a></div>
       <small>Sem cartão de crédito no teste · Dados de fontes públicas oficiais · Falha de consulta nunca vira “sem novidade”</small>
     </div>
     <ul class="lista">

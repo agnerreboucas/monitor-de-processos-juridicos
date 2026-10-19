@@ -33,3 +33,19 @@ add_action('admin_notices', static function (): void {
         echo '<div class="notice notice-warning"><p><strong>Radar Processual (tema):</strong> ative também o plugin <em>Radar Processual</em>. É ele que traz o painel, as buscas e a API; sem ele os botões Entrar e Testar grátis não funcionam.</p></div>';
     }
 });
+
+// Cria a página "Demonstração" (escritório modelo, dados fictícios) ao ativar o tema, se ainda não existir.
+function radar_criar_pagina_demo(): void
+{
+    if (get_page_by_path('demonstracao')) {
+        return;
+    }
+    wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Demonstração', 'post_name' => 'demonstracao', 'post_content' => '']);
+}
+add_action('after_switch_theme', 'radar_criar_pagina_demo');
+add_action('init', static function (): void {
+    if (get_option('radar_tema_demo_criada') !== '1') {          // tema já ativo antes desta versão: cria uma vez
+        radar_criar_pagina_demo();
+        update_option('radar_tema_demo_criada', '1', false);
+    }
+});

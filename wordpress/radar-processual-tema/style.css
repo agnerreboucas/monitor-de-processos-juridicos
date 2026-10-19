@@ -21,3 +21,35 @@ Text Domain: radar-processual-tema
 body.admin-bar header.topo{top:32px}
 @media (max-width:782px){body.admin-bar header.topo{top:46px}}
 .screen-reader-text{position:absolute;left:-9999px}
+
+/* Página de demonstração (escritório modelo, dados fictícios) */
+.demo{padding:36px 0 90px}
+.demo-aviso{border:1px dashed var(--ambar);background:color-mix(in srgb,var(--ambar) 10%,transparent);border-radius:12px;padding:12px 18px;font-size:15px;color:#f3e2b8;margin-bottom:28px}
+.demo-topo{display:flex;flex-wrap:wrap;gap:16px 28px;justify-content:space-between;align-items:flex-end;margin-bottom:24px}
+.demo-topo h1{font-size:clamp(30px,4.4vw,48px);line-height:1.1;letter-spacing:-.02em;margin:0 0 8px}
+.demo .sub{font-size:17px;color:var(--suave);margin:0 0 18px;max-width:60em}
+.demo-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.demo-kpis .kpi{background:var(--cartao);border:1px solid var(--linha);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;color:var(--suave);font-size:14.5px}
+.demo-kpis .kpi .n{font-size:38px;font-weight:800;line-height:1;color:var(--texto);letter-spacing:-.02em}
+.demo-kpis .kpi.azul .n{color:#7ea2ff}.demo-kpis .kpi.amar .n{color:var(--ambar)}.demo-kpis .kpi.verm .n{color:var(--verm)}
+.demo-nav{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 30px}
+.demo-nav a{border:1px solid var(--linha);border-radius:99px;padding:7px 16px;color:var(--texto);text-decoration:none;font-weight:600;font-size:15px;background:var(--cartao)}
+.demo-nav a:hover{border-color:var(--ambar)}
+.demo-bloco{margin-bottom:46px;scroll-margin-top:90px}
+.demo-bloco h2{font-size:clamp(24px,3vw,32px);margin:0 0 8px;letter-spacing:-.01em}
+.demo .tabela{overflow-x:auto;border:1px solid var(--linha);border-radius:14px;background:var(--cartao)}
+.demo table{width:100%;border-collapse:collapse;font-size:15px;min-width:760px}
+.demo th{position:sticky;top:0;text-align:left;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);padding:13px 14px;border-bottom:1px solid var(--linha);background:var(--cartao)}
+.demo td{padding:13px 14px;border-top:1px solid var(--linha);vertical-align:top;color:var(--texto)}
+.demo tbody tr:first-child td{border-top:0}
+.demo td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;white-space:nowrap}
+.demo .nota-linha{display:block;color:var(--suave);font-size:13px;margin-top:3px}
+.demo .pilula{display:inline-block;border-radius:99px;padding:2px 11px;font-size:12.5px;font-weight:700;border:1px solid var(--linha);color:var(--suave);white-space:nowrap}
+.demo .pilula.azul{color:#8fb0ff;border-color:#35508f}.demo .pilula.verde{color:var(--verde);border-color:#1f6b57}.demo .pilula.amar{color:var(--ambar);border-color:#7a5a15}.demo .pilula.verm{color:var(--verm);border-color:#8a3a3d}
+.demo-rodape-tab{font-size:14px;color:var(--suave);margin:10px 0 0}
+.demo-fim{text-align:center;border:1px solid var(--linha);background:var(--cartao);border-radius:18px;padding:40px 24px}
+.demo-fim h2{margin:0 0 8px;font-size:clamp(26px,3.4vw,36px)}
+.demo-fim p{color:var(--suave);font-size:18px;margin:0 0 20px}
+.demo-fim .btn{margin:4px}
+@media (max-width:960px){.demo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{header.topo,.barra-topo,.barra-fixa,.demo-nav{display:none}}

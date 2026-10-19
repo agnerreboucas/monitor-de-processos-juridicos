@@ -5,6 +5,7 @@ O sistema inteiro roda **dentro do seu WordPress**, no mesmo site e no mesmo ban
 | Endereço | O que é |
 |---|---|
 | `seusite.com.br/` | página de venda (o **tema**) |
+| `seusite.com.br/demonstracao/` | **demonstração** com escritório modelo e dados fictícios (3 tabelas), para apresentar o sistema |
 | `seusite.com.br/radar/entrar` | painel do sistema: cadastro, login, processos, plano |
 | `seusite.com.br/radar/v1/...` | **API por chave** (para o seu GPT e outros sistemas) |
 | `seusite.com.br/radar/app/api-docs.html` | documentação da API para os clientes |
@@ -55,3 +56,6 @@ Desativar o plugin só para o robô. **Excluir** o plugin mantém os dados dos c
 - Montar os pacotes: `sh wordpress/montar-wordpress.sh` (gera os dois zips na raiz do repositório).
 - Teste de integração com WordPress de verdade: `sh wordpress/teste/rodar.sh` (precisa de php, composer, zip e MariaDB local).
 - O plugin é só um invólucro: o núcleo (`src/`, `migrations/`, telas) é o mesmo do sistema independente, com `DB_PREFIX` ligado.
+
+## Página de demonstração
+O tema cria sozinho a página **Demonstração** (`/demonstracao/`): escritório modelo fictício (Prado & Associados), com 3 tabelas: carteira de processos, ações e prazos e publicações do dia. As datas são sempre relativas a hoje. Para trocar nomes, números ou linhas, edite `inc/demo-data.php` no tema. Os números de processo são inventados, mas com dígito verificador válido.
